@@ -1,0 +1,7 @@
+Sandbox_EN = {
+	Sandbox_RedDays = "Red Days",
+
+	Sandbox_RedDaysConfigKey = "Value",
+	Sandbox_RedDaysConfigKey_tooltip = "Descriptive Text",
+
+}
