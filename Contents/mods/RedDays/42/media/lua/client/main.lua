@@ -1,18 +1,26 @@
 require "RedDays/cycle_manager"
+require "RedDays/effects_manager"
 
 local player
 local function LoadPlayerData()
 	player = getPlayer()
 	modData = player:getModData()
 	modData.ICdata = modData.ICdata or {}
-	modData.ICdata.currentCycle = modData.ICdata.currentCycle or CycleManager.newCycle() -- Initialize the current cycle or generate a new one if it doesn't exist
+    modData.ICdata.currentCycle = modData.ICdata.currentCycle or CycleManager.newCycle() -- Initialize the current cycle or generate a new one if it doesn't exist
+    if not CycleManager.isCycleValid(modData.ICdata.currentCycle) then
+        print("Cycle data structure mismatch! This could be due to a mod update. Regenerating cycle...")
+        modData.ICdata.currentCycle = CycleManager.newCycle()
+    end
 end
 Events.OnGameStart.Add(LoadPlayerData)
 
 local function PrintStatus() -- Purely for debug purposes, will be removed in the future
-    -- local cycle = modData.ICdata.currentCycle
-    local cycle = CycleManager.newCycle() -- For testing purposes, we generate a new cycle every time this function is called
+    local cycle = modData.ICdata.currentCycle
+    -- local cycle = CycleManager.newCycle() -- For testing purposes, we generate a new cycle every time this function is called
     print("================================== Generated menstrual cycle details: ==================================")
+    local currentDay = getGameTime():getWorldAgeHours() / 24
+    print("Current time in days: " .. currentDay)
+
     print("Cycle start day: " .. cycle.cycle_start_day)
     print("Total expected menstrual cycle duration: " .. cycle.cycle_duration .. " days")
     print("Follicular phase start day: " .. cycle.cycle_start_day)
@@ -25,11 +33,11 @@ local function PrintStatus() -- Purely for debug purposes, will be removed in th
     print("Luteal phase start day: " .. cycle.luteal_start_day)
     print("Luteal phase duration: " .. cycle.luteal_duration .. " days")
 
-    local currentDay = getGameTime():getWorldAgeHours() / 24
-    print("Current time in days: " .. currentDay)
+    local days_into_cycle = currentDay - cycle.cycle_start_day
+    print("Days into current cycle: " .. days_into_cycle)
 
-    -- local currentPhase = CycleManager.getCurrentCyclePhase(cycle)
-    -- print("Current cycle phase: " .. currentPhase)
+    local currentPhase = CycleManager.getCurrentCyclePhase(cycle)
+    print("Current cycle phase: " .. currentPhase)
 
 
 end

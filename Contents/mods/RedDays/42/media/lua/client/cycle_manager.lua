@@ -43,13 +43,16 @@ function CycleManager.newCycle()
             -- Red day always occurs at the start of the cycle
             local red_days_duration = random_between(range_red_phase_duration)
 
-            local follicle_stimulating_start_day = cycle_start_day + red_days_duration + 1
+            local offset = ZombRand(0,1000) / 1000 -- For random start times
+            local follicle_stimulating_start_day = cycle_start_day + red_days_duration + 1 + offset
             local follicle_stimulating_duration = follicular_duration - red_days_duration
 
+            local offset = ZombRand(0,200) / 1000 -- For random start times
             local ovulation_duration = random_between(range_ovulation_phase_duration)
-            local ovulation_day = follicular_duration
+            local ovulation_day = red_days_duration + follicle_stimulating_duration + offset
 
-            local luteal_start_day = follicular_duration + ovulation_duration
+            local offset = ZombRand(0,1000) / 1000 -- For random start times
+            local luteal_start_day = follicular_duration + ovulation_duration + offset
             local luteal_duration = cycle_duration - follicular_duration - ovulation_duration
 
             return {
@@ -87,6 +90,32 @@ function CycleManager.getCurrentCyclePhase(cycle)
         return "endOfCycle"
     end
     return "unknownPhase"
+end
+
+function CycleManager.isCycleValid(cycle) -- If mod is updated and the cycle structure changes, this function will check if the cycle is valid
+    -- Generate a reference cycle to get the expected keys
+    local reference = CycleManager.newCycle()
+    -- Collect keys from both tables
+    local function get_keys(tbl)
+        local keys = {}
+        for k, _ in pairs(tbl) do keys[k] = true end
+        return keys
+    end
+    local cycle_keys = get_keys(cycle)
+    local ref_keys = get_keys(reference)
+
+    -- Check for missing or extra keys
+    for k in pairs(ref_keys) do
+        if not cycle_keys[k] then
+            return false -- missing key
+        end
+    end
+    for k in pairs(cycle_keys) do
+        if not ref_keys[k] then
+            return false -- extra key
+        end
+    end
+    return true
 end
 
 return CycleManager
