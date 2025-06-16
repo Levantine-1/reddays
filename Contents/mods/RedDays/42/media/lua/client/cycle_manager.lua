@@ -75,16 +75,17 @@ function CycleManager.getCurrentCyclePhase(cycle)
     local current_day = getGameTime():getWorldAgeHours() / 24 
     local days_into_cycle = current_day - cycle.cycle_start_day
 
-    if days_into_cycle <= red_days_duration then
+    if days_into_cycle <= cycle.red_days_duration then
         return "redPhase"
-    elseif days_into_cycle <= follicle_stimulating_start_day then
+    elseif days_into_cycle <= (cycle.red_days_duration + cycle.follicle_stimulating_duration) then
         return "follicularPhase"
-    elseif days_into_cycle <= ovulation_day then
+    elseif days_into_cycle <= (cycle.red_days_duration + cycle.follicle_stimulating_duration + cycle.ovulation_duration) then
         return "ovulationPhase"
-    elseif days_into_cycle < luteal_start_day then
+    elseif days_into_cycle <= cycle.cycle_duration then
         return "lutealPhase"
+    elseif days_into_cycle > cycle.cycle_duration then
+        return "endOfCycle"
     end
-
     return "unknownPhase"
 end
 
