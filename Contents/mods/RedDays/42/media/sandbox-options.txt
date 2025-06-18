@@ -1,0 +1,11 @@
+VERSION = 1,
+
+option RedDays.baseDifficultyClass
+{
+	type = integer,
+	min = 1,
+	max = 30,
+	default = 16,
+	page = RedDays,
+	translation = Sandbox_RedDaysConfigKey,
+}
