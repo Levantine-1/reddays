@@ -21,7 +21,11 @@ local function default_cycle() -- Default cycle values if a new cycle cannot be 
         ovulation_duration = 1,
         ovulation_day = 14,
         luteal_start_day = 15,
-        luteal_duration = 14
+        luteal_duration = 14,
+        stiffness_target = 100,
+        discomfort_target = 100,
+        endurance_decrement = 0.5,
+        fatigue_increment = 0.5
     }
 end
 
@@ -55,6 +59,11 @@ function CycleManager.newCycle()
             local luteal_start_day = follicular_duration + ovulation_duration + offset
             local luteal_duration = cycle_duration - follicular_duration - ovulation_duration
 
+            local stiffness_target = 100
+            local discomfort_target = ZombRand(25,100)
+            local endurance_decrement = 0.0005
+            local fatigue_increment = 0.0001
+
             return {
                 cycle_start_day = cycle_start_day,
                 cycle_duration = cycle_duration,
@@ -65,7 +74,11 @@ function CycleManager.newCycle()
                 ovulation_duration = ovulation_duration,
                 ovulation_day = ovulation_day,
                 luteal_start_day = luteal_start_day,
-                luteal_duration = luteal_duration
+                luteal_duration = luteal_duration,
+                stiffness_target = stiffness_target,
+                discomfort_target = discomfort_target,
+                endurance_decrement = endurance_decrement,
+                fatigue_increment = fatigue_increment
             }
         end
     end
