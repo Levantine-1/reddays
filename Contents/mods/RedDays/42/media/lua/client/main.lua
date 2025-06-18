@@ -14,22 +14,26 @@ local function LoadPlayerData()
 end
 Events.OnGameStart.Add(LoadPlayerData)
 
-local function PrintStatus() -- Purely for debug purposes, will be removed in the future
+local function PrintStatus()
     local cycle = modData.ICdata.currentCycle
-    -- local cycle = CycleManager.newCycle() -- For testing purposes, we generate a new cycle every time this function is called
     print("================================== Generated menstrual cycle details: ==================================")
     local currentDay = getGameTime():getWorldAgeHours() / 24
     print("Current time in days: " .. currentDay)
 
     print("Cycle start day: " .. cycle.cycle_start_day)
     print("Total expected menstrual cycle duration: " .. cycle.cycle_duration .. " days")
+
     print("Follicular phase start day: " .. cycle.cycle_start_day)
     print("Total Follicular phase duration: " .. cycle.follicular_duration .. " days")
+
     print("Red phase duration: " .. cycle.red_days_duration .. " days")
+
     print("Follicle stimulating phase start day: " .. cycle.follicle_stimulating_start_day)
     print("Follicle stimulating phase duration: " .. cycle.follicle_stimulating_duration .. " days")
+
     print("Ovulation day: " .. cycle.ovulation_day .. " days after the start of the cycle")
     print("Ovulation phase duration: " .. cycle.ovulation_duration .. " days")
+
     print("Luteal phase start day: " .. cycle.luteal_start_day)
     print("Luteal phase duration: " .. cycle.luteal_duration .. " days")
 
@@ -38,7 +42,12 @@ local function PrintStatus() -- Purely for debug purposes, will be removed in th
 
     local currentPhase = CycleManager.getCurrentCyclePhase(cycle)
     print("Current cycle phase: " .. currentPhase)
-
-
+    print("==========================================================================================")
 end
-Events.EveryTenMinutes.Add(PrintStatus)
+Events.EveryHours.Add(PrintStatus)
+
+local function main()
+    local cycle = modData.ICdata.currentCycle
+    EffectsManager.determineEffects(cycle) -- Apply effects based on the current cycle phase
+end
+Events.EveryTenMinutes.Add(main)

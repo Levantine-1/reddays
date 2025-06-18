@@ -11,7 +11,7 @@ local function takePillsStiffness()
 	else
 		Events.EveryTenMinutes.Remove(takePillsStiffness) -- Pills are no longer effective
         pill_effect_active = false
-        print("Pills effect has worn off.")
+        print("Painkiller effect has worn off.")
 		return
 	end
 end
@@ -24,7 +24,7 @@ function ISTakePillAction:perform()
         pill_effect_active = true
         pill_recently_taken = true
 		Events.EveryTenMinutes.Add(takePillsStiffness)
-        print("Took a pill, pill effect is now active.")
+        print("Just took a pill, painkiller effect is now active.")
 	end
 	o_ISTakePillAction_perform(self)
 end
@@ -55,9 +55,6 @@ local function stat_Adjustment()
         return
     end
 
-    print("Stiffness Target: " .. cycle.stiffness_target)
-    print("Stiffness Increment: " .. cycle.stiffness_increment)
-
     local current_groin_stiffness = groin:getStiffness()
     if current_groin_stiffness < cycle.stiffness_target then
         groin:setStiffness(math.max(0, current_groin_stiffness + cycle.stiffness_increment))
@@ -82,14 +79,6 @@ end
 
 function EffectsManager.determineEffects(cycle)
     local current_phase = CycleManager.getCurrentCyclePhase(cycle)
-
-    local player = getPlayer()
-    local bodyDamage = player:getBodyDamage()
-    local lowerTorso = bodyDamage:getBodyPart(BodyPartType.Torso_Lower)
-    local groin = bodyDamage:getBodyPart(BodyPartType.Groin)
-
-    local stats = player:getStats()
-
 
     if current_phase == "redPhase" then
         if not stat_Adjustment_isEnabled then
