@@ -30,7 +30,7 @@ function ISTakePillAction:perform()
 end
 
 local stat_Adjustment_isEnabled = false
-local function stat_Adjustment(cycle)
+local function stat_Adjustment()
     stat_Adjustment_isEnabled = true
 
     local player = getPlayer()
@@ -38,6 +38,8 @@ local function stat_Adjustment(cycle)
     local bodyDamage = player:getBodyDamage()
     local lowerTorso = bodyDamage:getBodyPart(BodyPartType.Torso_Lower)
     local groin = bodyDamage:getBodyPart(BodyPartType.Groin)
+
+    local cycle = modData.ICdata.currentCycle -- The event system calls the function with no arguments, so cycle is nil, so that's why it's set here
 
     groin:setBleeding(true)
     if pill_effect_active then
@@ -53,17 +55,24 @@ local function stat_Adjustment(cycle)
         return
     end
 
-    local current_groin_stiffness = groin:getStiffness()
-    groin:setStiffness(math.max(0, current_groin_stiffness + 2))
+    print("Stiffness Target: " .. cycle.stiffness_target)
+    print("Stiffness Increment: " .. cycle.stiffness_increment)
 
+    local current_groin_stiffness = groin:getStiffness()
+    if current_groin_stiffness < cycle.stiffness_target then
+        groin:setStiffness(math.max(0, current_groin_stiffness + cycle.stiffness_increment))
+    end
+    
     local current_lower_torso_stiffness = lowerTorso:getStiffness()
-    lowerTorso:setStiffness(math.max(0, current_lower_torso_stiffness + 2))
+    if current_lower_torso_stiffness < cycle.stiffness_target then
+        lowerTorso:setStiffness(math.max(0, current_lower_torso_stiffness + cycle.stiffness_increment))
+    end
 
     local current_fatigue = stats:getFatigue()
-    stats:setFatigue(math.min(1, current_fatigue + 0.0001))
+    stats:setFatigue(math.min(1, current_fatigue + cycle.fatigue_increment))
 
     local current_endurance = stats:getEndurance()
-    stats:setEndurance(math.min(1, current_endurance - 0.0005))
+    stats:setEndurance(math.min(1, current_endurance - cycle.endurance_decrement))
 
     local current_discomfort = bodyDamage:getDiscomfortLevel()
     bodyDamage:setDiscomfortLevel(math.max(0, current_discomfort + 20))
