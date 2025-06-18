@@ -1,23 +1,67 @@
 EffectsManager = {}
 
-function EffectsManager.applyCycleEffects(cycle)
-    local current_phase = CycleManager.getCurrentCyclePhase(cycle)
-    print("Applying effects for phase: " .. current_phase)
+local stat_Adjustment_isEnabled = false
+local function stat_Adjustment(cycle)
+    stat_Adjustment_isEnabled = true
+    print("Stat adjustment is enabled, applying effects...")
 
-    if current_phase == "redPhase" then
-        -- Apply effects for red phase
-    elseif current_phase == "follicularPhase" then
-        -- Apply effects for follicular phase
-    elseif current_phase == "ovulationPhase" then
-        -- Apply effects for ovulation phase
-    elseif current_phase == "lutealPhase" then
-        -- Apply effects for luteal phase
-    elseif current_phase == "endOfCycle" then
-        -- Apply effects for end of cycle
+    local player = getPlayer()
+    local stats = player:getStats()
+    local bodyDamage = player:getBodyDamage()
+    local lowerTorso = bodyDamage:getBodyPart(BodyPartType.Torso_Lower)
+    local groin = bodyDamage:getBodyPart(BodyPartType.Groin)
+
+    groin:setBleeding(true)
+    if pill_effect_active then
+        print("Pill effect is active, skipping stat adjustment. Just bleeding...")
+        return
     end
+
+    local current_groin_stiffness = groin:getStiffness()
+    groin:setStiffness(math.max(0, current_groin_stiffness + 2.5))
+
+    local current_lower_torso_stiffness = lowerTorso:getStiffness()
+    lowerTorso:setStiffness(math.max(0, current_lower_torso_stiffness + 2.5))
+
+    local current_fatigue = stats:getFatigue()
+    stats:setFatigue(math.min(1, current_fatigue + 0.0001))
+
+    local current_endurance = stats:getEndurance()
+    stats:setEndurance(math.min(1, current_endurance - 0.0005))
+
+    local current_discomfort = bodyDamage:getDiscomfortLevel()
+    bodyDamage:setDiscomfortLevel(math.max(0, current_discomfort + 20))
+    -- I couldn't find the discomfort stat gets and sets in the API docuementation, but I found it in this mod:
+    -- Nepenthe's Slower Discomfort, Credit to Nepenthe for that
 end
 
-function EffectsManager.rampTo(cycle)
+local counter = 0
+local pill_effect_active = false
+local function takePillsStiffness()
+	if counter < 36 then -- Pills are effective for 6 hours (36 * 10 = 360 minutes)
+		counter = counter + 1
+        print("Pills counter: " .. counter)
+        pill_effect_active = true
+	else
+		Events.EveryTenMinutes.Remove(takePillsStiffness) -- Pills are no longer effective
+        pill_effect_active = false
+        print("Pills effect has worn off after 6 hours.")
+		return
+	end
+end
+-- takePillsStiffness and o_o_ISTakePillAction_perform is originally from [B42] Painkillers Remove Arm Muscle Strain created by lect 
+-- Slightly modified to fit the RedDays mod
+local o_ISTakePillAction_perform = ISTakePillAction.perform
+function ISTakePillAction:perform()
+	if self.item:getFullType() == "Base.Pills" then
+		counter = 0
+		Events.EveryTenMinutes.Add(takePillsStiffness)
+        print("Pills taken, stiffness effect will last for 6 hours.")
+	end
+	o_ISTakePillAction_perform(self)
+end
+
+function EffectsManager.determineEffects(cycle)
     local current_phase = CycleManager.getCurrentCyclePhase(cycle)
 
     local player = getPlayer()
@@ -25,18 +69,25 @@ function EffectsManager.rampTo(cycle)
     local lowerTorso = bodyDamage:getBodyPart(BodyPartType.Torso_Lower)
     local groin = bodyDamage:getBodyPart(BodyPartType.Groin)
 
+    local stats = player:getStats()
+
+
     if current_phase == "redPhase" then
-        print("Applying effects")
-        groin:setBleeding(true)
-        groin:setStiffness(100)
-        lowerTorso:setStiffness(100)
+        if not stat_Adjustment_isEnabled then
+            print("Red phase and stat_Adjustment is not enabled, enabling it now.")
+            Events.EveryOneMinute.Add(stat_Adjustment)
+        end
+    else
+        if stat_Adjustment_isEnabled then
+            print("Current phase is not redPhase and stat_Adjustment is enabled, disabling it.")
+            Events.EveryOneMinute.Remove(stat_Adjustment)
+        end
+        stat_Adjustment_isEnabled = false
     end
-        
-    -- TODO: groin strain and bleeding, lower torso strain
-    -- Discomfort
-    -- Reduce Stamina and Fatigue
 end
--- Events.EveryOneMinute.Add(EffectsManager.rampTo)
+
+
+
 
 
 return EffectsManager
