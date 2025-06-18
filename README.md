@@ -4,18 +4,43 @@
 
 ## You'll need to find and stockpile 
 
-## TODO
-Add the following items:
+## Current Features
+- The basic menstrual cycle including the following phases
+    - Menstural
+    - Folliclicular
+    - Ovulation
+    - Luteal
+
+- Debuff effects during the Menstrual Phase
+    - Reduced Endurance
+    - Increased Fatigue
+    - Groin bleeding and muscle strain (to simulate cramps)
+    - Lower torso muscle strain (to simulate cramps and increase pain level so the moodle shows up)
+    - Increased discomfort levels
+
+- Painkillers negates debuffs
+
+## Planned features in Priority Order
+
+Everything in the Minimum Viable Product Priority section below plus these:
+
+Feminine Hygiene products:
 - Pads
 - Tampons
-- Pantyliners
 - Craftable re-usable cloth pads
-- Craftable cycle tracker
 
-Add the 4 menstrual phases
-- Follicular Phase:
-    - Menstrual Bleeding Typical Range (3-5 days) Can be up to 7 days - Typically heavy bleeding first 2 days
-    - Follicle Stimulation - (13-16) - menstrual bleeding time - ~7-10 days
-- Ovulation 1 Day, aim for center of week
-- Luteal Phase lasts about 10-15 Days after ovulation
-- total should be between 27-31 days
+Random cycle start dates for new characters and only affect female characters
+- Currently all characters start the game on red day.
+
+Cycle tracking feature
+- Craftable cycle tracker calendar for cycle predictions
+
+Discharge feature:
+- Pantyliners
+
+
+## Minimum Viable Product Priority
+- Make sure males are not affected unless specified in custom options
+- Generate new cycle at end of cycle
+- Generate new cycle after character death/spawn
+- Add sandbox options for customization
