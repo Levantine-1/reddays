@@ -1,3 +1,5 @@
+require "RedDays/hygiene_manager"
+
 EffectsManager = {}
 
 local counter = 0
@@ -47,7 +49,10 @@ local function stat_Adjustment()
 
     local cycle = modData.ICdata.currentCycle -- The event system calls the function with no arguments, so cycle is nil, so that's why it's set here
 
-    groin:setBleeding(true)
+    if not HygieneManager:consumeHygieneProduct() then
+        groin:setBleeding(true)
+    end
+
     if pill_effect_active then
         if pill_recently_taken then
             if groin:getStiffness() > 22.5 then
