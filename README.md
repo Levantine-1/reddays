@@ -27,29 +27,29 @@
 
 Everything in the Minimum Viable Product Priority section below plus these:
 
-Feminine Hygiene products:
-- Pads
-- Tampons
-- Craftable re-usable cloth pads
+- Feminine Hygiene products:
+    - Pads
+    - Tampons
+    - Craftable re-usable cloth pads
 
 - Add sandbox options for customization
 
-Random cycle start dates for new characters and only affect female characters
+- Random cycle start dates for new characters
 - Currently all characters start the game on red day.
 
-Cycle tracking feature
-- Craftable cycle tracker calendar for cycle predictions
+- Cycle tracking feature
+    - Craftable cycle tracker calendar for cycle predictions
 
-Discharge feature:
-- Pantyliners
+- Discharge feature:
+    - Pantyliners
 
-Traits:
-- Hygiene product consumption and stat decrement rates vary by cycle trait:
-    - Light, Normal, Heavy Cycle Traits
-- Right now player starts on red day, but eventually a different start date could be a trait
+- Traits:
+    - Hygiene product consumption and stat decrement rates vary by cycle trait:
+        - Light, Normal, Heavy Cycle Traits
+    - Right now player starts on red day, but eventually a different start date could be a trait
 
-Debuffs for insufficient hygienic care
-- TSS or other sickness and debuffs
+- Debuffs for insufficient hygienic care
+    - TSS or other sickness and debuffs
 
 ## Known bugs
 
