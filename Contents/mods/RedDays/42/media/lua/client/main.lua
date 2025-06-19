@@ -48,6 +48,11 @@ Events.EveryHours.Add(PrintStatus)
 
 local function main()
     local cycle = modData.ICdata.currentCycle
+    if CycleManager.getCurrentCyclePhase(cycle) == "endOfCycle" then
+        print("End of cycle reached, generating a new cycle...")
+        modData.ICdata.currentCycle = CycleManager.newCycle()
+        cycle = modData.ICdata.currentCycle
+    end
     EffectsManager.determineEffects(cycle) -- Apply effects based on the current cycle phase
 end
 Events.EveryTenMinutes.Add(main)

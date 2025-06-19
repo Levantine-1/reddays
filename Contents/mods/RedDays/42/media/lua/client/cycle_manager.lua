@@ -6,6 +6,12 @@ local range_red_phase_duration = {3, 5}
 local range_luteal_phase_duration = {11, 18}
 local range_ovulation_phase_duration = {1, 1}
 
+-- local range_total_menstrual_cycle_duration = {7, 9}
+-- local range_follicular_phase_duration = {3, 4}
+-- local range_red_phase_duration = {1, 2}
+-- local range_luteal_phase_duration = {3, 5}
+-- local range_ovulation_phase_duration = {1, 1}
+
 local function random_between(range)
     return ZombRand(range[1], range[2])
 end
@@ -105,6 +111,7 @@ function CycleManager.getCurrentCyclePhase(cycle)
     elseif days_into_cycle > cycle.cycle_duration then
         return "endOfCycle"
     end
+    print("Error: Unable to determine current cycle phase.")
     return "unknownPhase"
 end
 

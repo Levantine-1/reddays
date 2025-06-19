@@ -41,6 +41,6 @@ Discharge feature:
 
 ## Minimum Viable Product Priority
 - Make sure males are not affected unless specified in custom options
-- Generate new cycle at end of cycle
 - Generate new cycle after character death/spawn
 - Add sandbox options for customization
+- Groin in bandaged only soil the bandage
