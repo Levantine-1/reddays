@@ -32,6 +32,8 @@ Feminine Hygiene products:
 - Tampons
 - Craftable re-usable cloth pads
 
+- Add sandbox options for customization
+
 Random cycle start dates for new characters and only affect female characters
 - Currently all characters start the game on red day.
 
@@ -48,9 +50,6 @@ Traits:
 
 Debuffs for insufficient hygienic care
 - TSS or other sickness and debuffs
-
-## Minimum Viable Product Priority
-- Add sandbox options for customization
 
 ## Known bugs
 
