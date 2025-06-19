@@ -16,6 +16,7 @@ Events.OnGameStart.Add(LoadPlayerData)
 
 local function ResetCycleData()
     modData.ICdata.currentCycle = CycleManager.newCycle()
+    EffectsManager.resetEffects()
     print("Menstrual cycle data has been reset for new player.")
 end
 Events.OnCreatePlayer.Add(ResetCycleData)
