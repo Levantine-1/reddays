@@ -18,7 +18,10 @@
     - Lower torso muscle strain (to simulate cramps and increase pain level so the moodle shows up)
     - Increased discomfort levels
 
-- Painkillers negates debuffs
+- Painkillers negates debuffs (6 ingame hours default)
+
+- Hygiene
+    - Bandages will work as a quick stop gap if regular feminine hygiene products are not available.
 
 ## Planned features in Priority Order
 
@@ -38,9 +41,18 @@ Cycle tracking feature
 Discharge feature:
 - Pantyliners
 
+Traits:
+- Hygiene product consumption and stat decrement rates vary by cycle trait:
+    - Light, Normal, Heavy Cycle Traits
+- Right now player starts on red day, but eventually a different start date could be a trait
+
+Debuffs for insufficient hygienic care
+- TSS or other sickness and debuffs
 
 ## Minimum Viable Product Priority
-- Make sure males are not affected unless specified in custom options
-- Generate new cycle after character death/spawn
 - Add sandbox options for customization
-- Groin in bandaged only soil the bandage
+
+## Known bugs
+
+## FAQ
+- Groin bleeding doesn't decrement HP and will not kill you
