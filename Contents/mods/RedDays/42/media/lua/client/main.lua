@@ -14,6 +14,12 @@ local function LoadPlayerData()
 end
 Events.OnGameStart.Add(LoadPlayerData)
 
+local function ResetCycleData()
+    modData.ICdata.currentCycle = CycleManager.newCycle()
+    print("Menstrual cycle data has been reset for new player.")
+end
+Events.OnCreatePlayer.Add(ResetCycleData)
+
 local function PrintStatus()
     local cycle = modData.ICdata.currentCycle
     print("================================== Generated menstrual cycle details: ==================================")
