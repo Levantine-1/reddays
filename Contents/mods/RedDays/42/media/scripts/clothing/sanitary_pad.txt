@@ -8,6 +8,6 @@ module Base
         Weight = 0.1,
         ClothingItem = Sanitary_Pad,
         Icon = PantiesGeneric,
-        BodyLocation = Underwear,
+        BodyLocation = HygieneItem,
     }
 }

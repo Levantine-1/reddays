@@ -7,4 +7,5 @@
     <textureChoices>
         <texture choice="Underwear_Default"/>
     </textureChoices>
+	<bodyLocation>HygieneItem</bodyLocation>
 </clothingItem>
