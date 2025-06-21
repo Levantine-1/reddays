@@ -1,0 +1,13 @@
+module Base
+{
+    item Sanitary_Pad
+    {
+        DisplayName = Sanitary Pad,
+        DisplayCategory = Clothing,
+        Type = Clothing,
+        Weight = 0.1,
+        ClothingItem = Sanitary_Pad,
+        Icon = PantiesGeneric,
+        BodyLocation = Underwear,
+    }
+}
