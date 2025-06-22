@@ -9,6 +9,6 @@ module Base
         ClothingItem = Sanitary_Pad,
         Icon = PantiesGeneric,
         BodyLocation = HygieneItem,
-		ConditionMax = 7,
+		ConditionMax = 10,
     }
 }
