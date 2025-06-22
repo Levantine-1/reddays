@@ -3,7 +3,7 @@ module Base
     item Sanitary_Pad
     {
         DisplayName = Sanitary Pad,
-        DisplayCategory = Clothing,
+        DisplayCategory = Feminine Hygiene,
         Type = Clothing,
         Weight = 0.1,
         ClothingItem = Sanitary_Pad,
