@@ -2,15 +2,13 @@ HygieneManager = {}
 
 local function consumeSanitaryItemHelperRenameItemAndLeakChance(item)
     local itemName = item:getName()
-    print("Consuming sanitary item: " .. itemName)
 
     current_condition = item:getCondition()
     if current_condition > 1 then
         item:setCondition(current_condition - 1)
-        print("Sanitary item consumed, remaining condition: " .. item:getCondition())
     end
 
-    baseName = itemName:match("^(.-) %(")
+    local baseName = itemName:match("^(.-) %(")
     if not baseName then
         baseName = itemName
     end
@@ -42,37 +40,38 @@ local function consumeSanitaryItemHelperRenameItemAndLeakChance(item)
     end
     return true -- No leak
 end
-
 local function consumeSanitaryItem()
     local player = getPlayer()
     local wornItems = player:getWornItems()
 
+    local isSanitaryItemEquipped = false
+    local didConsumeSanitaryItem = false
+
     for i = 0, wornItems:size() - 1 do
         local item = wornItems:get(i):getItem()
         if item and item:getDisplayCategory() == "Feminine Hygiene" then
-            consumeSanitaryItem = consumeSanitaryItemHelperRenameItemAndLeakChance(item)
-            return consumeSanitaryItem
+            isSanitaryItemEquipped = true
+            didConsumeSanitaryItem = consumeSanitaryItemHelperRenameItemAndLeakChance(item)
+            return isSanitaryItemEquipped, didConsumeSanitaryItem
         end
     end
-    print("No sanitary item equipped.")
-    return false
+    return isSanitaryItemEquipped, didConsumeSanitaryItem
 end
 
 function HygieneManager.consumeHygieneProduct()
     local player = getPlayer()
-    local stats = player:getStats()
     local bodyDamage = player:getBodyDamage()
     local groin = bodyDamage:getBodyPart(BodyPartType.Groin)
 
-    consumeSanitaryItem()
-
-    if groin:bandaged() then
+    isSanitaryItemEquipped, didConsumeSanitaryItem = consumeSanitaryItem()
+    if isSanitaryItemEquipped then
+        return didConsumeSanitaryItem -- Returns true if sanitary item was consumed and no leak occurred
+    elseif groin:bandaged() then
         current_bandageLife = groin:getBandageLife()
         groin:setBandageLife(current_bandageLife - 0.1)
-    else
-        return false
+        return true -- Always returns true because player could bleed to death if they have other injuries. Setting to false could remove the bandage.
     end
-    return true
+    return false -- No sanitary item equipped and no bandage
 end
 
 return HygieneManager
