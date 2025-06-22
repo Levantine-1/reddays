@@ -1,0 +1,14 @@
+module Base
+{
+    item Tampon
+    {
+        DisplayName = Tampon,
+        DisplayCategory = Feminine Hygiene,
+        Type = Clothing,
+        Weight = 0.1,
+        ClothingItem = Tampon,
+        Icon = PantiesGeneric,
+        BodyLocation = HygieneItem,
+		ConditionMax = 10,
+    }
+}

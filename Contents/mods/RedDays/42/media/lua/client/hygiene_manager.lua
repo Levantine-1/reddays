@@ -40,6 +40,7 @@ local function consumeSanitaryItemHelperRenameItemAndLeakChance(item)
     end
     return true -- No leak
 end
+
 local function consumeSanitaryItem()
     local player = getPlayer()
     local wornItems = player:getWornItems()
