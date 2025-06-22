@@ -17,8 +17,18 @@ local function consumeSanitaryItem()
                 print("Sanitary item is already at unusable condition.")
             end
 
-            if current_condition <= 3 then
-                item:setName(itemName .. " (Dirty)")
+            baseName = itemName:match("^(.-) %(")
+            if not baseName then
+                baseName = itemName
+            end
+            if current_condition == 5 then
+                item:setName(baseName .. " (Dirty)")
+            elseif current_condition == 3 then
+                item:setName(baseName .. " (Very Dirty)")
+            elseif current_condition == 2 then
+                item:setName(baseName .. " (Nearly Saturated)")
+            elseif current_condition == 1 then
+                item:setName(baseName .. " (Saturated)")
             end
             return true
         end
