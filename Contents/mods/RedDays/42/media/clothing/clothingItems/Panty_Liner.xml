@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<clothingItem>
+    <name>Panty_Liner</name>
+    <m_MaleModel>Underwear_Male</m_MaleModel>
+    <m_FemaleModel>Underwear_Female</m_FemaleModel>
+	<m_GUID>54aef0c6-1e1f-416c-85e5-da04c272b871</m_GUID>
+    <textureChoices>
+        <texture choice="Underwear_Default"/>
+    </textureChoices>
+	<bodyLocation>HygieneItem</bodyLocation>
+</clothingItem>

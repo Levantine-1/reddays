@@ -1,0 +1,14 @@
+module Base
+{
+    item Panty_Liner
+    {
+        DisplayName = Panty Liner,
+        DisplayCategory = Feminine Hygiene,
+        Type = Clothing,
+        Weight = 0.1,
+        ClothingItem = Panty_Liner,
+        Icon = PantiesGeneric,
+        BodyLocation = HygieneItem,
+		ConditionMax = 2,
+    }
+}
