@@ -11,4 +11,18 @@ module Base
         BodyLocation = HygieneItem,
 		ConditionMax = 10,
     }
+
+	item BoxOfSanitaryPads
+	{
+		DisplayName = Box of Sanitary Pads,
+	    DisplayCategory = Feminine Hygiene,
+		Type = Drainable,
+        UseDelta = 0.1,
+		Weight = 1,
+		Icon = TissueBox,
+		WorldStaticModel = TissueBox,
+		Tags = IsFireFuel,
+		FireFuelRatio = 0.25,
+		UseWhileEquipped = FALSE,
+	}
 }
