@@ -61,6 +61,10 @@ function HygieneManager.consumeHygieneProduct()
 
     isSanitaryItemEquipped, didConsumeSanitaryItem = consumeSanitaryItem()
     if isSanitaryItemEquipped then
+        local bleedingTime = groin:getBleedingTime()
+        if bleedingTime == 0 and didConsumeSanitaryItem then
+            groin:setBleeding(false) -- Clear bleeding if no wounds. Cycle generates bleeding time of 0, so assumed no wounds.
+        end
         return didConsumeSanitaryItem -- Returns true if sanitary item was consumed and no leak occurred
     elseif groin:bandaged() then
         current_bandageLife = groin:getBandageLife()
