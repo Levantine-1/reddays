@@ -1,4 +1,5 @@
-module Base
+module RedDays
+
 {
     item Tampon
     {
@@ -12,17 +13,33 @@ module Base
 		ConditionMax = 10,
     }
 
-    item BoxOfSanitaryTampons
+
+    item TamponBox
 	{
-		DisplayName = Box of Sanitary Tampons,
-	    DisplayCategory = Feminine Hygiene,
-		Type = Drainable,
-        UseDelta = 0.1,
+		DisplayName = Box of Tampons,
+		DisplayCategory = Feminine Hygiene,
+		Type = Normal,
 		Weight = 1,
-		Icon = TissueBox,
-		WorldStaticModel = TissueBox,
-		Tags = IsFireFuel,
+        Icon	=	GenericMedicalParcel2,
+		Medical = TRUE,
+		WorldStaticModel = MedicalParcel_Green,
+		Tags = IgnoreZombieDensity;IsFireFuel,
 		FireFuelRatio = 0.25,
-		UseWhileEquipped = FALSE,
+	}
+
+	craftRecipe UnpackBoxOfTampons
+	{
+        timedAction = UnPackBox_Small,
+		Time = 50,
+		Tags = InHandCraft;Packing;CanBeDoneInDark,
+        category = Packing,
+		inputs
+		{
+			item 1 [RedDays.TamponBox] flags[AllowFavorite;InheritFavorite],
+		}
+		outputs
+		{
+			item 12 RedDays.Tampon,
+		}
 	}
 }
