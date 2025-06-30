@@ -1,22 +1,30 @@
 HygieneManager = {}
 
+local cSIHDC_counter = 0 -- Counter before decrementing item condition as this is called every 1 ingame minute
+local cSIHDC_counter_tgt = 100 -- Decrement 1 every 100 minutes, should get to very bloody condition around 10 hours and saturated around 20 hours
+local cSIHDC_counter_increment = 1
+local function consumeSanitaryItemHelperDecrementCondition(item, current_condition)
+    cSIHDC_counter = cSIHDC_counter + cSIHDC_counter_increment
+    if current_condition == 10 or (current_condition > 1 and cSIHDC_counter > cSIHDC_counter_tgt) then
+        item:setCondition(current_condition - 1)
+        cSIHDC_counter = 0
+    end
+end
+
 local function consumeSanitaryItemHelperRenameItemAndLeakChance(item)
     local itemName = item:getName()
-
-    current_condition = item:getCondition()
-    if current_condition > 1 then
-        item:setCondition(current_condition - 1)
-    end
-
     local baseName = itemName:match("^(.-) %(")
     if not baseName then
         baseName = itemName
     end
 
-    d20Roll = ZombRand(1, 21) -- Chance to leak
+    local current_condition = item:getCondition()
+    consumeSanitaryItemHelperDecrementCondition(item, current_condition)
+
+    local d20Roll = ZombRand(1, 21) -- Chance to leak
     if current_condition >= 9 then
         item:setName(baseName .. " (Spotty)")
-    elseif current_condition >= 7 then
+    elseif current_condition >= 8 then
         item:setName(baseName .. " (Bloody)")
     elseif current_condition >= 4 then
         item:setName(baseName .. " (Very Bloody)")

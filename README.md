@@ -52,6 +52,9 @@ Everything in the Minimum Viable Product Priority section below plus these:
     - TSS or other sickness and debuffs
 
 ## Known bugs
+- Item Degrade counter resets on restart
+- Painkiller effect resets on restart
+
 
 ## FAQ
 - Groin bleeding doesn't decrement HP and will not kill you
