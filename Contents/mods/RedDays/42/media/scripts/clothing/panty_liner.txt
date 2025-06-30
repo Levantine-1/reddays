@@ -28,7 +28,7 @@ module RedDays
 	craftRecipe UnpackBoxOfPantyLiners
 	{
         timedAction = UnPackBox_Small,
-		Time = 50,
+		Time = 30,
 		Tags = InHandCraft;Packing;CanBeDoneInDark,
         category = Packing,
 		inputs
