@@ -14,25 +14,20 @@ local function consumeSanitaryItemHelperRenameItemAndLeakChance(item)
     end
 
     d20Roll = ZombRand(1, 21) -- Chance to leak
-    if current_condition < 10 and current_condition > 5 then
+    if current_condition >= 9 then
+        item:setName(baseName .. " (Spotty)")
+    elseif current_condition >= 7 then
         item:setName(baseName .. " (Bloody)")
-    elseif current_condition == 5 then
+    elseif current_condition >= 4 then
         item:setName(baseName .. " (Very Bloody)")
-        if d20Roll >= 17 then
-            return false -- 15% chance to leak
-        end
-    elseif current_condition == 4 then
+    elseif current_condition == 3 then
         if d20Roll >= 15 then
             return false -- 25% chance to leak
         end
-    elseif current_condition == 3 then
-        if d20Roll >= 10 then
-            return false -- 50% chance to leak
-        end
     elseif current_condition == 2 then
         item:setName(baseName .. " (Nearly Saturated)")
-        if d20Roll >= 5 then
-            return false -- 75% chance to leak
+        if d20Roll >= 10 then
+            return false -- 50% chance to leak
         end
     elseif current_condition < 2 then
         item:setName(baseName .. " (Saturated)")
