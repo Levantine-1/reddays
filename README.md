@@ -20,7 +20,9 @@
 
 - Painkillers negates debuffs (6 ingame hours default)
 
-- Hygiene
+- Feminine Hygiene products:
+    - Boxes of Sanitary Pads
+    - Boxes of Tampons
     - Bandages will work as a quick stop gap if regular feminine hygiene products are not available.
 
 ## Planned features in Priority Order
@@ -28,8 +30,6 @@
 Everything in the Minimum Viable Product Priority section below plus these:
 
 - Feminine Hygiene products:
-    - Pads
-    - Tampons
     - Craftable re-usable cloth pads
 
 - Add sandbox options for customization

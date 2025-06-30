@@ -1,0 +1,45 @@
+module RedDays
+
+{
+    item Sanitary_Pad
+    {
+        DisplayName = Sanitary Pad,
+        DisplayCategory = Feminine Hygiene,
+        Type = Clothing,
+        Weight = 0.1,
+        ClothingItem = Sanitary_Pad,
+        Icon = PantiesGeneric,
+        BodyLocation = HygieneItem,
+		ConditionMax = 10,
+    }
+
+    item SantiaryPadBox
+	{
+		DisplayName = Box of Sanitary Pads,
+		DisplayCategory = Feminine Hygiene,
+		Type = Normal,
+		Weight = 1,
+        Icon	=	GenericMedicalParcel2,
+		Medical = TRUE,
+		WorldStaticModel = MedicalParcel_Green,
+		Tags = IgnoreZombieDensity;IsFireFuel,
+		FireFuelRatio = 0.25,
+	}
+
+
+	craftRecipe UnpackBoxOSantiaryPads
+	{
+        timedAction = UnPackBox_Small,
+		Time = 30,
+		Tags = InHandCraft;Packing;CanBeDoneInDark,
+        category = Packing,
+		inputs
+		{
+			item 1 [RedDays.SantiaryPadBox] flags[AllowFavorite;InheritFavorite],
+		}
+		outputs
+		{
+			item 12 RedDays.Sanitary_Pad,
+		}
+	}
+}
