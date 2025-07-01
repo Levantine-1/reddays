@@ -1,10 +1,31 @@
 HygieneManager = {}
 
-local cSIHDC_counter = 0 -- Counter before decrementing item condition as this is called every 1 ingame minute
+local function LoadPlayerData()
+    local player = getPlayer()
+    modData = player:getModData()
+    modData.ICdata = modData.ICdata or {}
+    print("Current Counter: " .. tostring(modData.ICdata.cSIHDC_counter))
+    if modData.ICdata.cSIHDC_counter ~= nil then
+        cSIHDC_counter = modData.ICdata.cSIHDC_counter
+    else
+        cSIHDC_counter = 0
+    end
+end
+Events.OnLoad.Add(LoadPlayerData)
+
+local function SavePlayerData()
+    local player = getPlayer()
+    modData = player:getModData()
+    modData.ICdata.cSIHDC_counter = cSIHDC_counter
+end
+-- Events.OnSave.Add(SavePlayerData) -- For some reason this doesn't work. It'll print the counter, but it doesn't seem save it as on load, value is 0.
+Events.EveryTenMinutes.Add(SavePlayerData) -- Save every 10 minutes instead
+
 local cSIHDC_counter_tgt = 100 -- Decrement 1 every 100 minutes, should get to very bloody condition around 10 hours and saturated around 20 hours
 local cSIHDC_counter_increment = 1
 local function consumeSanitaryItemHelperDecrementCondition(item, current_condition)
     cSIHDC_counter = cSIHDC_counter + cSIHDC_counter_increment
+    -- modData.ICdata.cSIHDC_counter = cSIHDC_counter -- debugging counter saving -- But don't save here because it'll save every second which may have performance issues
     if current_condition == 10 or (current_condition > 1 and cSIHDC_counter > cSIHDC_counter_tgt) then
         item:setCondition(current_condition - 1)
         cSIHDC_counter = 0

@@ -1,9 +1,9 @@
 require "RedDays/cycle_manager"
 require "RedDays/effects_manager"
+require "RedDays/hygiene_manager"
 
-local player
 local function LoadPlayerData()
-	player = getPlayer()
+	local player = getPlayer()
 	modData = player:getModData()
 	modData.ICdata = modData.ICdata or {}
     modData.ICdata.currentCycle = modData.ICdata.currentCycle or CycleManager.newCycle() -- Initialize the current cycle or generate a new one if it doesn't exist
