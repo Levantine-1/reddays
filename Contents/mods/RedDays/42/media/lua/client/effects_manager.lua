@@ -2,21 +2,39 @@ require "RedDays/hygiene_manager"
 
 EffectsManager = {}
 
-local counter = 0
-local pill_effect_active = false
 local pill_recently_taken = false
 local function takePillsStiffness()
-    -- print("takePillsStiffness called, current counter: " .. counter)
-	if counter < 36 then -- Pills are effective for 6 hours (36 * 10 = 360 minutes)
-		counter = counter + 1
-        -- print("Pills counter: " .. counter)
+    print("Pill effect active: " .. tostring(pill_effect_active))
+    print("Pill effect counter: " .. pill_effect_counter)
+	if pill_effect_counter < 36 then -- Pills are effective for 6 hours (36 * 10 = 360 minutes)
+		pill_effect_counter = pill_effect_counter + 1
+        modData.ICdata.pill_effect_counter = pill_effect_counter -- Saving the counter here is fine because it only saves every 10 minutes``
 	else
 		Events.EveryTenMinutes.Remove(takePillsStiffness) -- Pills are no longer effective
         pill_effect_active = false
+        modData.ICdata.pill_effect_active = pill_effect_active -- Save the pill effect state
         print("Painkiller effect has worn off.")
 		return
 	end
 end
+
+local function LoadPlayerData()
+    local player = getPlayer()
+    modData = player:getModData()
+    modData.ICdata = modData.ICdata or {}
+    pill_effect_counter = modData.ICdata.pill_effect_counter or 0
+    pill_effect_active = modData.ICdata.pill_effect_active or false
+    print("LOADING -- pill effect counter " .. pill_effect_counter)
+    print("LOADING -- pill effect active " .. tostring(pill_effect_active))
+    if pill_effect_active then
+        print("Pill effect is active, starting the timer.")
+        Events.EveryTenMinutes.Add(takePillsStiffness) -- Start the timer if the effect is active
+    else
+        print("Pill effect is not active, no timer started.")
+    end
+end
+Events.OnLoad.Add(LoadPlayerData)
+
 -- takePillsStiffness and o_o_ISTakePillAction_perform is originally from [B42] Painkillers Remove Arm Muscle Strain created by lect 
 -- Slightly modified to fit the RedDays mod
 local o_ISTakePillAction_perform = ISTakePillAction.perform
@@ -24,6 +42,7 @@ function ISTakePillAction:perform()
 	if self.item:getFullType() == "Base.Pills" then
 		counter = 0
         pill_effect_active = true
+        modData.ICdata.pill_effect_active = pill_effect_active -- Save the pill effect state
         pill_recently_taken = true
 		Events.EveryTenMinutes.Add(takePillsStiffness)
         print("Just took a pill, painkiller effect is now active.")
