@@ -4,7 +4,6 @@ local function LoadPlayerData()
     local player = getPlayer()
     modData = player:getModData()
     modData.ICdata = modData.ICdata or {}
-    print("Current Counter: " .. tostring(modData.ICdata.cSIHDC_counter))
     if modData.ICdata.cSIHDC_counter ~= nil then
         cSIHDC_counter = modData.ICdata.cSIHDC_counter
     else

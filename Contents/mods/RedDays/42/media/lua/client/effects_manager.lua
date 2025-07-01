@@ -2,10 +2,9 @@ require "RedDays/hygiene_manager"
 
 EffectsManager = {}
 
+
 local pill_recently_taken = false
 local function takePillsStiffness()
-    print("Pill effect active: " .. tostring(pill_effect_active))
-    print("Pill effect counter: " .. pill_effect_counter)
 	if pill_effect_counter < 36 then -- Pills are effective for 6 hours (36 * 10 = 360 minutes)
 		pill_effect_counter = pill_effect_counter + 1
         modData.ICdata.pill_effect_counter = pill_effect_counter -- Saving the counter here is fine because it only saves every 10 minutes``
@@ -24,13 +23,9 @@ local function LoadPlayerData()
     modData.ICdata = modData.ICdata or {}
     pill_effect_counter = modData.ICdata.pill_effect_counter or 0
     pill_effect_active = modData.ICdata.pill_effect_active or false
-    print("LOADING -- pill effect counter " .. pill_effect_counter)
-    print("LOADING -- pill effect active " .. tostring(pill_effect_active))
     if pill_effect_active then
-        print("Pill effect is active, starting the timer.")
         Events.EveryTenMinutes.Add(takePillsStiffness) -- Start the timer if the effect is active
     else
-        print("Pill effect is not active, no timer started.")
     end
 end
 Events.OnLoad.Add(LoadPlayerData)
