@@ -10,6 +10,7 @@
     - Folliclicular
     - Ovulation
     - Luteal
+    - Character generates discharge outside of the menstrual cycle.
 
 - Debuff effects during the Menstrual Phase
     - Reduced Endurance
@@ -23,6 +24,7 @@
 - Feminine Hygiene products:
     - Boxes of Sanitary Pads
     - Boxes of Tampons
+    - Boxes of Panty Liners
     - Bandages will work as a quick stop gap if regular feminine hygiene products are not available.
 
 ## Planned features in Priority Order
@@ -39,9 +41,6 @@ Everything in the Minimum Viable Product Priority section below plus these:
 
 - Cycle tracking feature
     - Craftable cycle tracker calendar for cycle predictions
-
-- Discharge feature:
-    - Pantyliners
 
 - Traits:
     - Hygiene product consumption and stat decrement rates vary by cycle trait:
