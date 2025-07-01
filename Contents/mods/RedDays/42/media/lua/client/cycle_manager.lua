@@ -32,14 +32,17 @@ local function default_cycle() -- Default cycle values if a new cycle cannot be 
         stiffness_increment = 2,
         discomfort_target = 100,
         endurance_decrement = 0.0005,
-        fatigue_increment = 0.0001
+        fatigue_increment = 0.0001,
+        reason_for_cycle = "defaultCycle"
     }
 end
 
-function CycleManager.newCycle()
+function CycleManager.newCycle(whoDidThis)
     local max_attempts = 10 -- Duration values can be user-defined and may not always yield a valid cycle, so we try multiple times to find a valid one and return a default cycle if we fail
     for attempt = 1, max_attempts do
-        print("Attempt " .. attempt .. " to generate a new menstrual cycle...")
+        if whoDidThis ~= "isCycleValid" then
+            print("Attempt " .. attempt .. " to generate a new menstrual cycle...")
+        end
 
         local cycle_start_day = getGameTime():getWorldAgeHours() / 24
 
@@ -87,7 +90,8 @@ function CycleManager.newCycle()
                 stiffness_increment = stiffness_increment,
                 discomfort_target = discomfort_target,
                 endurance_decrement = endurance_decrement,
-                fatigue_increment = fatigue_increment
+                fatigue_increment = fatigue_increment,
+                reason_for_cycle = whoDidThis
             }
         end
     end
@@ -98,6 +102,10 @@ end
 
 function CycleManager.getCurrentCyclePhase(cycle)
     local current_day = getGameTime():getWorldAgeHours() / 24 
+    if not cycle then
+        print("Error: Invalid cycle structure detected.")
+        return "invalidCycle"
+    end
     local days_into_cycle = current_day - cycle.cycle_start_day
 
     if days_into_cycle <= cycle.red_days_duration then
@@ -117,7 +125,7 @@ end
 
 function CycleManager.isCycleValid(cycle) -- If mod is updated and the cycle structure changes, this function will check if the cycle is valid
     -- Generate a reference cycle to get the expected keys
-    local reference = CycleManager.newCycle()
+    local reference = CycleManager.newCycle("isCycleValid")
     -- Collect keys from both tables
     local function get_keys(tbl)
         local keys = {}

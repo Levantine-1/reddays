@@ -2,21 +2,34 @@ require "RedDays/hygiene_manager"
 
 EffectsManager = {}
 
-local counter = 0
-local pill_effect_active = false
+
 local pill_recently_taken = false
 local function takePillsStiffness()
-    -- print("takePillsStiffness called, current counter: " .. counter)
-	if counter < 36 then -- Pills are effective for 6 hours (36 * 10 = 360 minutes)
-		counter = counter + 1
-        -- print("Pills counter: " .. counter)
+	if pill_effect_counter < 36 then -- Pills are effective for 6 hours (36 * 10 = 360 minutes)
+		pill_effect_counter = pill_effect_counter + 1
+        modData.ICdata.pill_effect_counter = pill_effect_counter -- Saving the counter here is fine because it only saves every 10 minutes``
 	else
 		Events.EveryTenMinutes.Remove(takePillsStiffness) -- Pills are no longer effective
         pill_effect_active = false
+        modData.ICdata.pill_effect_active = pill_effect_active -- Save the pill effect state
         print("Painkiller effect has worn off.")
 		return
 	end
 end
+
+local function LoadPlayerData()
+    local player = getPlayer()
+    modData = player:getModData()
+    modData.ICdata = modData.ICdata or {}
+    pill_effect_counter = modData.ICdata.pill_effect_counter or 0
+    pill_effect_active = modData.ICdata.pill_effect_active or false
+    if pill_effect_active then
+        Events.EveryTenMinutes.Add(takePillsStiffness) -- Start the timer if the effect is active
+    else
+    end
+end
+Events.OnLoad.Add(LoadPlayerData)
+
 -- takePillsStiffness and o_o_ISTakePillAction_perform is originally from [B42] Painkillers Remove Arm Muscle Strain created by lect 
 -- Slightly modified to fit the RedDays mod
 local o_ISTakePillAction_perform = ISTakePillAction.perform
@@ -24,6 +37,7 @@ function ISTakePillAction:perform()
 	if self.item:getFullType() == "Base.Pills" then
 		counter = 0
         pill_effect_active = true
+        modData.ICdata.pill_effect_active = pill_effect_active -- Save the pill effect state
         pill_recently_taken = true
 		Events.EveryTenMinutes.Add(takePillsStiffness)
         print("Just took a pill, painkiller effect is now active.")
@@ -88,6 +102,13 @@ local function stat_Adjustment()
     -- Nepenthe's Slower Discomfort, Credit to Nepenthe for that
 end
 
+local consumingDischargeItem = false
+local function consumeDischargeProduct()
+    consumingDischargeItem = true
+    print("Consuming hygiene product for discharge")
+    return HygieneManager:consumeDischargeProduct()
+end
+
 function EffectsManager.determineEffects(cycle)
     local player = getPlayer()
     if not player:isFemale() then
@@ -107,17 +128,36 @@ function EffectsManager.determineEffects(cycle)
             print("Red phase has begun, applying debuffs")
             Events.EveryOneMinute.Add(stat_Adjustment)
         end
+        if consumingDischargeItem then
+            print("Stopping to consume hygiene product for discharge")
+            Events.EveryDays.Remove(consumeDischargeProduct)
+            consumingDischargeItem = false
+        end
     else
         if stat_Adjustment_isEnabled then
             Events.EveryOneMinute.Remove(stat_Adjustment)
             print("Red phase has ended, removing debuffs")
         end
         stat_Adjustment_isEnabled = false
+
+        if not consumingDischargeItem then
+            print("Starting to consume hygiene product for discharge")
+            Events.EveryDays.Add(consumeDischargeProduct)
+            consumingDischargeItem = true
+        end
     end
 end
 
 function EffectsManager.resetEffects()
+    local player = getPlayer()
+    modData = player:getModData()
+    modData.ICdata = modData.ICdata or {}
     stat_Adjustment_isEnabled = false
+    modData.ICdata.pill_effect_counter = 0
+    modData.ICdata.pill_effect_active = false
+    Events.EveryDays.Remove(consumeDischargeProduct)
+    Events.EveryOneMinute.Remove(stat_Adjustment)
+    Events.EveryTenMinutes.Remove(takePillsStiffness)
 end
 
 return EffectsManager
