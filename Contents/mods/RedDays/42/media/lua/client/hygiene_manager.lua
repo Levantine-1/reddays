@@ -12,6 +12,14 @@ local function LoadPlayerData()
 end
 Events.OnLoad.Add(LoadPlayerData)
 
+function HygieneManager.resetHygieneData()
+    local player = getPlayer()
+    modData = player:getModData()
+    modData.ICdata = modData.ICdata or {}
+    modData.ICdata.cSIHDC_counter = 0
+    cSIHDC_counter = 0
+end
+
 local function SavePlayerData()
     local player = getPlayer()
     modData = player:getModData()
@@ -62,6 +70,30 @@ local function consumeSanitaryItemHelperRenameItemAndLeakChance(item)
         return false
     end
     return true -- No leak
+end
+
+function HygieneManager.consumeDischargeProduct()
+    local player = getPlayer()
+    local wornItems = player:getWornItems()
+
+    for i = 0, wornItems:size() - 1 do
+        local item = wornItems:get(i):getItem()
+        if item and item:getDisplayCategory() == "Feminine Hygiene" then
+            local itemName = item:getName()
+            local baseName = itemName:match("^(.-) %(")
+            if not baseName then
+                baseName = itemName
+            end
+            wasItemConsumed = false
+            if item:getCondition() > 1 then
+                wasItemConsumed = true
+            end
+            item:setCondition(1)
+            item:setName(baseName .. " (Dirty)")
+            return wasItemConsumed
+        end
+    end
+    return false
 end
 
 local function consumeSanitaryItem()

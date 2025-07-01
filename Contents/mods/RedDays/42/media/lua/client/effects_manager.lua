@@ -102,6 +102,13 @@ local function stat_Adjustment()
     -- Nepenthe's Slower Discomfort, Credit to Nepenthe for that
 end
 
+local consumingDischargeItem = false
+local function consumeDischargeProduct()
+    consumingDischargeItem = true
+    print("Consuming hygiene product for discharge")
+    return HygieneManager:consumeDischargeProduct()
+end
+
 function EffectsManager.determineEffects(cycle)
     local player = getPlayer()
     if not player:isFemale() then
@@ -121,17 +128,36 @@ function EffectsManager.determineEffects(cycle)
             print("Red phase has begun, applying debuffs")
             Events.EveryOneMinute.Add(stat_Adjustment)
         end
+        if consumingDischargeItem then
+            print("Stopping to consume hygiene product for discharge")
+            Events.EveryDays.Remove(consumeDischargeProduct)
+            consumingDischargeItem = false
+        end
     else
         if stat_Adjustment_isEnabled then
             Events.EveryOneMinute.Remove(stat_Adjustment)
             print("Red phase has ended, removing debuffs")
         end
         stat_Adjustment_isEnabled = false
+
+        if not consumingDischargeItem then
+            print("Starting to consume hygiene product for discharge")
+            Events.EveryDays.Add(consumeDischargeProduct)
+            consumingDischargeItem = true
+        end
     end
 end
 
 function EffectsManager.resetEffects()
+    local player = getPlayer()
+    modData = player:getModData()
+    modData.ICdata = modData.ICdata or {}
     stat_Adjustment_isEnabled = false
+    modData.ICdata.pill_effect_counter = 0
+    modData.ICdata.pill_effect_active = false
+    Events.EveryDays.Remove(consumeDischargeProduct)
+    Events.EveryOneMinute.Remove(stat_Adjustment)
+    Events.EveryTenMinutes.Remove(takePillsStiffness)
 end
 
 return EffectsManager
