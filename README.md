@@ -52,6 +52,7 @@ Everything in the Minimum Viable Product Priority section below plus these:
     - TSS or other sickness and debuffs
 
 ## Known bugs
+- Place items into loot tables
 
 ## FAQ
 - Groin bleeding doesn't decrement HP and will not kill you
