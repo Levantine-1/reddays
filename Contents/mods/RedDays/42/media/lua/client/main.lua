@@ -51,7 +51,7 @@ local function PrintStatus()
     print("Current cycle phase: " .. currentPhase)
     print("==========================================================================================")
 end
-Events.EveryHours.Add(PrintStatus)
+Events.EveryDays.Add(PrintStatus)
 
 local function main()
     local cycle = modData.ICdata.currentCycle
