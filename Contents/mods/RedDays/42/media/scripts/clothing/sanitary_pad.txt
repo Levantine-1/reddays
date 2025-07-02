@@ -13,7 +13,7 @@ module RedDays
 		ConditionMax = 10,
     }
 
-    item SantiaryPadBox
+    item SanitaryPadBox
 	{
 		DisplayName = Box of Sanitary Pads,
 		DisplayCategory = Feminine Hygiene,
@@ -35,7 +35,7 @@ module RedDays
         category = Packing,
 		inputs
 		{
-			item 1 [RedDays.SantiaryPadBox] flags[AllowFavorite;InheritFavorite],
+			item 1 [RedDays.SanitaryPadBox] flags[AllowFavorite;InheritFavorite],
 		}
 		outputs
 		{
