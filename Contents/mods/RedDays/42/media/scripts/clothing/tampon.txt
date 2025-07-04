@@ -8,11 +8,10 @@ module RedDays
         Type = Clothing,
         Weight = 0.1,
         ClothingItem = Tampon,
-        Icon = PantiesGeneric,
+        Icon = tampon_clean,
         BodyLocation = HygieneItem,
 		ConditionMax = 10,
     }
-
 
     item TamponBox
 	{

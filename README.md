@@ -58,7 +58,7 @@
     - Stat degrade rates
     - painkiller effect time / effectiveness
     - Target discomfort/strain levels
-- Add 2D icons and replace current placeholders
+- Have 2D icons show degraded item status
 
 
 ## FAQ
