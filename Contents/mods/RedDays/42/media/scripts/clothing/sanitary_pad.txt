@@ -8,7 +8,7 @@ module RedDays
         Type = Clothing,
         Weight = 0.1,
         ClothingItem = Sanitary_Pad,
-        Icon = PantiesGeneric,
+        Icon = sanitarypad_clean,
         BodyLocation = HygieneItem,
 		ConditionMax = 10,
     }
