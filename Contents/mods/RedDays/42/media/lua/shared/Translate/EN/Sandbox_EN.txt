@@ -1,6 +1,9 @@
 Sandbox_EN = {
     Sandbox_RedDays = "Red Days",
 
+	Sandbox_RedDays_affectsAllGenders= "Affect All Genders",
+    Sandbox_RedDays_affectsAllGenders_tooltip = "Enable to apply menstrual cycle to all characters regardless of gender",
+
     Sandbox_RedDays_menstrual_cycle_duration_lowerBound = "Minimum Cycle Length",
     Sandbox_RedDays_menstrual_cycle_duration_lowerBound_tooltip = "The shortest possible length (in days) for a menstrual cycle.",
 

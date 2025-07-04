@@ -1,5 +1,13 @@
 VERSION = 1,
 
+option RedDays.affectsAllGenders
+{
+	type = boolean,
+	default = false,
+	page = RedDays,
+	translation = RedDays_affectsAllGenders,
+}
+
 option RedDays.menstrual_cycle_duration_lowerBound
 {
 	type = integer,
