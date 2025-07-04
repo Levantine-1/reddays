@@ -1,7 +1,33 @@
 Sandbox_EN = {
-	Sandbox_RedDays = "Red Days",
+    Sandbox_RedDays = "Red Days",
 
-	Sandbox_RedDaysConfigKey = "Value",
-	Sandbox_RedDaysConfigKey_tooltip = "Descriptive Text",
+    Sandbox_RedDays_menstrual_cycle_duration_lowerBound = "Minimum Cycle Length",
+    Sandbox_RedDays_menstrual_cycle_duration_lowerBound_tooltip = "The shortest possible length (in days) for a menstrual cycle.",
 
+    Sandbox_RedDays_menstrual_cycle_duration_upperBound = "Maximum Cycle Length",
+    Sandbox_RedDays_menstrual_cycle_duration_upperBound_tooltip = "The longest possible length (in days) for a menstrual cycle.",
+
+    Sandbox_RedDays_red_phase_duration_lowerBound = "Minimum Red Phase Length",
+    Sandbox_RedDays_red_phase_duration_lowerBound_tooltip = "The shortest possible duration (in days) for the red (menstruation) phase.",
+
+    Sandbox_RedDays_red_phase_duration_upperBound = "Maximum Red Phase Length",
+    Sandbox_RedDays_red_phase_duration_upperBound_tooltip = "The longest possible duration (in days) for the red (menstruation) phase.",
+
+    Sandbox_RedDays_follicular_phase_duration_lowerBound = "Minimum Follicular Phase Length",
+    Sandbox_RedDays_follicular_phase_duration_lowerBound_tooltip = "The shortest possible duration (in days) for the follicular phase.",
+
+    Sandbox_RedDays_follicular_phase_duration_upperBound = "Maximum Follicular Phase Length",
+    Sandbox_RedDays_follicular_phase_duration_upperBound_tooltip = "The longest possible duration (in days) for the follicular phase.",
+
+    Sandbox_RedDays_ovulation_phase_duration_lowerBound = "Minimum Ovulation Phase Length",
+    Sandbox_RedDays_ovulation_phase_duration_lowerBound_tooltip = "The shortest possible duration (in days) for the ovulation phase.",
+
+    Sandbox_RedDays_ovulation_phase_duration_upperBound = "Maximum Ovulation Phase Length",
+    Sandbox_RedDays_ovulation_phase_duration_upperBound_tooltip = "The longest possible duration (in days) for the ovulation phase.",
+
+    Sandbox_RedDays_luteal_phase_duration_lowerBound = "Minimum Luteal Phase Length",
+    Sandbox_RedDays_luteal_phase_duration_lowerBound_tooltip = "The shortest possible duration (in days) for the luteal phase.",
+
+    Sandbox_RedDays_luteal_phase_duration_upperBound = "Maximum Luteal Phase Length",
+    Sandbox_RedDays_luteal_phase_duration_upperBound_tooltip = "The longest possible duration (in days) for the luteal phase.",
 }
