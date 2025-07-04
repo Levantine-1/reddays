@@ -49,11 +49,6 @@ local stat_Adjustment_isEnabled = false
 local function stat_Adjustment()
     local player = getPlayer()
 
-    if not player:isFemale() then
-        -- todo: add sandbox option to enable the mod for all players if desired
-        print("Player is not female, skipping stat adjustment.")
-        return
-    end
     stat_Adjustment_isEnabled = true
 
     local stats = player:getStats()
@@ -110,15 +105,15 @@ local function consumeDischargeProduct()
 end
 
 function EffectsManager.determineEffects(cycle)
-    local player = getPlayer()
-    if not player:isFemale() then
-        -- Todo: Add a sandbox option to enable the mod for non female players
-        if stat_Adjustment_isEnabled then
-            Events.EveryOneMinute.Remove(stat_Adjustment)
-            print("Disabling stat adjustment for non female player")
+    if not SandboxVars.RedDays.affectsAllGenders then
+        local player = getPlayer()
+        if not player:isFemale() then
+            if stat_Adjustment_isEnabled then
+                Events.EveryOneMinute.Remove(stat_Adjustment)
+                print("Disabling stat adjustment for non female player")
+            end
+            return
         end
-        print("YOU ARE NOT A WOMAN!")
-        return
     end
 
     local current_phase = CycleManager.getCurrentCyclePhase(cycle)

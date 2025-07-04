@@ -1,17 +1,5 @@
 CycleManager = {}
 
-local range_total_menstrual_cycle_duration = {28, 34}
-local range_follicular_phase_duration = {11, 16}
-local range_red_phase_duration = {3, 5}
-local range_luteal_phase_duration = {11, 18}
-local range_ovulation_phase_duration = {1, 1}
-
--- local range_total_menstrual_cycle_duration = {7, 9}
--- local range_follicular_phase_duration = {3, 4}
--- local range_red_phase_duration = {1, 2}
--- local range_luteal_phase_duration = {3, 5}
--- local range_ovulation_phase_duration = {1, 1}
-
 local function random_between(range)
     return ZombRand(range[1], range[2])
 end
@@ -38,6 +26,26 @@ local function default_cycle() -- Default cycle values if a new cycle cannot be 
 end
 
 function CycleManager.newCycle(whoDidThis)
+    sbv = SandboxVars.RedDays
+    local range_total_menstrual_cycle_duration = {sbv.menstrual_cycle_duration_lowerBound, sbv.menstrual_cycle_duration_upperBound}
+    local range_red_phase_duration = {sbv.red_phase_duration_lowerBound, sbv.red_phase_duration_upperBound}
+    local range_follicular_phase_duration = {sbv.follicular_phase_duration_lowerBound, sbv.follicular_phase_duration_upperBound}
+    local range_ovulation_phase_duration = {sbv.ovulation_phase_duration_lowerBound, sbv.ovulation_phase_duration_upperBound}
+    local range_luteal_phase_duration = {sbv.luteal_phase_duration_lowerBound, sbv.luteal_phase_duration_upperBound}
+
+    -- local range_total_menstrual_cycle_duration = {28, 34}
+    -- local range_red_phase_duration = {2, 5}
+    -- local range_follicular_phase_duration = {11, 16}
+    -- local range_ovulation_phase_duration = {1, 1}
+    -- local range_luteal_phase_duration = {11, 18}
+
+    -- local range_total_menstrual_cycle_duration = {7, 9}
+    -- local range_red_phase_duration = {1, 2}
+    -- local range_follicular_phase_duration = {3, 4}
+    -- local range_ovulation_phase_duration = {1, 1}
+    -- local range_luteal_phase_duration = {3, 5}
+
+
     local max_attempts = 10 -- Duration values can be user-defined and may not always yield a valid cycle, so we try multiple times to find a valid one and return a default cycle if we fail
     for attempt = 1, max_attempts do
         if whoDidThis ~= "isCycleValid" then

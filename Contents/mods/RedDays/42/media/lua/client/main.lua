@@ -59,6 +59,7 @@ local function PrintStatus()
 end
 Events.OnGameStart.Add(PrintStatus)
 Events.EveryDays.Add(PrintStatus)
+-- Events.EveryHours.Add(PrintStatus)
 
 local function phaseIsValid(phase)
     local valid_phases = {"redPhase", "follicularPhase", "ovulationPhase", "lutealPhase"}
@@ -73,7 +74,6 @@ end
 local function main()
     local cycle = modData.ICdata.currentCycle
     local current_phase = CycleManager.getCurrentCyclePhase(cycle)
-
     if not phaseIsValid(current_phase) then
         print("Invalid cycle phase detected: " .. current_phase .. ". Regenerating cycle...")
         reason_for_newCycle = "main_afterInvalidPhase_" .. current_phase

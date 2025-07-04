@@ -1,13 +1,13 @@
 # Red Days
 
-## Female characters will experience the monthly cycle and need feminine care
+## Players will now have a menstrual cycle and need to find feminine care products
 
 ## You'll need to find and stockpile 
 
 ## Current Features
-- The basic menstrual cycle including the following phases
+- The basic menstrual cycle including the following phases:
     - Menstural
-    - Folliclicular
+    - Follicular
     - Ovulation
     - Luteal
     - Character generates discharge outside of the menstrual cycle.
@@ -27,9 +27,10 @@
     - Boxes of Panty Liners
     - Bandages will work as a quick stop gap if regular feminine hygiene products are not available.
 
-## Planned features in Priority Order
-
 - Add sandbox options for customization
+    - See sandbox option tooltips for details
+
+## Planned features
 
 - Feminine Hygiene products:
     - Craftable re-usable cloth pads
@@ -49,8 +50,16 @@
 - Debuffs for insufficient hygienic care
     - TSS or other sickness and debuffs
 
-## Known bugs
-- Place items into loot tables
+- Custom 3D models for Hygiene Products
+
+## Known bugs or basic ToDos
+- Add more sandbox options
+    - Hygiene product spawn rates
+    - Stat degrade rates
+    - painkiller effect time / effectiveness
+    - Target discomfort/strain levels
+- Add 2D icons and replace current placeholders
+
 
 ## FAQ
 - Groin bleeding doesn't decrement HP and will not kill you
