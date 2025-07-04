@@ -1,6 +1,3 @@
--- require 'Items/ProceduralDistributions'
--- require "Items/ItemPicker"
-
 table.insert(ProceduralDistributions["list"]["BathroomCabinet"].items, "RedDays.PantyLinerBox");
 table.insert(ProceduralDistributions["list"]["BathroomCabinet"].items, 2);
 
