@@ -27,9 +27,11 @@
     - Boxes of Panty Liners
     - Bandages will work as a quick stop gap if regular feminine hygiene products are not available.
 
-## Planned features in Priority Order
-
 - Add sandbox options for customization
+    - See sandbox option tooltips for details
+
+## Planned features
+
 
 - Feminine Hygiene products:
     - Craftable re-usable cloth pads
@@ -50,7 +52,6 @@
     - TSS or other sickness and debuffs
 
 ## Known bugs
-- Place items into loot tables
 
 ## FAQ
 - Groin bleeding doesn't decrement HP and will not kill you
