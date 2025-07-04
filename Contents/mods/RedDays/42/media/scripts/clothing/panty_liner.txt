@@ -3,7 +3,7 @@ module RedDays
     item Panty_Liner
     {
         DisplayName = Panty Liner,
-        DisplayCategory = Feminine Hygiene,
+        DisplayCategory = FeminineHygiene,
         Type = Clothing,
         Weight = 0.1,
         ClothingItem = Panty_Liner,
@@ -15,7 +15,7 @@ module RedDays
     item PantyLinerBox
 	{
 		DisplayName = Box of Panty Liners,
-		DisplayCategory = Feminine Hygiene,
+		DisplayCategory = FeminineHygiene,
 		Type = Normal,
 		Weight = 1,
         Icon	=	GenericMedicalParcel2,

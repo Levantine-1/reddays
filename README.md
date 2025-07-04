@@ -29,18 +29,17 @@
 
 ## Planned features in Priority Order
 
-Everything in the Minimum Viable Product Priority section below plus these:
+- Add sandbox options for customization
 
 - Feminine Hygiene products:
     - Craftable re-usable cloth pads
-
-- Add sandbox options for customization
-
-- Random cycle start dates for new characters
-- Currently all characters start the game on red day.
+    - Menstrual cups
 
 - Cycle tracking feature
     - Craftable cycle tracker calendar for cycle predictions
+
+- Random cycle start dates for new characters
+- Currently all characters start the game on red day.
 
 - Traits:
     - Hygiene product consumption and stat decrement rates vary by cycle trait:

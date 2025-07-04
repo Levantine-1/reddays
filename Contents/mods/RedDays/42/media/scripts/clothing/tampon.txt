@@ -4,7 +4,7 @@ module RedDays
     item Tampon
     {
         DisplayName = Tampon,
-        DisplayCategory = Feminine Hygiene,
+        DisplayCategory = FeminineHygiene,
         Type = Clothing,
         Weight = 0.1,
         ClothingItem = Tampon,
@@ -17,7 +17,7 @@ module RedDays
     item TamponBox
 	{
 		DisplayName = Box of Tampons,
-		DisplayCategory = Feminine Hygiene,
+		DisplayCategory = FeminineHygiene,
 		Type = Normal,
 		Weight = 1,
         Icon	=	GenericMedicalParcel2,
