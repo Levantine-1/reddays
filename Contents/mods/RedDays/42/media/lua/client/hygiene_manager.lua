@@ -23,7 +23,7 @@ end
 local function SavePlayerData()
     local player = getPlayer()
     modData = player:getModData()
-    modData.ICdata.cSIHDC_counter = cSIHDC_counter
+    modData.ICdata.cSIHDC_counter = cSIHDC_counter or 0
 end
 -- Events.OnSave.Add(SavePlayerData) -- For some reason this doesn't work. It'll print the counter, but it doesn't seem save it as on load, value is 0.
 Events.EveryTenMinutes.Add(SavePlayerData) -- Save every 10 minutes instead
