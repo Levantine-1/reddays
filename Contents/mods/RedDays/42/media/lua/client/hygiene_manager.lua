@@ -78,7 +78,7 @@ function HygieneManager.consumeDischargeProduct()
 
     for i = 0, wornItems:size() - 1 do
         local item = wornItems:get(i):getItem()
-        if item and item:getDisplayCategory() == "Feminine Hygiene" then
+        if item and item:getDisplayCategory() == "FeminineHygiene" then
             local itemName = item:getName()
             local baseName = itemName:match("^(.-) %(")
             if not baseName then
@@ -105,7 +105,7 @@ local function consumeSanitaryItem()
 
     for i = 0, wornItems:size() - 1 do
         local item = wornItems:get(i):getItem()
-        if item and item:getDisplayCategory() == "Feminine Hygiene" then
+        if item and item:getDisplayCategory() == "FeminineHygiene" then
             isSanitaryItemEquipped = true
             didConsumeSanitaryItem = consumeSanitaryItemHelperRenameItemAndLeakChance(item)
             return isSanitaryItemEquipped, didConsumeSanitaryItem
