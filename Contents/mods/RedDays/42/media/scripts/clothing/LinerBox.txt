@@ -1,0 +1,9 @@
+module RedDays
+{
+model LinerBox
+    {
+        mesh = WorldItems/linerbox,
+        texture = WorldItems/linerbox,
+        scale = 0.4000,
+    }
+}
