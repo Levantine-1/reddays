@@ -6,7 +6,7 @@ module RedDays
         DisplayCategory = FeminineHygiene,
         Type = Clothing,
         Weight = 0.1,
-        ClothingItem = Invisible,
+        ClothingItem = Panty_Liner,
         Icon = pantyliner_clean,
         BodyLocation = HygieneItem,
 		ConditionMax = 2,
