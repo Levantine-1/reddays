@@ -4,7 +4,7 @@ model Liner
     {
         mesh = WorldItems/liner,
         texture = WorldItems/liner,
-        scale = 0.0004,
+        scale = 0.0003,
 	offset = 0.0000 0.0000 0.0000,
     }
 }

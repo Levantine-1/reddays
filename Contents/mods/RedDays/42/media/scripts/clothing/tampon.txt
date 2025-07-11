@@ -9,6 +9,7 @@ module RedDays
         Weight = 0.1,
         ClothingItem = Tampon,
         Icon = tampon_clean,
+	WorldStaticModel = Tampon,
         BodyLocation = HygieneItem,
 		ConditionMax = 10,
     }
@@ -21,7 +22,7 @@ module RedDays
 		Weight = 1,
         Icon	=	GenericMedicalParcel2,
 		Medical = TRUE,
-		WorldStaticModel = MedicalParcel_Green,
+		WorldStaticModel = TamponBox,
 		Tags = IgnoreZombieDensity;IsFireFuel,
 		FireFuelRatio = 0.25,
 	}
