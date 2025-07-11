@@ -70,3 +70,6 @@ Custom 3D models for Hygiene Products
 
 ## FAQ
 - Groin bleeding doesn't decrement HP and will not kill you
+- Only female characters will experience the menstrual cycle by default, but you can enable for all genders in sandbox options
+- This should be safe to add mid save, however feminine hygiene items won't spawn in places you've already looted and they don't spawn on zombies at this time.
+- The follicular, ovulation and luteal phase doesn't have any other effect besides generating discharge, which is completely a visual thing with no status effects that requires a 1-2 times a day change of panty liner.
