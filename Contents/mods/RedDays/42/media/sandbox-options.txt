@@ -18,6 +18,16 @@ option RedDays.affectsAllGenders
 	translation = RedDays_affectsAllGenders,
 }
 
+option RedDays.painkillerEffectDuration
+{
+	type = integer,
+	min = 0,
+	max = 300,
+	default = 36,
+	page = RedDays,
+	translation = RedDays_painkillerEffectDuration,
+}
+
 option RedDays.menstrual_cycle_duration_lowerBound
 {
 	type = integer,

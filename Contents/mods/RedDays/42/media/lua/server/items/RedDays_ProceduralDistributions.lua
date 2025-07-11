@@ -1,4 +1,4 @@
-spawnRateMultiplier = SandboxVars.RedDays.hygiene_item_spawn_rate_multiplier or 1
+local spawnRateMultiplier = SandboxVars.RedDays.hygiene_item_spawn_rate_multiplier or 1
 
 table.insert(ProceduralDistributions["list"]["BathroomCabinet"].items, "RedDays.PantyLinerBox");
 table.insert(ProceduralDistributions["list"]["BathroomCabinet"].items, 2 * spawnRateMultiplier);

@@ -28,6 +28,7 @@
 - Add sandbox options for customization
     - Hygiene product spawn rates
     - Option to enable MS for male characters (For FTM roleplay)
+    - painkiller effect time
     - Upperbound and Lowerbound durations for cycle phases
 
 ## Planned features
@@ -56,7 +57,7 @@ Custom 3D models for Hygiene Products
 ## Current Known Bugs or Basic ToDos:
 - Add more sandbox options:
     - Stat degrade rates
-    - painkiller effect time / effectiveness
+    - painkiller effectiveness
     - Target discomfort/strain levels
 
 ## Fixed Reported Bugs:

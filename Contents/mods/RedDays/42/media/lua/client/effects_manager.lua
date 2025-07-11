@@ -2,10 +2,10 @@ require "RedDays/hygiene_manager"
 
 EffectsManager = {}
 
-
+local pill_effect_counter_max = SandboxVars.RedDays.painkillerEffectDuration or 36
 local pill_recently_taken = false
 local function takePillsStiffness()
-	if pill_effect_counter < 36 then -- Pills are effective for 6 hours (36 * 10 = 360 minutes)
+	if pill_effect_counter < pill_effect_counter_max then -- Pills are effective for 6 hours (36 * 10 = 360 minutes)
 		pill_effect_counter = pill_effect_counter + 1
         modData.ICdata.pill_effect_counter = pill_effect_counter -- Saving the counter here is fine because it only saves every 10 minutes``
 	else
