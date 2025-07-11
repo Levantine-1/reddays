@@ -7,7 +7,7 @@ module RedDays
         DisplayCategory = FeminineHygiene,
         Type = Clothing,
         Weight = 0.1,
-        ClothingItem = Sanitary_Pad,
+        ClothingItem = Invisible,
         Icon = sanitarypad_clean,
         BodyLocation = HygieneItem,
 		ConditionMax = 10,
