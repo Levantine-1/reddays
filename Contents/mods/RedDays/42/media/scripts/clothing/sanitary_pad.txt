@@ -9,6 +9,7 @@ module RedDays
         Weight = 0.1,
         ClothingItem = Sanitary_Pad,
         Icon = sanitarypad_clean,
+	WorldStaticModel = Pad,
         BodyLocation = HygieneItem,
 		ConditionMax = 10,
     }
@@ -21,7 +22,7 @@ module RedDays
 		Weight = 1,
         Icon	=	GenericMedicalParcel2,
 		Medical = TRUE,
-		WorldStaticModel = MedicalParcel_Green,
+		WorldStaticModel = Padbox,
 		Tags = IgnoreZombieDensity;IsFireFuel,
 		FireFuelRatio = 0.25,
 	}
