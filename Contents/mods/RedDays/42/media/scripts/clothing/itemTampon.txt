@@ -1,34 +1,33 @@
 module RedDays
 
 {
-    item Sanitary_Pad
+    item Tampon
     {
-        DisplayName = Sanitary Pad,
+        DisplayName = Tampon,
         DisplayCategory = FeminineHygiene,
         Type = Clothing,
         Weight = 0.1,
-        ClothingItem = Sanitary_Pad,
-        Icon = sanitarypad_clean,
-	WorldStaticModel = Pad,
+        ClothingItem = Tampon,
+        Icon = tampon_clean,
+		WorldStaticModel = Tampon,
         BodyLocation = HygieneItem,
 		ConditionMax = 10,
     }
 
-    item SanitaryPadBox
+    item TamponBox
 	{
-		DisplayName = Box of Sanitary Pads,
+		DisplayName = Box of Tampons,
 		DisplayCategory = FeminineHygiene,
 		Type = Normal,
 		Weight = 1,
         Icon	=	GenericMedicalParcel2,
 		Medical = TRUE,
-		WorldStaticModel = Padbox,
+		WorldStaticModel = TamponBox,
 		Tags = IgnoreZombieDensity;IsFireFuel,
 		FireFuelRatio = 0.25,
 	}
 
-
-	craftRecipe UnpackBoxOSantiaryPads
+	craftRecipe UnpackBoxOfTampons
 	{
         timedAction = UnPackBox_Small,
 		Time = 30,
@@ -36,11 +35,11 @@ module RedDays
         category = Packing,
 		inputs
 		{
-			item 1 [RedDays.SanitaryPadBox] flags[AllowFavorite;InheritFavorite],
+			item 1 [RedDays.TamponBox] flags[AllowFavorite;InheritFavorite],
 		}
 		outputs
 		{
-			item 12 RedDays.Sanitary_Pad,
+			item 12 RedDays.Tampon,
 		}
 	}
 }

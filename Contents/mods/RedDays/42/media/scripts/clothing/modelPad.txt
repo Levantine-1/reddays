@@ -5,6 +5,6 @@ model Pad
         mesh = WorldItems/pad,
         texture = WorldItems/pad,
         scale = 0.0002,
-	offset = 0.0000 0.0000 0.0000,
+	    offset = 0.0000 0.0000 0.0000,
     }
 }

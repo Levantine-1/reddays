@@ -1,33 +1,32 @@
 module RedDays
-
 {
-    item Tampon
+    item Panty_Liner
     {
-        DisplayName = Tampon,
+        DisplayName = Panty Liner,
         DisplayCategory = FeminineHygiene,
         Type = Clothing,
         Weight = 0.1,
-        ClothingItem = Tampon,
-        Icon = tampon_clean,
-	WorldStaticModel = Tampon,
+        ClothingItem = Panty_Liner,
+        Icon = pantyliner_clean,
+		WorldStaticModel = RedDays.Liner,
         BodyLocation = HygieneItem,
-		ConditionMax = 10,
+		ConditionMax = 2,
     }
 
-    item TamponBox
+    item PantyLinerBox
 	{
-		DisplayName = Box of Tampons,
+		DisplayName = Box of Panty Liners,
 		DisplayCategory = FeminineHygiene,
 		Type = Normal,
 		Weight = 1,
         Icon	=	GenericMedicalParcel2,
 		Medical = TRUE,
-		WorldStaticModel = TamponBox,
+		WorldStaticModel = RedDays.LinerBox,
 		Tags = IgnoreZombieDensity;IsFireFuel,
 		FireFuelRatio = 0.25,
 	}
 
-	craftRecipe UnpackBoxOfTampons
+	craftRecipe UnpackBoxOfPantyLiners
 	{
         timedAction = UnPackBox_Small,
 		Time = 30,
@@ -35,11 +34,11 @@ module RedDays
         category = Packing,
 		inputs
 		{
-			item 1 [RedDays.TamponBox] flags[AllowFavorite;InheritFavorite],
+			item 1 [RedDays.PantyLinerBox] flags[AllowFavorite;InheritFavorite],
 		}
 		outputs
 		{
-			item 12 RedDays.Tampon,
+			item 24 RedDays.Panty_Liner,
 		}
 	}
 }
