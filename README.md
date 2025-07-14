@@ -31,6 +31,8 @@
     - painkiller effect time
     - Upperbound and Lowerbound durations for cycle phases
 
+- Custom 3D models thanks to sudodski's commit: 6f10ac0bdc8b76750152ad8aa34118ff13c9fa64
+
 ## Planned features
 
 Feminine Hygiene products:
@@ -51,8 +53,6 @@ Traits:
 
 Debuffs for insufficient hygienic care:
 - TSS or other sickness and debuffs
-
-Custom 3D models for Hygiene Products
 
 ## Current Known Bugs or Basic ToDos:
 - Add more sandbox options:
