@@ -5,6 +5,6 @@ model TamponBox
         mesh = WorldItems/tamponbox,
         texture = WorldItems/tamponbox,
         scale = 0.0003,
-	offset = 0.0000 0.0000 0.0000,
+	    offset = 0.0000 0.0000 0.0000,
     }
 }
