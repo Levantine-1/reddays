@@ -72,28 +72,41 @@ local function consumeSanitaryItemHelperRenameItemAndLeakChance(item)
     return true -- No leak
 end
 
-function HygieneManager.consumeDischargeProduct()
+function HygieneManager.getCurrentlyWornSanitaryItem()
     local player = getPlayer()
     local wornItems = player:getWornItems()
 
     for i = 0, wornItems:size() - 1 do
         local item = wornItems:get(i):getItem()
         if item and item:getDisplayCategory() == "FeminineHygiene" then
-            local itemName = item:getName()
-            local baseName = itemName:match("^(.-) %(")
-            if not baseName then
-                baseName = itemName
-            end
-            wasItemConsumed = false
-            if item:getCondition() > 1 then
-                wasItemConsumed = true
-            end
-            item:setCondition(1)
-            item:setName(baseName .. " (Dirty)")
-            return wasItemConsumed
+            return item
         end
     end
-    return false
+    return nil
+end
+
+function HygieneManager.consumeDischargeProduct()
+    local player = getPlayer()
+
+    local item = HygieneManager.getCurrentlyWornSanitaryItem()
+    if not item then
+        return false
+    end
+
+    local itemName = item:getName()
+    local baseName = itemName:match("^(.-) %(")
+    if not baseName then
+        baseName = itemName
+    end
+
+    wasItemConsumed = false
+    if item:getCondition() > 1 then
+        wasItemConsumed = true
+    end
+
+    item:setCondition(1)
+    item:setName(baseName .. " (Dirty)")
+    return wasItemConsumed
 end
 
 local function consumeSanitaryItem()
@@ -103,14 +116,16 @@ local function consumeSanitaryItem()
     local isSanitaryItemEquipped = false
     local didConsumeSanitaryItem = false
 
-    for i = 0, wornItems:size() - 1 do
-        local item = wornItems:get(i):getItem()
-        if item and item:getDisplayCategory() == "FeminineHygiene" then
-            isSanitaryItemEquipped = true
-            didConsumeSanitaryItem = consumeSanitaryItemHelperRenameItemAndLeakChance(item)
-            return isSanitaryItemEquipped, didConsumeSanitaryItem
-        end
+    local item = HygieneManager.getCurrentlyWornSanitaryItem()
+    if not item then
+        isSanitaryItemEquipped = false
+        didConsumeSanitaryItem = false
+        return isSanitaryItemEquipped, didConsumeSanitaryItem
     end
+
+    isSanitaryItemEquipped = true
+    didConsumeSanitaryItem = consumeSanitaryItemHelperRenameItemAndLeakChance(item)
+
     return isSanitaryItemEquipped, didConsumeSanitaryItem
 end
 
