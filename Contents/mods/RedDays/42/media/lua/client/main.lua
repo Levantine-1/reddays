@@ -59,7 +59,6 @@ local function PrintStatus(cycle)
     if sanitaryItem then
         print("Currently worn sanitary item: " .. sanitaryItem:getName())
         print("Sanitary item condition: " .. sanitaryItem:getCondition())
-        print("Sanitary item type: " .. sanitaryItem:getType())
     else
         print("No sanitary item currently worn.")
     end
