@@ -77,12 +77,9 @@ end
 function HygieneManager.getCurrentlyWornSanitaryItem()
     local player = getPlayer()
     local wornItems = player:getWornItems()
-
-    for i = 0, wornItems:size() - 1 do
-        local item = wornItems:get(i):getItem()
-        if item and item:getDisplayCategory() == "FeminineHygiene" then
-            return item
-        end
+    local hygieneItem = wornItems:getItem("HygieneItem") -- "HygieneItem" is the BodyLocation
+    if hygieneItem then
+        return hygieneItem
     end
     return nil
 end
