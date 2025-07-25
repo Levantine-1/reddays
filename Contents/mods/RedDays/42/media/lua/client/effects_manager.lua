@@ -5,8 +5,10 @@ EffectsManager = {}
 local pill_effect_counter_max = SandboxVars.RedDays.painkillerEffectDuration or 36
 local pill_recently_taken = false
 local function takePillsStiffness()
+    print("Current pill effect counter: " .. pill_effect_counter)
 	if pill_effect_counter < pill_effect_counter_max then -- Pills are effective for 6 hours (36 * 10 = 360 minutes)
-		pill_effect_counter = pill_effect_counter + 1
+		print("Incrementing pill effect counter")
+        pill_effect_counter = pill_effect_counter + 1
         modData.ICdata.pill_effect_counter = pill_effect_counter -- Saving the counter here is fine because it only saves every 10 minutes``
 	else
 		Events.EveryTenMinutes.Remove(takePillsStiffness) -- Pills are no longer effective
@@ -16,19 +18,6 @@ local function takePillsStiffness()
 		return
 	end
 end
-
-local function LoadPlayerData()
-    local player = getPlayer()
-    modData = player:getModData()
-    modData.ICdata = modData.ICdata or {}
-    pill_effect_counter = modData.ICdata.pill_effect_counter or 0
-    pill_effect_active = modData.ICdata.pill_effect_active or false
-    if pill_effect_active then
-        Events.EveryTenMinutes.Add(takePillsStiffness) -- Start the timer if the effect is active
-    else
-    end
-end
-Events.OnLoad.Add(LoadPlayerData)
 
 -- takePillsStiffness and o_o_ISTakePillAction_perform is originally from [B42] Painkillers Remove Arm Muscle Strain created by lect 
 -- Slightly modified to fit the RedDays mod
@@ -143,16 +132,30 @@ function EffectsManager.determineEffects(cycle)
     end
 end
 
-function EffectsManager.resetEffects()
+local function LoadPlayerData()
     local player = getPlayer()
     modData = player:getModData()
     modData.ICdata = modData.ICdata or {}
-    stat_Adjustment_isEnabled = false
-    modData.ICdata.pill_effect_counter = 0
-    modData.ICdata.pill_effect_active = false
-    Events.EveryDays.Remove(consumeDischargeProduct)
-    Events.EveryOneMinute.Remove(stat_Adjustment)
-    Events.EveryTenMinutes.Remove(takePillsStiffness)
+    pill_effect_counter = modData.ICdata.pill_effect_counter or 0
+    pill_effect_active = modData.ICdata.pill_effect_active or false
+    if pill_effect_active then
+        Events.EveryTenMinutes.Add(takePillsStiffness) -- Start the timer if the effect is active
+    else
+    end
 end
+Events.OnGameStart.Add(LoadPlayerData)
+
+-- NOTE: 2025-07-24 Disabled because this gets run on every load which means you always start on the first day of the cycle.
+-- function EffectsManager.resetEffects()
+--     local player = getPlayer()
+--     modData = player:getModData()
+--     modData.ICdata = modData.ICdata or {}
+--     stat_Adjustment_isEnabled = false
+--     modData.ICdata.pill_effect_counter = 0
+--     modData.ICdata.pill_effect_active = false
+--     Events.EveryDays.Remove(consumeDischargeProduct)
+--     Events.EveryOneMinute.Remove(stat_Adjustment)
+--     Events.EveryTenMinutes.Remove(takePillsStiffness)
+-- end
 
 return EffectsManager

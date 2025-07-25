@@ -12,13 +12,14 @@ local function LoadPlayerData()
 end
 Events.OnLoad.Add(LoadPlayerData)
 
-function HygieneManager.resetHygieneData()
-    local player = getPlayer()
-    modData = player:getModData()
-    modData.ICdata = modData.ICdata or {}
-    modData.ICdata.cSIHDC_counter = 0
-    cSIHDC_counter = 0
-end
+-- NOTE: 2025-07-24 Disabled because this gets run on every load which means you always start on the first day of the cycle.
+-- function HygieneManager.resetHygieneData()
+--     local player = getPlayer()
+--     modData = player:getModData()
+--     modData.ICdata = modData.ICdata or {}
+--     modData.ICdata.cSIHDC_counter = 0
+--     cSIHDC_counter = 0
+-- end
 
 local function SavePlayerData()
     local player = getPlayer()

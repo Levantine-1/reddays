@@ -14,16 +14,17 @@ local function LoadPlayerData()
 end
 Events.OnGameStart.Add(LoadPlayerData)
 
-local function ResetCycleData()
-    print("Resetting cycle data...")
-    EffectsManager.resetEffects()
-    HygieneManager.resetHygieneData()
-    -- modData.ICdata.currentCycle = CycleManager.newCycle("ResetCycleData")
-    -- Disabled new cycle because this was running on every load which meant you always started on the
-    -- first day of the cycle. I guess this is a bug that could be a feature where a new character
-    -- continues the cycle from the previous character so new characters don't always start on red day.
-end
-Events.OnCreatePlayer.Add(ResetCycleData)
+-- NOTE: 2025-07-24 Disabled because this gets run on every load which means you always start on the first day of the cycle.
+-- local function ResetCycleData()
+--     print("Resetting cycle data...")
+--     EffectsManager.resetEffects()
+--     HygieneManager.resetHygieneData()
+--     -- modData.ICdata.currentCycle = CycleManager.newCycle("ResetCycleData")
+--     -- Disabled new cycle because this was running on every load which meant you always started on the
+--     -- first day of the cycle. I guess this is a bug that could be a feature where a new character
+--     -- continues the cycle from the previous character so new characters don't always start on red day.
+-- end
+-- Events.OnCreatePlayer.Add(ResetCycleData)
 
 local function PrintStatus()
     local cycle = modData.ICdata.currentCycle
@@ -55,11 +56,25 @@ local function PrintStatus()
 
     local currentPhase = CycleManager.getCurrentCyclePhase(cycle)
     print("Current cycle phase: " .. currentPhase)
+
+    print("Pill effect active: " .. tostring(modData.ICdata.pill_effect_active))
+    print("Pill effect counter: " .. modData.ICdata.pill_effect_counter)
+
+    local sanitaryItem = HygieneManager.getCurrentlyWornSanitaryItem()
+    if sanitaryItem then
+        print("Currently worn sanitary item: " .. sanitaryItem:getName())
+        print("Sanitary item condition: " .. sanitaryItem:getCondition())
+        print("Sanitary item type: " .. sanitaryItem:getType())
+    else
+        print("No sanitary item currently worn.")
+    end
     print("==========================================================================================")
 end
+
 Events.OnGameStart.Add(PrintStatus)
 Events.EveryDays.Add(PrintStatus)
 -- Events.EveryHours.Add(PrintStatus)
+Events.EveryTenMinutes.Add(PrintStatus)
 
 local function phaseIsValid(phase)
     local valid_phases = {"redPhase", "follicularPhase", "ovulationPhase", "lutealPhase"}
