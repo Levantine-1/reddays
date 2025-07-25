@@ -14,6 +14,8 @@ local function takePillsStiffness()
 		Events.EveryTenMinutes.Remove(takePillsStiffness) -- Pills are no longer effective
         pill_effect_active = false
         modData.ICdata.pill_effect_active = pill_effect_active -- Save the pill effect state
+        pill_effect_counter = 0
+        modData.ICdata.pill_effect_counter = pill_effect_counter -- Reset the counter
         print("Painkiller effect has worn off.")
 		return
 	end
