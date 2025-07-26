@@ -142,7 +142,6 @@ local function LoadPlayerData()
     pill_effect_active = modData.ICdata.pill_effect_active or false
     if pill_effect_active then
         Events.EveryTenMinutes.Add(takePillsStiffness) -- Start the timer if the effect is active
-    else
     end
 end
 Events.OnGameStart.Add(LoadPlayerData)
