@@ -66,14 +66,16 @@ Debuffs for insufficient hygienic care:
 - Equipping a sanitary item causes the character avatar to fail to render in the character info menu.
     - Fixed 2025-7-11: Updated clothingItems xml files to render an invisible model to address some warnings and null exceptions
 
--Random cycle start dates for new characters
+- Random cycle start dates for new characters
     - 2025-26-07 Added feature to start on random dates and added respective sandbox options
+
+- 2025-26-07 Items will now spawn on zombies
 
 ## FAQ
 - Groin bleeding time is set to 0 and should not kill you. However upon some testing, if bleeding and if you speed up time, it might decrement some HP so be careful if low HP.
 
 - Only female characters will experience the menstrual cycle by default, but you can enable for all genders in sandbox options
 
-- This should be safe to add mid save, however feminine hygiene items won't spawn in places you've already looted and they don't spawn on zombies at this time.
+- This should be safe to add mid save, however feminine hygiene items won't spawn in places you've already looted, but can spawn on corpses.
 
 - The follicular, ovulation and luteal phase doesn't have any other effect besides generating discharge, which is completely a visual thing with no status effects that requires a 1-2 times a day change of panty liners.
