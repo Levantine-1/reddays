@@ -32,7 +32,7 @@ local function PrintStatus(cycle)
     print("Current time in days: " .. currentDay)
 
     print("The reason for last cycle generation: " .. cycle.reason_for_cycle)
-
+    print("Cycle Delayed time: " .. cycle.timeToDelaycycle .. " days")
     print("Cycle start day: " .. cycle.cycle_start_day)
     print("Total expected menstrual cycle duration: " .. cycle.cycle_duration .. " days")
 
@@ -83,7 +83,7 @@ local function printWrapper(cycle) -- Wrapper to control printing frequency when
 end
 
 local function phaseIsValid(phase)
-    local valid_phases = {"redPhase", "follicularPhase", "ovulationPhase", "lutealPhase"}
+    local valid_phases = {"delayPhase", "redPhase", "follicularPhase", "ovulationPhase", "lutealPhase"}
     for _, valid_phase in ipairs(valid_phases) do
         if phase == valid_phase then
             return true

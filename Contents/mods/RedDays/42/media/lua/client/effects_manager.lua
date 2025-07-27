@@ -95,6 +95,16 @@ local function consumeDischargeProduct()
     return HygieneManager:consumeDischargeProduct()
 end
 
+local function stopGroinBleeding()
+    local player = getPlayer()
+    local bodyDamage = player:getBodyDamage()
+    local groin = bodyDamage:getBodyPart(BodyPartType.Groin)
+    local bleedingTime = groin:getBleedingTime()
+    if bleedingTime == 0 then -- Clear bleeding if no wounds. Cycle generates bleeding time of 0, so assumed no wounds.
+        groin:setBleeding(false)
+    end
+end
+
 function EffectsManager.determineEffects(cycle)
     if not SandboxVars.RedDays.affectsAllGenders then
         local player = getPlayer()
@@ -123,6 +133,7 @@ function EffectsManager.determineEffects(cycle)
         if stat_Adjustment_isEnabled then
             Events.EveryOneMinute.Remove(stat_Adjustment)
             print("Red phase has ended, removing debuffs")
+            stopGroinBleeding() -- Stop bleeding if it was caused by the red phase
         end
         stat_Adjustment_isEnabled = false
 
