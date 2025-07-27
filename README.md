@@ -2,7 +2,7 @@
 
 ## Players will now have a menstrual cycle and need to find and stockpile feminine care products
 
-## Current Features
+## Current Major Features
 - The basic menstrual cycle including the following phases:
     - Menstural
     - Follicular
@@ -42,9 +42,6 @@ Feminine Hygiene products:
 Cycle tracking feature:
 - Craftable cycle tracker calendar for cycle predictions
 
-Random cycle start dates for new characters
-- Currently all characters start the game on red day.
-
 Traits:
 - Hygiene product consumption and stat decrement rates vary by cycle trait:
 - Light, Normal, Heavy Cycle Traits
@@ -60,16 +57,25 @@ Debuffs for insufficient hygienic care:
     - painkiller effectiveness
     - Target discomfort/strain levels
 
-## Fixed Reported Bugs:
+## Fixed Reported Bugs and minor feature change notes:
 - Incompatibility issue - mod conflicts with: 'organizedCategories: Core'
-    - Fixed 2025-7-11: User reporting incompatibility issue, however after fixing the avatar in the character info panel
+    - Fixed 2025-7-11: User reporting incompatibility issue
         The mod seems to just rename the category from Feminine Hygiene -> Clothing - Protective. Which I assume is correct behavior.
+    - Fixed 2025-7-26: While the above is correct behavior for the organizer mod, by changing the category, red days no longer reconizes a feminine hygiene items because it relies on searching equipped items by category. I've updated the way this is handled so this shouldn't affect category organiziers in the future.
 
 - Equipping a sanitary item causes the character avatar to fail to render in the character info menu.
     - Fixed 2025-7-11: Updated clothingItems xml files to render an invisible model to address some warnings and null exceptions
 
+- Random cycle start dates for new characters
+    - 2025-26-07 Added feature to start on random dates and added respective sandbox options
+
+- 2025-26-07 Items will now spawn on zombies
+
 ## FAQ
-- Groin bleeding doesn't decrement HP and will not kill you
+- Groin bleeding time is set to 0 and should not kill you. However upon some testing, if bleeding and if you speed up time, it might decrement some HP so be careful if low HP.
+
 - Only female characters will experience the menstrual cycle by default, but you can enable for all genders in sandbox options
-- This should be safe to add mid save, however feminine hygiene items won't spawn in places you've already looted and they don't spawn on zombies at this time.
-- The follicular, ovulation and luteal phase doesn't have any other effect besides generating discharge, which is completely a visual thing with no status effects that requires a 1-2 times a day change of panty liner.
+
+- This should be safe to add mid save, however feminine hygiene items won't spawn in places you've already looted, but can spawn on corpses.
+
+- The follicular, ovulation and luteal phase doesn't have any other effect besides generating discharge, which is completely a visual thing with no status effects that requires a 1-2 times a day change of panty liners.

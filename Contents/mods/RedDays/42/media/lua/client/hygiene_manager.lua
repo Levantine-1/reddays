@@ -12,17 +12,19 @@ local function LoadPlayerData()
 end
 Events.OnLoad.Add(LoadPlayerData)
 
-function HygieneManager.resetHygieneData()
-    local player = getPlayer()
-    modData = player:getModData()
-    modData.ICdata = modData.ICdata or {}
-    modData.ICdata.cSIHDC_counter = 0
-    cSIHDC_counter = 0
-end
+-- NOTE: 2025-07-24 Disabled because this gets run on every load which means you always start on the first day of the cycle.
+-- function HygieneManager.resetHygieneData()
+--     local player = getPlayer()
+--     modData = player:getModData()
+--     modData.ICdata = modData.ICdata or {}
+--     modData.ICdata.cSIHDC_counter = 0
+--     cSIHDC_counter = 0
+-- end
 
 local function SavePlayerData()
     local player = getPlayer()
     modData = player:getModData()
+    modData.ICdata = modData.ICdata or {}
     modData.ICdata.cSIHDC_counter = cSIHDC_counter or 0
 end
 -- Events.OnSave.Add(SavePlayerData) -- For some reason this doesn't work. It'll print the counter, but it doesn't seem save it as on load, value is 0.
@@ -72,28 +74,42 @@ local function consumeSanitaryItemHelperRenameItemAndLeakChance(item)
     return true -- No leak
 end
 
-function HygieneManager.consumeDischargeProduct()
+function HygieneManager.getCurrentlyWornSanitaryItem()
+    -- 2025-07-24
+    -- There used to be a lot of logic in here but it has since been simplified
+    -- However keeping this here because a lot of existing code relies on this function
+    -- And I'm too lazy to refactor all of it right now
     local player = getPlayer()
     local wornItems = player:getWornItems()
-
-    for i = 0, wornItems:size() - 1 do
-        local item = wornItems:get(i):getItem()
-        if item and item:getDisplayCategory() == "FeminineHygiene" then
-            local itemName = item:getName()
-            local baseName = itemName:match("^(.-) %(")
-            if not baseName then
-                baseName = itemName
-            end
-            wasItemConsumed = false
-            if item:getCondition() > 1 then
-                wasItemConsumed = true
-            end
-            item:setCondition(1)
-            item:setName(baseName .. " (Dirty)")
-            return wasItemConsumed
-        end
+    local hygieneItem = wornItems:getItem("HygieneItem") -- "HygieneItem" is the BodyLocation
+    if hygieneItem then
+        return hygieneItem
     end
-    return false
+    return nil
+end
+
+function HygieneManager.consumeDischargeProduct()
+    local player = getPlayer()
+
+    local item = HygieneManager.getCurrentlyWornSanitaryItem()
+    if not item then
+        return false
+    end
+
+    local itemName = item:getName()
+    local baseName = itemName:match("^(.-) %(")
+    if not baseName then
+        baseName = itemName
+    end
+
+    wasItemConsumed = false
+    if item:getCondition() > 1 then
+        wasItemConsumed = true
+    end
+
+    item:setCondition(1)
+    item:setName(baseName .. " (Dirty)")
+    return wasItemConsumed
 end
 
 local function consumeSanitaryItem()
@@ -103,14 +119,16 @@ local function consumeSanitaryItem()
     local isSanitaryItemEquipped = false
     local didConsumeSanitaryItem = false
 
-    for i = 0, wornItems:size() - 1 do
-        local item = wornItems:get(i):getItem()
-        if item and item:getDisplayCategory() == "FeminineHygiene" then
-            isSanitaryItemEquipped = true
-            didConsumeSanitaryItem = consumeSanitaryItemHelperRenameItemAndLeakChance(item)
-            return isSanitaryItemEquipped, didConsumeSanitaryItem
-        end
+    local item = HygieneManager.getCurrentlyWornSanitaryItem()
+    if not item then
+        isSanitaryItemEquipped = false
+        didConsumeSanitaryItem = false
+        return isSanitaryItemEquipped, didConsumeSanitaryItem
     end
+
+    isSanitaryItemEquipped = true
+    didConsumeSanitaryItem = consumeSanitaryItemHelperRenameItemAndLeakChance(item)
+
     return isSanitaryItemEquipped, didConsumeSanitaryItem
 end
 

@@ -1,5 +1,13 @@
 CycleManager = {}
 
+local function LoadPlayerData()
+    local player = getPlayer()
+    modData = player:getModData()
+    modData.ICdata = modData.ICdata or {}
+    cycleDelayed = modData.ICdata.cycleDelayed or false
+end
+Events.OnGameStart.Add(LoadPlayerData)
+
 local function random_between(range)
     return ZombRand(range[1], range[2])
 end
@@ -21,7 +29,8 @@ local function default_cycle() -- Default cycle values if a new cycle cannot be 
         discomfort_target = 100,
         endurance_decrement = 0.0005,
         fatigue_increment = 0.0001,
-        reason_for_cycle = "defaultCycle"
+        reason_for_cycle = "defaultCycle",
+        timeToDelaycycle = 0
     }
 end
 
@@ -32,18 +41,21 @@ function CycleManager.newCycle(whoDidThis)
     local range_follicular_phase_duration = {sbv.follicular_phase_duration_lowerBound, sbv.follicular_phase_duration_upperBound}
     local range_ovulation_phase_duration = {sbv.ovulation_phase_duration_lowerBound, sbv.ovulation_phase_duration_upperBound}
     local range_luteal_phase_duration = {sbv.luteal_phase_duration_lowerBound, sbv.luteal_phase_duration_upperBound}
+    local range_delay_duration = {sbv.phase_start_delay_lowerBound, sbv.phase_start_delay_upperBound}
 
     -- local range_total_menstrual_cycle_duration = {28, 34}
     -- local range_red_phase_duration = {2, 5}
     -- local range_follicular_phase_duration = {11, 16}
     -- local range_ovulation_phase_duration = {1, 1}
     -- local range_luteal_phase_duration = {11, 18}
+    -- local range_delay_duration = {0, 5}
 
     -- local range_total_menstrual_cycle_duration = {7, 9}
     -- local range_red_phase_duration = {1, 2}
     -- local range_follicular_phase_duration = {3, 4}
     -- local range_ovulation_phase_duration = {1, 1}
     -- local range_luteal_phase_duration = {3, 5}
+    -- local range_delay_duration = {1, 1}
 
 
     local max_attempts = 10 -- Duration values can be user-defined and may not always yield a valid cycle, so we try multiple times to find a valid one and return a default cycle if we fail
@@ -53,6 +65,15 @@ function CycleManager.newCycle(whoDidThis)
         end
 
         local cycle_start_day = getGameTime():getWorldAgeHours() / 24
+
+        local timeToDelaycycle = 0
+        cycleDelayed = modData.ICdata.cycleDelayed or false
+        if  sbv.phase_start_delay_enabled and not cycleDelayed and whoDidThis ~= "isCycleValid" then
+            print("Assuming player recently spawned, adding a random delay to the cycle start.")
+            timeToDelaycycle = random_between(range_delay_duration)
+            print("Cycle start will be delayed by " .. timeToDelaycycle .. " days.")
+            modData.ICdata.cycleDelayed = true -- Only run this once per life time.
+        end
 
         local cycle_duration = random_between(range_total_menstrual_cycle_duration)
 
@@ -99,7 +120,8 @@ function CycleManager.newCycle(whoDidThis)
                 discomfort_target = discomfort_target,
                 endurance_decrement = endurance_decrement,
                 fatigue_increment = fatigue_increment,
-                reason_for_cycle = whoDidThis
+                reason_for_cycle = whoDidThis, -- This is used for debugging purposes to know what generated the cycle, for example on game load, no message is printed.
+                timeToDelaycycle = timeToDelaycycle
             }
         end
     end
@@ -115,6 +137,10 @@ function CycleManager.getCurrentCyclePhase(cycle)
         return "invalidCycle"
     end
     local days_into_cycle = current_day - cycle.cycle_start_day
+
+    if days_into_cycle < cycle.timeToDelaycycle then
+        return "delayPhase" -- This is for the random cycle start day for new characters
+    end
 
     if days_into_cycle <= cycle.red_days_duration then
         return "redPhase"

@@ -7,6 +7,9 @@ Sandbox_EN = {
 	Sandbox_RedDays_affectsAllGenders= "Affect All Genders",
     Sandbox_RedDays_affectsAllGenders_tooltip = "Enable to apply menstrual cycle to all characters regardless of gender",
 
+	Sandbox_RedDays_phase_start_delay_enabled= "Randomize menstrual start date",
+    Sandbox_RedDays_phase_start_delay_enabled_tooltip = "This is mainly for newly spawned players so players don't always start on the menstrual phase.",
+
     Sandbox_RedDays_painkillerEffectDuration= "Painkiller Effect Duration",
     Sandbox_RedDays_painkillerEffectDuration_tooltip = "Each point is 10 mins. Default is 36x10=360 mins or 6 hours",
 
@@ -39,4 +42,10 @@ Sandbox_EN = {
 
     Sandbox_RedDays_luteal_phase_duration_upperBound = "Maximum Luteal Phase Length",
     Sandbox_RedDays_luteal_phase_duration_upperBound_tooltip = "The longest possible duration (in days) for the luteal phase.",
+
+    Sandbox_RedDays_phase_start_delay_lowerBound = "Minimum First Period Delay Time",
+    Sandbox_RedDays_phase_start_delay_lowerBound_tooltip = "The shortest amount of days before your first period occurs.",
+
+    Sandbox_RedDays_phase_start_delay_upperBound = "Maximum First Period Delay Time",
+    Sandbox_RedDays_phase_start_delay_upperBound_tooltip = "The maximum amount of days before your first period occurs.",
 }

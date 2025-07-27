@@ -18,6 +18,14 @@ option RedDays.affectsAllGenders
 	translation = RedDays_affectsAllGenders,
 }
 
+option RedDays.phase_start_delay_enabled
+{
+	type = boolean,
+	default = true,
+	page = RedDays,
+	translation = RedDays_phase_start_delay_enabled,
+}
+
 option RedDays.painkillerEffectDuration
 {
 	type = integer,
@@ -126,4 +134,24 @@ option RedDays.luteal_phase_duration_upperBound
 	default = 18,
 	page = RedDays,
 	translation = RedDays_luteal_phase_duration_upperBound,
+}
+
+option RedDays.phase_start_delay_lowerBound
+{
+	type = integer,
+	min = 0,
+	max = 29,
+	default = 0,
+	page = RedDays,
+	translation = RedDays_phase_start_delay_lowerBound,
+}
+
+option RedDays.phase_start_delay_upperBound
+{
+	type = integer,
+	min = 1,
+	max = 30,
+	default = 5,
+	page = RedDays,
+	translation = RedDays_phase_start_delay_upperBound,
 }
