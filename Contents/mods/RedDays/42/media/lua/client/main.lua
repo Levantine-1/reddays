@@ -1,6 +1,7 @@
 require "RedDays/cycle_manager"
 require "RedDays/effects_manager"
 require "RedDays/hygiene_manager"
+require "RedDays/cycle_tracker"
 
 local function LoadPlayerData()
 	local player = getPlayer()
@@ -68,7 +69,7 @@ end
 
 local print_counter = 0
 local hasPrintedOnStart = false
-local debugPrinting = true
+local debugPrinting = false -- Set to true to enable debug printing every 10 minutes
 local function printWrapper(cycle) -- Wrapper to control printing frequency when running from main function
     if debugPrinting then
         PrintStatus(cycle)
