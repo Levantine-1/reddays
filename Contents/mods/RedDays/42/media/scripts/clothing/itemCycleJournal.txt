@@ -1,0 +1,33 @@
+module RedDays
+{
+    item Period_Tracker
+    {
+		DisplayName = Period Tracker,
+		DisplayCategory = Literature,
+		Type = Literature,
+		Weight = 1,
+		Icon = Notebook,
+		CanBeWrite = true,
+		PageToWrite = 14,
+		StaticModel = EmptyNotebook,
+		WorldStaticModel = EmptyNotebook,
+		ReadType = newspaper,
+	}
+
+	craftRecipe Craft Period Tracker
+	{
+        timedAction = Making,
+		Time = 30,
+		Tags = InHandCraft,
+        category = Skill Journal,
+		inputs
+		{
+			item 1 [Base.Journal;Base.Notebook],
+			item 1 [Base.Pen;Base.BluePen;Base.GreenPen;Base.RedPen;Base.PenFancy;Base.PenMultiColor;Base.PenSpiffo;Base.Pencil;Base.PencilSpiffo;Base.MarkerBlack;Base.MarkerBlue;Base.MarkerGreen;Base.MarkerRed],
+		}
+		outputs
+		{
+			item 1 RedDays.Period_Tracker,
+		}
+	}
+}
