@@ -106,17 +106,14 @@ function CycleTrackerText.newCalendar()
     return lines
 end
 
-function CycleTrackerText.getCalendarText(calendar)
-    -- local calendar = newCalendar()
+function CycleTrackerText.getCalendarText(calendar, month)
     local year = getGameTime():getYear()
-    local month = getGameTime():getMonth() + 1
     local monthName = getMonthName(month)
 
     local text = monthName .. " " .. year .. "\n"
     for i = 1, #calendar do
         local month = calendar[i]
         if month then
-            -- local line = "Month " .. i .. ": "
             local line = ""
             for day, value in pairs(month.days) do
                 if day < 10 then
@@ -124,7 +121,6 @@ function CycleTrackerText.getCalendarText(calendar)
                 end
                 line = line .. day .. ": " .. value .. "  "
             end
-            -- print(line:sub(1, -3)) -- Remove trailing comma and space
             text = text .. line:sub(1, -2) .. "\n"
         end
     end
