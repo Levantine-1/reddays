@@ -70,10 +70,14 @@ function CycleTrackerText.generateUID()
     return uid
 end
 
-function CycleTrackerText.getBackPage()
-    local UID = CycleTrackerText.generateUID()
+function CycleTrackerText.getBackPage(UID)
     local ID_Line = "ID: " .. UID
-    local text_body = "Do not modify the ID or journal will stop updating.     Delete all entries to reuse."
+    local text_body = "Do not modify the ID or this tracker will stop updating.\
+   \
+ If you want to overwrite  or reuse this journal, delete all contents on this page.\
+\
+This tracker is automatically updated when the you unequip a feminine hygiene item.\
+If changed multiple times, only last data for the day is saved."
     local text = ID_Line .. "\n" .. text_body
     return text
 end
