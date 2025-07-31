@@ -12,17 +12,24 @@ end
 Events.OnGameStart.Add(LoadPlayerData)
 
 local function checkIfJournalisBlank(journal)
-    local allBlank = true
-    for pageNum = 1, 14 do
-        local pageData = CycleTrackerLogic.readJournal(journal, pageNum)
-        if pageData and pageData:match("%S") then -- if any non-whitespace found
-            allBlank = false
-            break
-        end
+    -- local allBlank = true
+    -- for pageNum = 1, 14 do
+    --     local pageData = CycleTrackerLogic.readJournal(journal, pageNum)
+    --     if pageData and pageData:match("%S") then -- if any non-whitespace found
+    --         allBlank = false
+    --         break
+    --     end
+    -- end
+    -- if allBlank then
+    --     return journal
+    -- end
+
+    -- Just check if page 14 is blank as the user is instructed to blank it if they want to reuse the journal.
+    local pageData = CycleTrackerLogic.readJournal(journal, 14)
+    if pageData and pageData:match("%S") then
+        return false -- ID page not blank
     end
-    if allBlank then
-        return journal
-    end
+    return journal -- Blank ID page found
 end
 
 function CycleTrackerLogic.getJournal(player, idSubstring, returnBlank)
@@ -68,7 +75,7 @@ function CycleTrackerLogic.RegisterNewJournal(player, idSubstring)
             CycleTrackerLogic.writeToJournal(journal, month + 1, monthText) -- Pages 2-13 for months
         end
 
-        idPageData = CycleTrackerText.getBackPage()
+        idPageData = CycleTrackerText.getBackPage(idSubstring)
         CycleTrackerLogic.writeToJournal(journal, 14, idPageData)
         return journal
     end
@@ -95,10 +102,13 @@ local function updateCalendar(calendar, day, value)
     return false
 end
 
-local function cycleTrackerMainLogic()
+function CycleTrackerLogic.cycleTrackerMainLogic()
     print("Player has unequipped/replaced a hygiene item, updating the cycle tracker.")
 
     local player = getPlayer()
+    local playerJournalID = modData.ICdata.journalID
+    print("Player Journal ID: " .. playerJournalID)
+
     local day = getGameTime():getDayPlusOne()
     local month = getGameTime():getMonth() + 1
     local year = getGameTime():getYear()
@@ -109,9 +119,9 @@ local function cycleTrackerMainLogic()
         print("Cycle Tracker Logic: New month detected, resetting calendar.")
     end
 
-    local journal = CycleTrackerLogic.getJournal(player, modData.ICdata.journalID, false)
+    local journal = CycleTrackerLogic.getJournal(player, playerJournalID, false)
     if not journal then
-        journal = CycleTrackerLogic.RegisterNewJournal(player, modData.ICdata.journalID)
+        journal = CycleTrackerLogic.RegisterNewJournal(player, playerJournalID)
         if not journal then
             print("No valid journal found or registered. Cycle tracking data not saved.")
             return
@@ -126,28 +136,6 @@ local function cycleTrackerMainLogic()
     -- local calendarData = CycleTrackerText.getCalendarText(calendar)
     -- CycleTrackerLogic.writeToJournal(journal, pageMonthNumber, calendarData)
     return
-end
-
-
--- If player unequips the hygiene item, inspect the item and update the cycle tracker
-local o_ISUnequipAction_perform = ISUnequipAction.perform
-function ISUnequipAction:perform()
-    if self.item:getBodyLocation() == "HygieneItem" then
-        cycleTrackerMainLogic()
-    end
-    o_ISUnequipAction_perform(self)
-end
-
--- If the player replaces a hygiene item, inspect the item and update the cycle tracker
-local o_ISWearClothing_perform = ISWearClothing.perform
-function ISWearClothing:perform()
-    if self.item:getBodyLocation() == "HygieneItem" then
-        local hygieneItem = HygieneManager.getCurrentlyWornSanitaryItem()
-        if hygieneItem then
-            cycleTrackerMainLogic()
-        end
-    end
-    o_ISWearClothing_perform(self)
 end
 
 return CycleTrackerLogic
