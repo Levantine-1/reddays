@@ -55,7 +55,7 @@ S: Spotting    Dew: Egg White\
 A: Agitated    F: Fatigue\
 U: Sadness     T: TenderBrst.\
 C: Cramps      Y: Crave Food\
-X: No Data     B: BC Pill  Taken"
+X: No Data     B: BC Pill Taken"
     local text = nameLine .. "\n" .. inspirationalQuote .. "\n"  .. text_body
     return text
 end
@@ -88,20 +88,20 @@ end
 
 function CycleTrackerText.newCalendar()
     local lines = {
-        [1] = { days = { [1] = "____", [15] = "____", [29] = "____" } },
-        [2] = { days = { [2] = "____", [16] = "____", [30] = "____" } },
-        [3] = { days = { [3] = "____", [17] = "____", [31] = "____" } },
-        [4] = { days = { [4] = "____", [18] = "____" } },
-        [5] = { days = { [5] = "____", [19] = "____" } },
-        [6] = { days = { [6] = "____", [20] = "____" } },
-        [7] = { days = { [7] = "____", [21] = "____" } },
-        [8] = { days = { [8] = "____", [22] = "____" } },
-        [9] = { days = { [9] = "____", [23] = "____" } },
-        [10] = { days = { [10] = "____", [24] = "____" } },
-        [11] = { days = { [11] = "____", [25] = "____" } },
-        [12] = { days = { [12] = "____", [26] = "____" } },
-        [13] = { days = { [13] = "____", [27] = "____" } },
-        [14] = { days = { [14] = "____", [28] = "____" } },
+        [1] = { days = { [1] = "______", [15] = "______", [29] = "______" } },
+        [2] = { days = { [2] = "______", [16] = "______", [30] = "______" } },
+        [3] = { days = { [3] = "______", [17] = "______", [31] = "______" } },
+        [4] = { days = { [4] = "______", [18] = "______" } },
+        [5] = { days = { [5] = "______", [19] = "______" } },
+        [6] = { days = { [6] = "______", [20] = "______" } },
+        [7] = { days = { [7] = "______", [21] = "______" } },
+        [8] = { days = { [8] = "______", [22] = "______" } },
+        [9] = { days = { [9] = "______", [23] = "______" } },
+        [10] = { days = { [10] = "______", [24] = "______" } },
+        [11] = { days = { [11] = "______", [25] = "______" } },
+        [12] = { days = { [12] = "______", [26] = "______" } },
+        [13] = { days = { [13] = "______", [27] = "______" } },
+        [14] = { days = { [14] = "______", [28] = "______" } },
     }
     return lines
 end
@@ -111,9 +111,6 @@ function CycleTrackerText.getCalendarText(calendar)
     local year = getGameTime():getYear()
     local month = getGameTime():getMonth() + 1
     local monthName = getMonthName(month)
-
-    -- calendar[1].days[1] = "ABC_"
-    -- calendar[12].days[26] = "XYZ_"
 
     local text = monthName .. " " .. year .. "\n"
     for i = 1, #calendar do
@@ -125,7 +122,7 @@ function CycleTrackerText.getCalendarText(calendar)
                 if day < 10 then
                     day = "0" .. day -- Pad single-digit days with a leading zero
                 end
-                line = line .. day .. ": " .. value .. " "
+                line = line .. day .. ": " .. value .. "  "
             end
             -- print(line:sub(1, -3)) -- Remove trailing comma and space
             text = text .. line:sub(1, -2) .. "\n"

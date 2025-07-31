@@ -5,7 +5,8 @@ local function LoadPlayerData()
     local player = getPlayer()
     modData = player:getModData()
     modData.ICdata = modData.ICdata or {}
-    cycleDelayed = modData.ICdata.cycleDelayed or false
+    modData.ICdata.calendar = modData.ICdata.calendar or CycleTrackerText.newCalendar()
+    modData.ICdata.calendarMonth = modData.ICdata.calendarMonth or getGameTime():getMonth() + 1
 end
 Events.OnGameStart.Add(LoadPlayerData)
 
@@ -41,31 +42,46 @@ function CycleTrackerLogic.readJournal(journal)
     end
 end
 
-function CycleTrackerLogic.writeToJournal(journal, pageNum, text)
+function CycleTrackerLogic.writeToJournal(journal, pageNum, data)
+    journal:addPage(pageNum, data)
+end
+
+local function updateCalendar(calendar, day, value)
+    for lineIndex, line in ipairs(calendar) do
+        if line.days[day] then
+            line.days[day] = value
+            modData.ICdata.calendar = calendar
+            return true
+        end
+    end
+    return false
+end
+
+local function cycleTrackerMainLogic()
+    print("Player has unequipped/replaced a hygiene item, updating the cycle tracker.")
     return
 end
 
-local function testFunction()
-    local player = getPlayer()
-    local journal = CycleTrackerLogic.getJournal(player)
-    -- CycleTracker.readJournal(journal)
-    if journal then
-        print("Adding frontPage to journal.")
-        local frontPage = CycleTrackerText.getFrontPage(player)
-        journal:addPage(1, frontPage)
-        print("Adding page template to journal.")
-        local newCalendar = CycleTrackerText.newCalendar()
-        local calendarText = CycleTrackerText.getCalendarText(newCalendar)
-        journal:addPage(2, calendarText)
-        print("Adding backpage to journal.")
-        local backPage = CycleTrackerText.getBackPage()
-        journal:addPage(14, backPage)
+
+-- If player unequips the hygiene item, inspect the item and update the cycle tracker
+local o_ISUnequipAction_perform = ISUnequipAction.perform
+function ISUnequipAction:perform()
+    if self.item:getBodyLocation() == "HygieneItem" then
+        cycleTrackerMainLogic()
     end
-    local year = getGameTime():getYear()
-    local month = getGameTime():getMonth() + 1
-    local day = getGameTime():getDay() + 1
-    print("DATE: " .. month .. "/" .. day .. "/" .. year)
+    o_ISUnequipAction_perform(self)
 end
-Events.EveryTenMinutes.Add(testFunction)
+
+-- If the player replaces a hygiene item, inspect the item and update the cycle tracker
+local o_ISWearClothing_perform = ISWearClothing.perform
+function ISWearClothing:perform()
+    if self.item:getBodyLocation() == "HygieneItem" then
+        hygieneItem = HygieneManager.getCurrentlyWornSanitaryItem()
+        if hygieneItem then
+            cycleTrackerMainLogic()
+        end
+    end
+    o_ISWearClothing_perform(self)
+end
 
 return CycleTrackerLogic
