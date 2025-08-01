@@ -34,7 +34,8 @@ local function default_cycle() -- Default cycle values if a new cycle cannot be 
     }
 end
 
-function CycleManager.newCycle(whoDidThis)
+function CycleManager.sandboxValues()
+    -- Abstracted this to a function because this is used in multiple places
     sbv = SandboxVars.RedDays
     local range_total_menstrual_cycle_duration = {sbv.menstrual_cycle_duration_lowerBound, sbv.menstrual_cycle_duration_upperBound}
     local range_red_phase_duration = {sbv.red_phase_duration_lowerBound, sbv.red_phase_duration_upperBound}
@@ -42,6 +43,24 @@ function CycleManager.newCycle(whoDidThis)
     local range_ovulation_phase_duration = {sbv.ovulation_phase_duration_lowerBound, sbv.ovulation_phase_duration_upperBound}
     local range_luteal_phase_duration = {sbv.luteal_phase_duration_lowerBound, sbv.luteal_phase_duration_upperBound}
     local range_delay_duration = {sbv.phase_start_delay_lowerBound, sbv.phase_start_delay_upperBound}
+    return {
+        range_total_menstrual_cycle_duration = range_total_menstrual_cycle_duration,
+        range_red_phase_duration = range_red_phase_duration,
+        range_follicular_phase_duration = range_follicular_phase_duration,
+        range_ovulation_phase_duration = range_ovulation_phase_duration,
+        range_luteal_phase_duration = range_luteal_phase_duration,
+        range_delay_duration = range_delay_duration
+    }
+end
+
+function CycleManager.newCycle(whoDidThis)
+    local ranges = CycleManager.sandboxValues()
+    local range_total_menstrual_cycle_duration = ranges.range_total_menstrual_cycle_duration
+    local range_red_phase_duration = ranges.range_red_phase_duration
+    local range_follicular_phase_duration = ranges.range_follicular_phase_duration
+    local range_ovulation_phase_duration = ranges.range_ovulation_phase_duration
+    local range_luteal_phase_duration = ranges.range_luteal_phase_duration
+    local range_delay_duration = ranges.range_delay_duration
 
     -- local range_total_menstrual_cycle_duration = {28, 34}
     -- local range_red_phase_duration = {2, 5}
@@ -68,7 +87,7 @@ function CycleManager.newCycle(whoDidThis)
 
         local timeToDelaycycle = 0
         cycleDelayed = modData.ICdata.cycleDelayed or false
-        if  sbv.phase_start_delay_enabled and not cycleDelayed and whoDidThis ~= "isCycleValid" then
+        if  ranges.phase_start_delay_enabled and not cycleDelayed and whoDidThis ~= "isCycleValid" then
             print("Assuming player recently spawned, adding a random delay to the cycle start.")
             timeToDelaycycle = random_between(range_delay_duration)
             print("Cycle start will be delayed by " .. timeToDelaycycle .. " days.")
@@ -155,6 +174,46 @@ function CycleManager.getCurrentCyclePhase(cycle)
     end
     print("Error: Unable to determine current cycle phase.")
     return "unknownPhase"
+end
+
+
+function CycleManager.getPhaseStatus(cycle)
+    local current_day = getGameTime():getWorldAgeHours() / 24
+    local days_into_cycle = current_day - cycle.cycle_start_day
+    local phase = CycleManager.getCurrentCyclePhase(cycle)
+
+    local phase_start, phase_end
+
+    if phase == "redPhase" then
+        phase_start = 0
+        phase_end = cycle.red_days_duration
+    elseif phase == "follicularPhase" then
+        phase_start = cycle.red_days_duration
+        phase_end = cycle.red_days_duration + cycle.follicle_stimulating_duration
+    elseif phase == "ovulationPhase" then
+        phase_start = cycle.red_days_duration + cycle.follicle_stimulating_duration
+        phase_end = cycle.red_days_duration + cycle.follicle_stimulating_duration + cycle.ovulation_duration
+    elseif phase == "lutealPhase" then
+        phase_start = cycle.red_days_duration + cycle.follicle_stimulating_duration + cycle.ovulation_duration
+        phase_end = cycle.cycle_duration
+    else
+        return false
+    end
+
+    local phase_length = phase_end - phase_start
+    local days_into_phase = days_into_cycle - phase_start
+    days_into_phase = math.max(0, math.min(days_into_phase, phase_length))
+    local percent = (days_into_phase / phase_length) * 100
+    percent = math.max(0, math.min(percent, 100))
+
+    local time_remaining = phase_end - days_into_cycle
+    time_remaining = math.max(0, time_remaining)
+
+    return {
+        phase = phase,
+        time_remaining = time_remaining,
+        percent_complete = percent
+    }
 end
 
 function CycleManager.isCycleValid(cycle) -- If mod is updated and the cycle structure changes, this function will check if the cycle is valid
