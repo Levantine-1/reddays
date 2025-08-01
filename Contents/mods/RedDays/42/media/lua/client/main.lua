@@ -1,7 +1,6 @@
 require "RedDays/cycle_manager"
 require "RedDays/effects_manager"
 require "RedDays/hygiene_manager"
-require "RedDays/cycle_tracker_logic"
 
 local function LoadPlayerData()
 	local player = getPlayer()
@@ -14,27 +13,6 @@ local function LoadPlayerData()
     end
 end
 Events.OnGameStart.Add(LoadPlayerData)
-
--- If player unequips the hygiene item, inspect the item and update the cycle tracker
-local o_ISUnequipAction_perform = ISUnequipAction.perform
-function ISUnequipAction:perform()
-    if self.item:getBodyLocation() == "HygieneItem" then
-        CycleTrackerLogic.cycleTrackerMainLogic()
-    end
-    o_ISUnequipAction_perform(self)
-end
-
--- If the player replaces a hygiene item, inspect the item and update the cycle tracker
-local o_ISWearClothing_perform = ISWearClothing.perform
-function ISWearClothing:perform()
-    if self.item:getBodyLocation() == "HygieneItem" then
-        local hygieneItem = HygieneManager.getCurrentlyWornSanitaryItem()
-        if hygieneItem then
-            CycleTrackerLogic.cycleTrackerMainLogic()
-        end
-    end
-    o_ISWearClothing_perform(self)
-end
 
 local function phaseIsValid(phase)
     local valid_phases = {"delayPhase", "redPhase", "follicularPhase", "ovulationPhase", "lutealPhase"}

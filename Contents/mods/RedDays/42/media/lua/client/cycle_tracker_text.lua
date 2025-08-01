@@ -76,7 +76,7 @@ function CycleTrackerText.getBackPage(UID)
    \
  If you want to overwrite  or reuse this journal, delete all contents on this page.\
 \
-This tracker is automatically updated when the you unequip a feminine hygiene item.\
+This tracker is automatically updated when the you unequip or replace a feminine hygiene item.\
 If changed multiple times, only last data for the day is saved."
     local text = ID_Line .. "\n" .. text_body
     return text
@@ -129,6 +129,137 @@ function CycleTrackerText.getCalendarText(calendar, month)
         end
     end
     return text
+end
+
+local function symptomShuffle(possibleValues, valuesToReturnLowerBound, valuesToReturnUpperBound)
+    -- Pick a random number in the range [lowerBound, upperBound]
+    local count = ZombRand(valuesToReturnUpperBound - valuesToReturnLowerBound + 1) + valuesToReturnLowerBound
+
+    -- Make a shallow copy to avoid modifying the original table
+    local shuffled = {}
+    for i, v in ipairs(possibleValues) do shuffled[i] = v end
+
+    -- Fisher-Yates shuffle
+    for i = #shuffled, 2, -1 do
+        local j = ZombRand(i) + 1
+        shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
+    end
+
+    -- Return the first 'count' elements
+    local result = {}
+    for i = 1, math.min(count, #shuffled) do
+        table.insert(result, shuffled[i])
+    end
+    return result
+end
+
+function CycleTrackerText.redPhaseDataCodes(cycle, stat)
+    local datacodes = {}
+    local statusMap = {
+                        {threshold = 15, code = "S"},
+                        {threshold = 25, code = "L"},
+                        {threshold = 35, code = "M"},
+                        {threshold = 50, code = "H"},
+                        {threshold = 70, code = "M"},
+                        {threshold = 85, code = "L"},
+                        {threshold = 100, code = "S"},
+                    }
+    for _, entry in ipairs(statusMap) do
+        if stat.percent_complete < entry.threshold then
+            table.insert(datacodes, entry.code)
+            break
+        end
+    end
+
+    local extraSymptomCodes = {"A", "C", "F"} -- Agitated, Cramps, Fatigue
+    local randomSymptoms = symptomShuffle(extraSymptomCodes, 1, 3) -- returns 1 to 3 random symptoms
+    for _, code in ipairs(randomSymptoms) do
+        table.insert(datacodes, code)
+    end
+
+    return datacodes
+end
+
+function CycleTrackerText.follicularPhaseDataCodes(cycle, stat)
+    -- quotes[ZombRand(#quotes) + 1]
+    local datacodes = {}
+    local validDischargeCodes = {"Dc", "Dcw", "D"}
+    local randomDischargeCode = validDischargeCodes[ZombRand(#validDischargeCodes) + 1]
+    local statusMap = {
+                        {threshold = 90, code = randomDischargeCode},
+                        {threshold = 100, code = "Dew"}, -- Starting to ovulate
+                    }
+    for _, entry in ipairs(statusMap) do
+        if stat.percent_complete < entry.threshold then
+            table.insert(datacodes, entry.code)
+            break
+        end
+    end
+    -- No random symptoms in follicular phase
+    return datacodes
+end
+
+function CycleTrackerText.OvulationPhaseDataCodes(cycle, stat)
+    local datacodes = {"Dew"} -- Egg White Discharge
+
+    local extraSymptomCodes = {"A"} -- Agitated (I guess it can mean different things...)
+    local randomSymptoms = symptomShuffle(extraSymptomCodes, 0, 1) -- returns 0 to 1 random symptoms
+    for _, code in ipairs(randomSymptoms) do
+        table.insert(datacodes, code)
+    end
+
+    return datacodes
+end
+
+function CycleTrackerText.lutealPhaseDataCodes(cycle, stat)
+    local datacodes = {}
+    local validDischargeCodes = {"Dc", "Dcw"}
+    local randomDischargeCode = validDischargeCodes[ZombRand(#validDischargeCodes) + 1]
+    local statusMap = {
+                        {threshold = 75, code = randomDischargeCode},
+                        {threshold = 100, code = "D"}, -- Starting to menstruate
+                    }
+    for _, entry in ipairs(statusMap) do
+        if stat.percent_complete < entry.threshold then
+            table.insert(datacodes, entry.code)
+            break
+        end
+    end
+
+    if stat.percent_complete >= 75 then
+        local extraSymptomCodes = {"A", "C", "F", "T", "Y", "U"} -- Agitated, Cramps, Fatigue, Tender Breasts, Crave Food, Sadness
+        local randomSymptoms = symptomShuffle(extraSymptomCodes, 1, 3) -- returns 1 to 3 random symptoms
+        for _, code in ipairs(randomSymptoms) do
+            table.insert(datacodes, code)
+        end
+    end
+    return datacodes
+end
+
+local function tableToString(tbl) -- Converts a table to a string
+    local result = ""
+    for _, v in ipairs(tbl) do
+        result = result .. tostring(v)
+    end
+    return result
+end
+
+function CycleTrackerText.dataCodeFormatter(dataCodes)
+    local datacodeString = tableToString(dataCodes)
+
+    -- Limit to 4 characters, and pad if not all characters are used
+    if #datacodeString > 4 then
+        datacodeString = datacodeString:sub(1, 4)
+    end
+
+    local missing = 4 - #datacodeString
+    if missing == 1 then
+        datacodeString = datacodeString .. string.rep(" ", 2)
+    elseif missing > 1 then
+        local totalSpaces = math.ceil(missing * 2.5)
+        datacodeString = datacodeString .. string.rep(" ", totalSpaces)
+    end
+    return datacodeString
 end
 
 return CycleTrackerText

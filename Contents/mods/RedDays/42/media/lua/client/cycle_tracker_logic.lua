@@ -102,12 +102,30 @@ local function updateCalendar(calendar, day, value)
     return false
 end
 
-function CycleTrackerLogic.cycleTrackerMainLogic()
-    print("Player has unequipped/replaced a hygiene item, updating the cycle tracker.")
+function CycleTrackerLogic.getDataCodes(cycle)
+    stat = CycleManager.getPhaseStatus(cycle) -- returns: phase, time_remaining, percent_complete
+    if not stat or not stat.phase then
+        return false
+    end
+    if stat.phase == "redPhase" then
+        return CycleTrackerText.redPhaseDataCodes(cycle, stat)
 
+    elseif stat.phase == "follicularPhase" then
+        return CycleTrackerText.follicularPhaseDataCodes(cycle, stat)
+
+    elseif stat.phase == "ovulationPhase" then
+        return CycleTrackerText.OvulationPhaseDataCodes(cycle, stat)
+
+    elseif stat.phase == "lutealPhase" then
+        return CycleTrackerText.lutealPhaseDataCodes(cycle, stat)
+    end
+    return false
+end
+
+
+function CycleTrackerLogic.cycleTrackerMainLogic(cycle)
     local player = getPlayer()
     local playerJournalID = modData.ICdata.journalID
-    print("Player Journal ID: " .. playerJournalID)
 
     local day = getGameTime():getDayPlusOne()
     local month = getGameTime():getMonth() + 1
@@ -123,7 +141,7 @@ function CycleTrackerLogic.cycleTrackerMainLogic()
     if not journal then
         journal = CycleTrackerLogic.RegisterNewJournal(player, playerJournalID)
         if not journal then
-            print("No valid journal found or registered. Cycle tracking data not saved.")
+            print("No valid journal found or registered. Cycle tracking data will not be saved.")
             return
         end
     end
@@ -132,10 +150,43 @@ function CycleTrackerLogic.cycleTrackerMainLogic()
     frontCoverData = CycleTrackerText.getFrontPage(player)
     CycleTrackerLogic.writeToJournal(journal, 1, frontCoverData)
 
-    -- local pageMonthNumber = month + 1 -- Adjusted for front cover page
-    -- local calendarData = CycleTrackerText.getCalendarText(calendar)
-    -- CycleTrackerLogic.writeToJournal(journal, pageMonthNumber, calendarData)
-    return
+    local dataCodes = CycleTrackerLogic.getDataCodes(cycle)
+    if dataCodes then
+        local dataCodeString = CycleTrackerText.dataCodeFormatter(dataCodes)
+
+        updateCalendar(modData.ICdata.calendar, day, dataCodeString)
+        local calendarData = CycleTrackerText.getCalendarText(modData.ICdata.calendar, month)
+
+        local pageMonthNumber = month + 1 -- Adjusted for front cover page
+        CycleTrackerLogic.writeToJournal(journal, pageMonthNumber, calendarData)
+    end
+end
+
+
+
+
+
+-- Below are intercept functions that are triggered when the player interacts with hygiene items.
+
+-- If player unequips the hygiene item, inspect the item and update the cycle tracker
+local o_ISUnequipAction_perform = ISUnequipAction.perform
+function ISUnequipAction:perform()
+    if self.item:getBodyLocation() == "HygieneItem" then
+        CycleTrackerLogic.cycleTrackerMainLogic(modData.ICdata.currentCycle)
+    end
+    o_ISUnequipAction_perform(self)
+end
+
+-- If the player replaces a hygiene item, inspect the item and update the cycle tracker
+local o_ISWearClothing_perform = ISWearClothing.perform
+function ISWearClothing:perform()
+    if self.item:getBodyLocation() == "HygieneItem" then
+        local hygieneItem = HygieneManager.getCurrentlyWornSanitaryItem()
+        if hygieneItem then
+            CycleTrackerLogic.cycleTrackerMainLogic(modData.ICdata.currentCycle)
+        end
+    end
+    o_ISWearClothing_perform(self)
 end
 
 return CycleTrackerLogic
