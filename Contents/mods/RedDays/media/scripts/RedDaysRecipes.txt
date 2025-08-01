@@ -1,0 +1,54 @@
+module RedDays {
+    recipe Open Box of Panty Liners
+    {
+        RedDays.PantyLinerBox,
+        Result: RedDays.Panty_Liner=16,
+        Time: 30.0,
+		OnCreate:RedDays_OpenBox,
+        Category: Packing,
+    }
+
+    recipe Open Box of Sanitary Pads
+    {
+        RedDays.SanitaryPadBox,
+        Result: RedDays.Sanitary_Pad=10,
+        Time: 30.0,
+		OnCreate:RedDays_OpenBox,
+        Category: Packing,
+    }
+
+    recipe Open Box of Tampons
+    {
+        RedDays.TamponBox,
+        Result: RedDays.Tampon=10,
+        Time: 30.0,
+		OnCreate:RedDays_OpenBox,
+        Category: Packing,
+    }
+	recipe Pack Panty Liners into Box
+    {
+        RedDays.Panty_Liner=16,
+        RedDays.EmptyBox,
+        Result: RedDays.PantyLinerBox,
+        Time: 30.0,
+        Category: Packing,
+    }
+
+    recipe Pack Sanitary Pads into Box
+    {
+        RedDays.Sanitary_Pad=10,
+        RedDays.EmptyBox,
+        Result: RedDays.SanitaryPadBox,
+        Time: 30.0,
+        Category: Packing,
+    }
+
+    recipe Pack Tampons into Box
+    {
+        RedDays.Tampon=10,
+        RedDays.EmptyBox,
+        Result: RedDays.TamponBox,
+        Time: 30.0,
+        Category: Packing,
+    }
+}

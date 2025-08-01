@@ -1,0 +1,6 @@
+name=Red Days
+poster=poster.png
+id=RedDays
+description=Characters will experience the natural monthly cycle and require feminine care.
+lua=client
+required = MoodleFramework;

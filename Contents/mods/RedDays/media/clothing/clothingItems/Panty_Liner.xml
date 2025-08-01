@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<clothingItem>
+    <name>Panty_Liner</name>
+    <guid>54aef0c6-1e1f-416c-85e5-da04c272b871</guid>
+    <type>HygieneItem</type>
+    <maleModel>false</maleModel>
+    <femaleModel>false</femaleModel>
+    <static>false</static>
+    <albedo></albedo>
+    <mask></mask>
+    <normal></normal>
+    <paletteChoices></paletteChoices>
+</clothingItem>

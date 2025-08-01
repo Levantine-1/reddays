@@ -1,0 +1,56 @@
+module RedDays {
+	model Box
+	{
+		mesh = WorldItems/Box,
+		texture = Worlditems/Box,
+		scale = 0.01,
+	}
+	model EmptyBox
+	{
+		mesh = WorldItems/EmptyBox,
+		texture = Worlditems/Box,
+		scale = 0.01,
+	}
+	model LinerBox
+    {
+        mesh = WorldItems/linerbox,
+        texture = WorldItems/linerbox,
+        scale = 0.0004,
+	    offset = 0.0000 0.0000 0.0000,
+    }
+	model Padbox
+    {
+        mesh = WorldItems/padbox,
+        texture = WorldItems/padbox,
+        scale = 0.0004,
+	    offset = 0.0000 0.0000 0.0000,
+    }
+	model TamponBox
+    {
+        mesh = WorldItems/tamponbox,
+        texture = WorldItems/tamponbox,
+        scale = 0.0003,
+	    offset = 0.0000 0.0000 0.0000,
+    }
+	model Liner
+    {
+        mesh = WorldItems/liner,
+        texture = WorldItems/liner,
+        scale = 0.0003,
+        offset = 0.0000 0.0000 0.0000,
+    }
+	model Pad
+    {
+        mesh = WorldItems/pad,
+        texture = WorldItems/pad,
+        scale = 0.0002,
+	    offset = 0.0000 0.0000 0.0000,
+    }
+	model Tampon
+    {
+        mesh = WorldItems/tampon,
+        texture = WorldItems/tampon,
+        scale = 0.0002,
+	    offset = 0.0000 0.0000 0.0000,
+    }
+}

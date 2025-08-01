@@ -1,0 +1,31 @@
+Moodles_EN = {
+    Moodles_Menstruation_Good_lvl1 = "Menstruating",
+    Moodles_Menstruation_Good_desc_lvl1 = "You are menstruating. Hygiene is good.",
+	
+	Moodles_Menstruation_Bad_lvl1 = "Menstruating",
+    Moodles_Menstruation_Bad_desc_lvl1 = "You are menstruating. Manage hygiene to avoid penalties.",
+    
+    Moodles_HygieneIssue_Bad_lvl1 = "Hygiene Issue",
+    Moodles_HygieneIssue_Bad_desc_lvl1 = "No hygiene item worn.",
+    
+    Moodles_HygieneIssue_Bad_lvl2 = "Hygiene Issue",
+    Moodles_HygieneIssue_Bad_desc_lvl2 = "Hygiene item partially saturated.",
+    
+    Moodles_HygieneIssue_Bad_lvl3 = "Hygiene Issue",
+    Moodles_HygieneIssue_Bad_desc_lvl3 = "Hygiene item moderately saturated.",
+    
+    Moodles_HygieneIssue_Bad_lvl4 = "Hygiene Issue",
+    Moodles_HygieneIssue_Bad_desc_lvl4 = "Hygiene item fully saturated."
+
+	Moodles_TamponIssue_Bad_lvl1 = "Tampon Inserted",
+    Moodles_TamponIssue_Bad_desc_lvl1 = "Fresh.",
+    
+    Moodles_TamponIssue_Bad_lvl2 = "Tampon Inserted",
+    Moodles_TamponIssue_Bad_desc_lvl2 = "Partially saturated.",
+    
+    Moodles_TamponIssue_Bad_lvl3 = "Tampon Inserted",
+    Moodles_TamponIssue_Bad_desc_lvl3 = "Moderately saturated.",
+    
+    Moodles_TamponIssue_Bad_lvl4 = "Tampon Inserted",
+    Moodles_TamponIssue_Bad_desc_lvl4 = "Fully saturated."
+}

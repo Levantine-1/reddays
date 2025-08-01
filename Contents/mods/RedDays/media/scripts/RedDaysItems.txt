@@ -1,0 +1,112 @@
+module RedDays {
+    item Panty_Liner {
+        Type = Normal,
+        DisplayName = Panty Liner,
+        Icon = pantyliner_clean,
+		WorldStaticModel = liner,
+        Weight = 0.06,
+        Tags = Hygiene,
+        ConditionMax = 6,
+        DisplayCategory = FeminineHygiene
+    }
+    item Sanitary_Pad {
+        Type = Normal,
+        DisplayName = Sanitary Pad,
+        Icon = sanitarypad_clean,
+		WorldStaticModel = pad,
+        Weight = 0.1,
+        Tags = Hygiene,
+        ConditionMax = 10,
+        DisplayCategory = FeminineHygiene
+    }
+    item Tampon {
+        Type = Normal,
+        DisplayName = Tampon,
+        Icon = tampon_clean,
+		WorldStaticModel = tampon,
+        Weight = 0.1,
+        Tags = Hygiene,
+        ConditionMax = 10,
+        DisplayCategory = FeminineHygiene
+    }
+    item PantyLinerBox {
+        Type = Normal,
+        DisplayName = Box of Panty Liners,
+        Icon = Box,
+		WorldStaticModel = linerbox,
+        Weight = 1,
+		DisplayCategory = Household
+    }
+    item SanitaryPadBox {
+        Type = Normal,
+        DisplayName = Box of Sanitary Pads,
+        Icon = Box,
+		WorldStaticModel = padbox,
+        Weight = 1,
+		DisplayCategory = Household
+    }
+    item TamponBox {
+        Type = Normal,
+        DisplayName = Box of Tampons,
+        Icon = Box,
+		WorldStaticModel = tamponbox,
+        Weight = 1,
+		DisplayCategory = Household
+    }
+    item EmptyBox {
+        Type = Normal,
+		DisplayName = Empty Box,
+        Icon = EmptyBox,
+        WorldStaticModel = EmptyBox,
+		Weight = 0.1,
+		DisplayCategory = Household
+    }
+    item Panty_Liner_Dirty {
+        Type = Normal,
+        DisplayName = Panty Liner (Used),
+        Icon = pantyliner_dirty,
+		ScaleWorldIcon = 0.60,
+        Weight = 0.1,
+        Tags = Hygiene;Used
+    }
+    item Panty_Liner_Bloody {
+        Type = Normal,
+        DisplayName = Panty Liner (Bloody),
+        Icon = pantyliner_bloody,
+		ScaleWorldIcon = 0.60,
+        Weight = 0.1,
+        Tags = Hygiene;Used;Bloody
+    }
+    item Sanitary_Pad_Dirty {
+        Type = Normal,
+        DisplayName = Sanitary Pad (Used),
+        Icon = sanitarypad_dirty,
+		ScaleWorldIcon = 0.50,
+        Weight = 0.1,
+        Tags = Hygiene;Used
+    }
+    item Sanitary_Pad_Bloody {
+        Type = Normal,
+        DisplayName = Sanitary Pad (Bloody),
+        Icon = sanitarypad_bloody,
+		ScaleWorldIcon = 0.50,
+        Weight = 0.1,
+        Tags = Hygiene;Used;Bloody
+    }
+    item Tampon_Dirty {
+        Type = Normal,
+        DisplayName = Tampon (Used),
+        Icon = tampon_dirty,
+		ScaleWorldIcon = 0.40,
+        Weight = 0.1,
+        Tags = Hygiene;Used
+    }
+    item Tampon_Bloody {
+        Type = Normal,
+        DisplayName = Tampon (Bloody),
+        Icon = tampon_bloody,
+		ScaleWorldIcon = 0.40,
+        Weight = 0.1,
+        Tags = Hygiene;Used;Bloody
+    }
+}

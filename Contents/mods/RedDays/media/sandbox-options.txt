@@ -1,0 +1,109 @@
+VERSION = 1,
+
+option RedDays.affectsAllGenders
+{
+	type = boolean,
+	default = false,
+	page = RedDays,
+	translation = RedDays_affectsAllGenders,
+}
+
+option RedDays.menstrual_cycle_duration_lowerBound
+{
+	type = integer,
+	min = -100,
+	max = 100,
+	default = 28,
+	page = RedDays,
+	translation = RedDays_menstrual_cycle_duration_lowerBound,
+}
+
+option RedDays.menstrual_cycle_duration_upperBound
+{
+	type = integer,
+	min = -100,
+	max = 100,
+	default = 34,
+	page = RedDays,
+	translation = RedDays_menstrual_cycle_duration_upperBound,
+}
+
+option RedDays.red_phase_duration_lowerBound
+{
+	type = integer,
+	min = -100,
+	max = 100,
+	default = 2,
+	page = RedDays,
+	translation = RedDays_red_phase_duration_lowerBound,
+}
+
+option RedDays.red_phase_duration_upperBound
+{
+	type = integer,
+	min = -100,
+	max = 100,
+	default = 5,
+	page = RedDays,
+	translation = RedDays_red_phase_duration_upperBound,
+}
+
+option RedDays.follicular_phase_duration_lowerBound
+{
+	type = integer,
+	min = -100,
+	max = 100,
+	default = 11,
+	page = RedDays,
+	translation = RedDays_follicular_phase_duration_lowerBound,
+}
+
+option RedDays.follicular_phase_duration_upperBound
+{
+	type = integer,
+	min = -100,
+	max = 100,
+	default = 16,
+	page = RedDays,
+	translation = RedDays_follicular_phase_duration_upperBound,
+}
+
+option RedDays.ovulation_phase_duration_lowerBound
+{
+	type = integer,
+	min = -100,
+	max = 100,
+	default = 1,
+	page = RedDays,
+	translation = RedDays_ovulation_phase_duration_lowerBound,
+}
+
+option RedDays.ovulation_phase_duration_upperBound
+{
+	type = integer,
+	min = -100,
+	max = 100,
+	default = 1,
+	page = RedDays,
+	translation = RedDays_ovulation_phase_duration_upperBound,
+}
+
+option RedDays.luteal_phase_duration_lowerBound
+{
+	type = integer,
+	min = -100,
+	max = 100,
+	default = 11,
+	page = RedDays,
+	translation = RedDays_luteal_phase_duration_lowerBound,
+}
+
+option RedDays.luteal_phase_duration_upperBound
+{
+	type = integer,
+	min = -100,
+	max = 100,
+	default = 18,
+	page = RedDays,
+	translation = RedDays_luteal_phase_duration_upperBound,
+}

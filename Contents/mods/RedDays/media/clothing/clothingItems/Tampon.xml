@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<clothingItem>
+    <name>Tampon</name>
+    <guid>951a0b20-c3f2-4a64-b025-9e248d0cc86f</guid>
+    <type>HygieneItem</type>
+    <maleModel>false</maleModel>
+    <femaleModel>false</femaleModel>
+    <static>false</static>
+    <albedo></albedo>
+    <mask></mask>
+    <normal></normal>
+    <paletteChoices></paletteChoices>
+</clothingItem>
