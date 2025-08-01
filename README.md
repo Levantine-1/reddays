@@ -33,20 +33,37 @@
 
 - Custom 3D models thanks to sudodski's commit: 6f10ac0bdc8b76750152ad8aa34118ff13c9fa64
 
+- Craftable cycle tracker calendar:
+    - If tracker book is in equipped bag or inventory and page 14 ID matches character ID
+        - Everytime player unequips or replaces a sanitary item, it as assumed the player 
+            inspected the item and results are automatically logged in the book.
+    - If data isn't being written, delete all contents on page 14 or craft a new book.
+    - IDK how to make a custom UI and I have 0 artistic talent so a text based calendar is the best I've got.
+    - The inspirational quote changes everytime you unequip/replace a sanitary pad item.
+        Let me know if there are any you'd like to add. Just make sure the quote and the author credit would fit in the character limits. Refer to existing quotes as a guideline.
+    - Writing tools aren't needed for now, but will be made necessary later.
+    - If you are on a new character and delayed phase is enabled, no data will be recorded until your first period occurs. After that however, everything should work normally.
+
 ## Planned features
 
 Feminine Hygiene products:
 - Craftable re-usable cloth pads
 - Menstrual cups
 
-Cycle tracking feature:
-- Craftable cycle tracker calendar for cycle predictions
+Pre-Menstrual Symptoms
+- PMS symptoms leading up to the menstrual phase
+
+Not wearing hyginene items increases "dirtiness/bloodiness" for certain clothing locations
+- Potential for interaction with other mods that have dirt/blood attracts zombies
 
 Traits:
 - Hygiene product consumption and stat decrement rates vary by cycle trait:
 - Light, Normal, Heavy Cycle Traits
 - Right now player starts on red day, but eventually a different start date could be a trait
 - Endometriosis by popular request
+- Health affects menstrual cycle
+    - Severe underweight/malnutrition can stop the cycle
+    - Severe stress can alter the cycle
 
 Debuffs for insufficient hygienic care:
 - TSS or other sickness and debuffs
