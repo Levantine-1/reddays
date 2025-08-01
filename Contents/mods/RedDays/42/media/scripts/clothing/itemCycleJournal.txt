@@ -19,11 +19,10 @@ module RedDays
         timedAction = Making,
 		Time = 30,
 		Tags = InHandCraft,
-        category = Skill Journal,
+        category = Feminine Hygiene,
 		inputs
 		{
 			item 1 [Base.Journal;Base.Notebook],
-			item 1 [Base.Pen;Base.BluePen;Base.GreenPen;Base.RedPen;Base.PenFancy;Base.PenMultiColor;Base.PenSpiffo;Base.Pencil;Base.PencilSpiffo;Base.MarkerBlack;Base.MarkerBlue;Base.MarkerGreen;Base.MarkerRed],
 		}
 		outputs
 		{
