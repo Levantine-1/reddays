@@ -36,12 +36,28 @@ local function PrintStatus(cycle)
     else
         print("No sanitary item currently worn.")
     end
+
+    local phaseStatus = CycleManager.getPhaseStatus(cycle)
+    if phaseStatus then
+        print("Phase Status: " .. phaseStatus.phase)
+        print("Time remaining in current phase: " .. phaseStatus.time_remaining .. " days")
+        print("Percentage complete: " .. phaseStatus.percent_complete .. "%")
+    else
+        print("No valid phase status found for the current cycle.")
+    end
+
+    local dataCodes = CycleTrackerLogic.getDataCodes(cycle)
+    if dataCodes then
+        print("Data codes for the current cycle phase: " .. table.concat(dataCodes, ", "))
+    else
+        print("No data codes available for the current cycle phase.")
+    end
     print("==========================================================================================")
 end
 -- Events.OnGameStart.Add(PrintStatus(modData.ICdata.currentCycle)) Sometimes this prints before the cycle is generated, so we call it in main() instead.
 
 local print_counter = 0
-local hasPrintedOnStart = false
+local hasPrintedOnStart = false -- Don't change this one manually
 local debugPrinting = false -- Set to true to enable debug printing every 10 minutes
 function CycleDebugger.printWrapper(cycle) -- Wrapper to control printing frequency when running from main function
     if debugPrinting then
