@@ -5,40 +5,40 @@ function CycleTrackerText.getInspirationalQuote()
         -- Quotes from International Women's Day 2024
         '"There is no limit to what we, as women, can accomplish." - Michelle Obama',
         '"A girl should be two things: Who and what she wants." - Coco Chanel',
-        '"As long as you live, there`s something new every day." - Dolly Parton',
+        '"As long as you live, there\'s something new every day." - Dolly Parton',
         '"Always be a first-rate version of yourself instead of a second-rate version of somebody else." - Judy Garland',
-        '"Do not live someone else`s life and someone else`s idea of what womanhood is. Womanhood is you." - Viola Davis',
+        '"Do not live someone else\'s life and someone else\'s idea of what womanhood is. Womanhood is you." - Viola Davis',
         '"Life is tough, my darling, but so are you." - Stephanie Bennett-Henry',
         '"Do not ever sell yourself short." - Jameela Jamil',
         '"I am grateful to be a woman. I must have done something great in another life." - Maya Angelou',
-        '"I`ve never been interested in being invisible and erased." - Laverne Cox',
-        '"I`d rather regret the things I`ve done than regret the things I haven`t done." - Lucille Ball',
+        '"I\'ve never been interested in being invisible and erased." - Laverne Cox',
+        '"I\'d rather regret the things I\'ve done than regret the things I haven\'t done." - Lucille Ball',
         '"I am a woman and I get to define what that means." - Swati Sharma',
         '"Girls should never be afraid to be smart." - Emma Watson',
-        '"You may be disappointed if you fail, but you are doomed if you don`t try." - Beverly Sills',
-        '"If you don`t see a clear path for what you want, sometimes you have to make it yourself." - Mindy Kaling',
-        '"The only one who can tell you `you can`t win` is you, and you don`t have to listen" - Dame Jessica Ennis-Hill',
+        '"You may be disappointed if you fail, but you are doomed if you don\'t try." - Beverly Sills',
+        '"If you don\'t see a clear path for what you want, sometimes you have to make it yourself." - Mindy Kaling',
+        '"The only one who can tell you \"you can\'t win\" is you, and you don\'t have to listen" - Dame Jessica Ennis-Hill',
         '"The most beautiful thing a woman can wear is confidence." - Blake Lively',
-        '"I don`t get my inspiration from books or a painting. I get it from the women I meet." - Carolina Herrera',
+        '"I don\'t get my inspiration from books or a painting. I get it from the women I meet." - Carolina Herrera',
         '"Alone we can do so little; together we can do so much." - Helen Keller',
         -- Quotes from UCSF Health - Inspire: Women to Women 2020
         '"A strong woman stands up for herself. A stronger woman stands up for others." - Unknown UCSF 2020',
         '"No one can make you feel inferior without your consent." - Eleanor Roosevelt',
-        '"You`ve always had the power, my dear, you just had to learn it for yourself." - Glinda the Good Witch',
+        '"You\'ve always had the power, my dear, you just had to learn it for yourself." - Glinda the Good Witch',
         '"A strong woman looks a challenge in the eye and gives it a wink" - Gina Carey',
         '"The more you love your decisions, the less you need others to love them." - Lisa Messenger',
         '"A queen is not afraid to fail. Failure is another stepping stone to greatness." - Oprah Winfrey',
         '"I figure if a girl wants to be a legend, she should go ahead and be one." - Calamity Jane',
         -- Quotes from Rebel Girls Blog
         '"You are more powerful than you know; you are beautiful just as you are." - Melissa Etheridge',
-        '"It`s tougher to be vulnerable than to be tough." - Rihanna',
+        '"It\'s tougher to be vulnerable than to be tough." - Rihanna',
         '"You can never leave footprints that last if you are always walking on tiptoe." - Leymah Gbowee',
         '"The art of life is not controlling what happens to us, but using what happens to us." - Gloria Steinem',
         '"Your story is what you have, what you will always have. It is something to own." - Michelle Obama',
         -- Random Quotes I thought were also good
-        '"Life isn`t fair, but your reaction to injustice is what defines the content of your character" - Unknown',
+        '"Life isn\'t fair, but your reaction to injustice is what defines the content of your character" - Unknown',
         '"All adventures, especially into new territory, are scary." - Sally Ride',
-        '"More good women have been lost to marriage than to war, famine, disease, and disaster. You have talent, darling. Don`t squander it." - Cruela De Vil' -- I thought this quote was so good it was worth breaking the character limit.
+        '"More good women have been lost to marriage than to war, famine, disease, and disaster. You have talent, darling. Don\'t squander it." - Cruela De Vil' -- I thought this quote was so good it was worth breaking the character limit.
     }
     return quotes[ZombRand(#quotes) + 1]
 end
