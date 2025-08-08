@@ -109,6 +109,10 @@ function HygieneManager.consumeDischargeProduct()
 
     item:setCondition(1)
     item:setName(baseName .. " (Dirty)")
+
+    if not wasItemConsumed then
+        addBloodDirt(player, blood=false, dirt=true)
+    end
     return wasItemConsumed
 end
 
@@ -132,6 +136,31 @@ local function consumeSanitaryItem()
     return isSanitaryItemEquipped, didConsumeSanitaryItem
 end
 
+local function addBloodDirt(player, blood, dirt)
+    local bodyDamage = player:getBodyDamage()
+    local groin = bodyDamage:getBodyPart(BodyPartType.Groin)
+
+    -- Add blood/dirt to player's body
+    if blood then
+        groin:setHaveBlood(true)
+    end
+    if dirt then
+        groin:setHaveDirt(true)
+    end
+
+    -- Add blood/dirt to clothing worn at the groin
+    local wornItems = player:getWornItems()
+    local groinClothing = wornItems:getItem("Groin")
+    if groinClothing then
+        if blood then
+            groinClothing:addBlood(10)
+        end
+        if dirt then
+            groinClothing:addDirt(10)
+        end
+    end
+end
+
 function HygieneManager.consumeHygieneProduct()
     local player = getPlayer()
     local bodyDamage = player:getBodyDamage()
@@ -148,6 +177,11 @@ function HygieneManager.consumeHygieneProduct()
         current_bandageLife = groin:getBandageLife()
         groin:setBandageLife(current_bandageLife - 0.1)
         return true -- Always returns true because player could bleed to death if they have other injuries. Setting to false could remove the bandage.
+    end
+
+    if isSanitaryItemEquipped and not didConsumeSanitaryItem then
+        -- If sanitary item was equipped but not consumed, assuming it leaked and made clothes and player dirty/bloody
+        addBloodDirt(player, blood=true, dirt=true)
     end
     return false -- No sanitary item equipped and no bandage
 end
