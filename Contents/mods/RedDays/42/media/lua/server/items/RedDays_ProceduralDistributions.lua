@@ -1,7 +1,5 @@
-local spawnRateMultiplier = SandboxVars.RedDays.hygiene_item_spawn_rate_multiplier or 1
-
--- table.insert(ProceduralDistributions["list"]["BathroomCabinet"].items, "RedDays.PantyLinerBox");
--- table.insert(ProceduralDistributions["list"]["BathroomCabinet"].items, 2 * spawnRateMultiplier);
+-- local spawnRateMultiplier = SandboxVars.RedDays.hygiene_item_spawn_rate_multiplier or 1
+local spawnRateMultiplier = 1 -- Default multiplier, can't seem to load spawnrate from sandbox vars
 
 local hygieneItemPackages = {
     "RedDays.PantyLinerBox",
@@ -56,6 +54,13 @@ for distName, values in pairs(distributions) do
 end
 
 local function OnZombieDead(zombie)
+    local dropPackages = SandboxVars.RedDays.hygiene_item_packages_spawn_on_corpses
+    local dropItems = SandboxVars.RedDays.hygiene_items_spawn_on_corpses
+
+    if not dropItems and not dropPackages then
+        return
+    end
+
     if not zombie or not zombie:isFemale() then
         return
     end
@@ -67,29 +72,41 @@ local function OnZombieDead(zombie)
 
     local packagedItemChance = ZombRand(100)
     local numberOfItems = ZombRand(1, 3)
-    if ZombRand(100) >= 80 then -- 20% chance the poor soul was on their period at time of death.
-        if ZombRand(100) > 50 then -- 50% chance to drop either a pad or tampon
+    local dropChanceRoll = ZombRand(100)
+
+    if dropChanceRoll >= 90 then -- 10% chance the poor soul was on their period at time of death.
+        if ZombRand(100) > 50 and dropItems then -- 50% chance to drop either a pad or tampon
             for i = 1, numberOfItems do
                 inventory:AddItem("RedDays.Tampon")
             end
-            if packagedItemChance > 75 then -- 25% chance to drop a tampon box
+            if packagedItemChance > 95 and dropPackages then -- 5% chance to drop a tampon box
                 inventory:AddItem("RedDays.TamponBox")
             end
-        else
+        elseif dropItems then
             for i = 1, numberOfItems do
                 inventory:AddItem("RedDays.Sanitary_Pad")
             end
-            if packagedItemChance > 75 then -- 25% chance to drop a pad box
+            if packagedItemChance > 95 and dropPackages then -- 5% chance to drop a pad box
                 inventory:AddItem("RedDays.SanitaryPadBox")
             end
         end
-    else -- 80% chance to drop panty liners
-        for i = 1, numberOfItems do
-            inventory:AddItem("RedDays.Panty_Liner")
+    elseif dropChanceRoll >= 50 then -- 50% chance to drop panty liners
+        if dropItems then
+            for i = 1, numberOfItems do
+                inventory:AddItem("RedDays.Panty_Liner")
+            end
         end
-        if packagedItemChance > 95 then -- 5% chance to drop a panty liner box
+
+        if packagedItemChance > 98 and dropPackages then -- 2% chance to drop a panty liner box
             inventory:AddItem("RedDays.PantyLinerBox")
         end
+    else
+        return -- Drops nothing about 40% of the time
     end
 end
 Events.OnZombieDead.Add(OnZombieDead)
+
+-- NOTE 2025-08-07: For some reason I can't get the sandbox var before the event is added. So the condition is checked after game start and on zombie death
+-- if SandboxVars.RedDays.hygiene_items_spawn_on_corpses then
+--     Events.OnZombieDead.Add(OnZombieDead)
+-- end

@@ -1,13 +1,19 @@
 VERSION = 1,
 
-option RedDays.hygiene_item_spawn_rate_multiplier
+option RedDays.hygiene_items_spawn_on_corpses
 {
-	type = integer,
-	min = 0,
-	max = 100,
-	default = 1,
+	type = boolean,
+	default = true,
 	page = RedDays,
-	translation = RedDays_hygiene_item_spawn_rate_multiplier,
+	translation = RedDays_hygiene_items_spawn_on_corpses,
+}
+
+option RedDays.hygiene_item_packages_spawn_on_corpses
+{
+	type = boolean,
+	default = true,
+	page = RedDays,
+	translation = RedDays_hygiene_item_packages_spawn_on_corpses,
 }
 
 option RedDays.affectsAllGenders
