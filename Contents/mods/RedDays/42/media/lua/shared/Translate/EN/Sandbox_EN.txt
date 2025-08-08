@@ -13,6 +13,12 @@ Sandbox_EN = {
     Sandbox_RedDays_painkillerEffectDuration= "Painkiller Effect Duration",
     Sandbox_RedDays_painkillerEffectDuration_tooltip = "Each point is 10 mins. Default is 36x10=360 mins or 6 hours",
 
+    Sandbox_RedDays_hygiene_items_spawn_on_corpses= "Items spawn on corpses",
+    Sandbox_RedDays_hygiene_items_spawn_on_corpses_tooltip = "The idea is that female corpses would often carry 1 or 2 spares and rarely a full package",
+
+    Sandbox_RedDays_hygiene_item_packages_spawn_on_corpses= "Packages spawn on corpses",
+    Sandbox_RedDays_hygiene_item_packages_spawn_on_corpses_tooltip = "Disable to only spawn spares and no packages. Needs item spawn on corpses enabled.",
+
     Sandbox_RedDays_menstrual_cycle_duration_lowerBound = "Minimum Cycle Length",
     Sandbox_RedDays_menstrual_cycle_duration_lowerBound_tooltip = "The shortest possible length (in days) for a menstrual cycle.",
 
