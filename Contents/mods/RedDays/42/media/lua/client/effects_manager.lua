@@ -91,7 +91,6 @@ end
 local consumingDischargeItem = false
 local function consumeDischargeProduct()
     consumingDischargeItem = true
-    print("Consuming hygiene product for discharge")
     return HygieneManager:consumeDischargeProduct()
 end
 

@@ -85,7 +85,7 @@ function HygieneManager.getCurrentlyWornSanitaryItem()
     if hygieneItem then
         return hygieneItem
     end
-    return nil
+    return false
 end
 
 function HygieneManager.consumeDischargeProduct()
@@ -102,7 +102,7 @@ function HygieneManager.consumeDischargeProduct()
         baseName = itemName
     end
 
-    wasItemConsumed = false
+    local wasItemConsumed = false
     if item:getCondition() > 1 then
         wasItemConsumed = true
     end
@@ -111,7 +111,8 @@ function HygieneManager.consumeDischargeProduct()
     item:setName(baseName .. " (Dirty)")
 
     if not wasItemConsumed then
-        addBloodDirt(player, blood=false, dirt=true)
+        print("Sanitary item was not consumed, adding blood and dirt")
+        addBloodDirt(player, false, true)
     end
     return wasItemConsumed
 end
@@ -137,25 +138,33 @@ local function consumeSanitaryItem()
 end
 
 local function addBloodDirt(player, blood, dirt)
+    print("Adding Blood Dirt")
     local bodyDamage = player:getBodyDamage()
     local groin = bodyDamage:getBodyPart(BodyPartType.Groin)
 
+    print("Set Blood: " .. tostring(blood))
+    print("Set Dirt: " .. tostring(dirt))
     -- Add blood/dirt to player's body
-    if blood then
-        groin:setHaveBlood(true)
-    end
-    if dirt then
-        groin:setHaveDirt(true)
-    end
+    -- if blood then
+    --     print("Adding Blood to Groin")
+    --     groin:setHaveBlood(true)
+    -- end
+    -- if dirt then
+    --     print("Adding Dirt to Groin")
+    --     groin:setHaveDirt(true)
+    -- end
 
     -- Add blood/dirt to clothing worn at the groin
     local wornItems = player:getWornItems()
     local groinClothing = wornItems:getItem("Groin")
+    print("Groin Clothing: ", groinClothing)
     if groinClothing then
         if blood then
+            print("Adding Blood to Groin Clothing")
             groinClothing:addBlood(10)
         end
         if dirt then
+            print("Adding Dirt to Groin Clothing")
             groinClothing:addDirt(10)
         end
     end
@@ -179,9 +188,11 @@ function HygieneManager.consumeHygieneProduct()
         return true -- Always returns true because player could bleed to death if they have other injuries. Setting to false could remove the bandage.
     end
 
-    if isSanitaryItemEquipped and not didConsumeSanitaryItem then
-        -- If sanitary item was equipped but not consumed, assuming it leaked and made clothes and player dirty/bloody
-        addBloodDirt(player, blood=true, dirt=true)
+    print("Value didConsumeSanitaryItem: " .. tostring(didConsumeSanitaryItem))
+    if not didConsumeSanitaryItem then
+        -- If sanitary item was not consumed, assuming it leaked and made clothes and player dirty/bloody
+        print("Sanitary item was not consumed, adding blood and dirt")
+        addBloodDirt(player, true, true)
     end
     return false -- No sanitary item equipped and no bandage
 end
