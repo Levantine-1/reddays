@@ -56,6 +56,9 @@ Pre-Menstrual Symptoms
 Not wearing hyginene items increases "dirtiness/bloodiness" for certain clothing locations
 - Potential for interaction with other mods that have dirt/blood attracts zombies
 
+Moodles
+    - Moodles reminding players to change out products
+
 Traits:
 - Hygiene product consumption and stat decrement rates vary by cycle trait:
 - Light, Normal, Heavy Cycle Traits
