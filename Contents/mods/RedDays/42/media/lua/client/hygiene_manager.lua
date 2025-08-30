@@ -110,10 +110,11 @@ function HygieneManager.consumeDischargeProduct()
     item:setCondition(1)
     item:setName(baseName .. " (Dirty)")
 
-    if not wasItemConsumed then
-        print("Sanitary item was not consumed, adding blood and dirt")
-        addBloodDirt(player, false, true)
-    end
+    -- NOTE: 2025-08-30 I've given up on trying to add blood to player clothes and body at this time. Uncomment the addBloodToClothes function to continue later
+    -- if not wasItemConsumed then
+    --     print("Sanitary item was not consumed, adding blood to player clothes and body")
+    --     addBloodToClothes(player, false, true)
+    -- end
     return wasItemConsumed
 end
 
@@ -137,38 +138,48 @@ local function consumeSanitaryItem()
     return isSanitaryItemEquipped, didConsumeSanitaryItem
 end
 
-local function addBloodDirt(player, blood, dirt)
-    print("Adding Blood Dirt")
-    local bodyDamage = player:getBodyDamage()
-    local groin = bodyDamage:getBodyPart(BodyPartType.Groin)
+-- local function addBloodToClothes(player, blood, dirt)
+--     print("Adding Blood To Clothes")
+--     local bodyDamage = player:getBodyDamage()
+--     local groin = bodyDamage:getBodyPart(BodyPartType.Groin)
 
-    print("Set Blood: " .. tostring(blood))
-    print("Set Dirt: " .. tostring(dirt))
-    -- Add blood/dirt to player's body
-    -- if blood then
-    --     print("Adding Blood to Groin")
-    --     groin:setHaveBlood(true)
-    -- end
-    -- if dirt then
-    --     print("Adding Dirt to Groin")
-    --     groin:setHaveDirt(true)
-    -- end
+--     local msg = "Set Blood: " .. tostring(blood) .. "Set Blood: " .. tostring(blood) .. ", Set Dirt: " .. tostring(dirt)
+--     print(msg)
+--     local wornItems = player:getWornItems()
 
-    -- Add blood/dirt to clothing worn at the groin
-    local wornItems = player:getWornItems()
-    local groinClothing = wornItems:getItem("Groin")
-    print("Groin Clothing: ", groinClothing)
-    if groinClothing then
-        if blood then
-            print("Adding Blood to Groin Clothing")
-            groinClothing:addBlood(10)
-        end
-        if dirt then
-            print("Adding Dirt to Groin Clothing")
-            groinClothing:addDirt(10)
-        end
-    end
-end
+--     -- These body locations not valid locations to add/blood dirt even though it would make sense
+--     -- "UnderwearBottom", "Underwear", "UnderwearExtra1", "UnderwearExtra2", "Legs1", "Legs5", "PantsExtra"
+
+--     -- Valid body locations for adding blood/dirt in sorted order that I thought would make sense, the idea was that if one item was full of blood, it'd leak to the next worn item.
+--     local validBodyLocations = {"Pants", "Pants_Skinny", "ShortPants", "ShortsShort", "Skirt", "LongDress", "LongSkirt"}
+--     local clothingItemToAddBlood = nil
+--     for i, location in ipairs(validBodyLocations) do
+--         local clothingItem = wornItems:getItem(location)
+--         if clothingItem and clothingItem:getBloodClothingType() then -- Check to make sure clothing item can be bloodied
+--             print(clothingItem:getName() .. " can be bloodied")
+--             clothingItemToAddBlood = clothingItem
+--             break
+--         end
+--     end
+
+--     -- Clothes can be on multiple parts of the body, so we need to figure out how to apply blood to clothes at that part
+--     -- But this is so hard to implement due to lack of clear documentation an
+--     if clothingItemToAddBlood then
+--         print(tostring(clothingItemToAddBlood) .. " selected to add blood")
+--         local bloodCoveredParts = clothingItemToAddBlood:getBloodClothingType()
+--         print("bloodCoveredParts: " .. tostring(bloodCoveredParts))
+--         if bloodCoveredParts then
+--             print("bloodCoveredParts size: " .. tostring(bloodCoveredParts:size()))
+--             for i = 0, bloodCoveredParts:size() - 1 do
+--                 local part = bloodCoveredParts:get(i)
+--                 local bloodValue = clothingItemToAddBlood:getBlood(part)
+--                 print("Covered part: " .. tostring(part) .. ", blood value: " .. tostring(bloodValue))
+--             end
+--         else
+--             print("No covered parts found for this clothing item.")
+--         end
+--     end
+-- end
 
 function HygieneManager.consumeHygieneProduct()
     local player = getPlayer()
@@ -188,12 +199,12 @@ function HygieneManager.consumeHygieneProduct()
         return true -- Always returns true because player could bleed to death if they have other injuries. Setting to false could remove the bandage.
     end
 
-    print("Value didConsumeSanitaryItem: " .. tostring(didConsumeSanitaryItem))
-    if not didConsumeSanitaryItem then
-        -- If sanitary item was not consumed, assuming it leaked and made clothes and player dirty/bloody
-        print("Sanitary item was not consumed, adding blood and dirt")
-        addBloodDirt(player, true, true)
-    end
+    -- print("Value didConsumeSanitaryItem: " .. tostring(didConsumeSanitaryItem))
+    -- if not didConsumeSanitaryItem then
+    --     -- If sanitary item was not consumed, assuming it leaked and made clothes and player dirty/bloody
+    --     print("Sanitary item was not consumed, adding blood to player clothes and body")
+    --     addBloodToClothes(player, true, true)
+    -- end
     return false -- No sanitary item equipped and no bandage
 end
 
