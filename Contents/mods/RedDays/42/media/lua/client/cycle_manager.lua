@@ -117,7 +117,7 @@ function CycleManager.newCycle(whoDidThis)
             local luteal_start_day = follicular_duration + ovulation_duration + offset
             local luteal_duration = cycle_duration - follicular_duration - ovulation_duration
 
-            local stiffness_target = 100
+            local stiffness_target = 50
             local stiffness_increment = 2
             local discomfort_target = ZombRand(25,100)
             local endurance_decrement = 0.0005
