@@ -93,6 +93,10 @@ function CycleManager.newCycle(whoDidThis)
             print("Cycle start will be delayed by " .. timeToDelaycycle .. " days.")
             modData.ICdata.cycleDelayed = true -- Only run this once per life time.
         end
+        print("DELAY TEST")
+        print(tostring(cycleDelayed) .. " is the value for cycle delayed")
+        print(ranges.phase_start_delay_enabled .. " is the value for phase start delay enabled")
+        print(tostring(timeToDelaycycle) .. " is the value for time to delay cycle")
 
         local cycle_duration = random_between(range_total_menstrual_cycle_duration)
 
