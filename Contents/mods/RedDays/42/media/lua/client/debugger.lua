@@ -30,6 +30,7 @@ local function PrintStatus(cycle)
 
     local currentPhase = CycleManager.getCurrentCyclePhase(cycle)
     print("Current cycle phase --------------------- " .. currentPhase)
+    print("Target Health Effect Level -------------- " .. cycle.stiffness_target)
     
     local sanitaryItem = HygieneManager.getCurrentlyWornSanitaryItem()
     if sanitaryItem then
