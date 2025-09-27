@@ -62,7 +62,7 @@ end
 
 local print_counter = 0
 local hasPrintedOnStart = false -- Don't change this one manually
-local debugPrinting = true -- Set to true to enable debug printing every 10 minutes
+local debugPrinting = false -- Set to true to enable debug printing every 10 minutes
 function CycleDebugger.printWrapper(cycle) -- Wrapper to control printing frequency when running from main function
     if debugPrinting then
         PrintStatus(cycle)

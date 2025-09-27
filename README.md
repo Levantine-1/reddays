@@ -78,18 +78,7 @@ Debuffs for insufficient hygienic care:
     - Target discomfort/strain levels
 
 ## Fixed Reported Bugs and minor feature change notes:
-- Incompatibility issue - mod conflicts with: 'organizedCategories: Core'
-    - Fixed 2025-7-11: User reporting incompatibility issue
-        The mod seems to just rename the category from Feminine Hygiene -> Clothing - Protective. Which I assume is correct behavior.
-    - Fixed 2025-7-26: While the above is correct behavior for the organizer mod, by changing the category, red days no longer reconizes a feminine hygiene items because it relies on searching equipped items by category. I've updated the way this is handled so this shouldn't affect category organiziers in the future.
-
-- Equipping a sanitary item causes the character avatar to fail to render in the character info menu.
-    - Fixed 2025-7-11: Updated clothingItems xml files to render an invisible model to address some warnings and null exceptions
-
-- Random cycle start dates for new characters
-    - 2025-26-07 Added feature to start on random dates and added respective sandbox options
-
-- 2025-26-07 Items will now spawn on zombies
+- Moved change notes to workshop page: https://steamcommunity.com/sharedfiles/filedetails/changelog/3516166810
 
 ## FAQ
 - Groin bleeding time is set to 0 and should not kill you. However upon some testing, if bleeding and if you speed up time, it might decrement some HP so be careful if low HP.
