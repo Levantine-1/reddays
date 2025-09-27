@@ -67,11 +67,13 @@ function CycleTrackerText.generateUID()
         local rand = ZombRand(#chars) + 1 -- ZombRand is 0-based, Lua strings are 1-based
         uid = uid .. chars:sub(rand, rand)
     end
+    print("Generated new journal UID - " .. tostring(uid))
     return uid
 end
 
 function CycleTrackerText.getBackPage(UID)
-    local ID_Line = "ID: " .. UID
+    print("Generating back page with UID - " .. tostring(UID))
+    local ID_Line = "ID - " .. UID
     local text_body = "Do not modify the ID or this tracker will stop updating.\
    \
  If you want to overwrite  or reuse this journal, delete all contents on this page.\

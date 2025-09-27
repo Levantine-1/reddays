@@ -63,6 +63,7 @@ function CycleTrackerLogic.getJournal(player, idSubstring, returnBlank)
 end
 
 function CycleTrackerLogic.RegisterNewJournal(player, idSubstring)
+    print("Registering new journal with ID - " .. tostring(idSubstring))
     journal = CycleTrackerLogic.getJournal(player, idSubstring, true)
     if journal then
         frontCoverData = CycleTrackerText.getFrontPage(player)
@@ -122,10 +123,14 @@ function CycleTrackerLogic.getDataCodes(cycle)
     return false
 end
 
-
 function CycleTrackerLogic.cycleTrackerMainLogic(cycle)
     local player = getPlayer()
     local playerJournalID = modData.ICdata.journalID
+    if not playerJournalID then
+        print("It appears the player has died and respawned without reloading the game. Generating a new journal ID.")
+        modData.ICdata.journalID = CycleTrackerText.generateUID()
+        playerJournalID = modData.ICdata.journalID
+    end
 
     local day = getGameTime():getDayPlusOne()
     local month = getGameTime():getMonth() + 1
