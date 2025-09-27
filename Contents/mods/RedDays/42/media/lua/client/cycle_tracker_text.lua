@@ -226,6 +226,7 @@ function CycleTrackerText.lutealPhaseDataCodes(cycle, stat)
         end
     end
 
+    -- NOTE 2025-09-27: Modify this later when adding PMS symptoms and have it correspond to health effect level
     if stat.percent_complete >= 75 then
         local extraSymptomCodes = {"A", "C", "F", "T", "Y", "U"} -- Agitated, Cramps, Fatigue, Tender Breasts, Crave Food, Sadness
         local randomSymptoms = symptomShuffle(extraSymptomCodes, 1, 3) -- returns 1 to 3 random symptoms

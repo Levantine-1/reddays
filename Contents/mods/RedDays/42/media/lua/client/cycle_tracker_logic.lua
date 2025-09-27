@@ -162,10 +162,6 @@ function CycleTrackerLogic.cycleTrackerMainLogic(cycle)
     end
 end
 
-
-
-
-
 -- Below are intercept functions that are triggered when the player interacts with hygiene items.
 
 -- If player unequips the hygiene item, inspect the item and update the cycle tracker
