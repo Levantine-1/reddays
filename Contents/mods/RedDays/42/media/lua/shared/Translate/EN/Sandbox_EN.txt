@@ -51,4 +51,10 @@ Sandbox_EN = {
 
     Sandbox_RedDays_phase_start_delay_upperBound = "Maximum First Period Delay Time",
     Sandbox_RedDays_phase_start_delay_upperBound_tooltip = "The maximum amount of days before your first period occurs.",
+
+    Sandbox_RedDays_healthEffectUpperBound = "Health Impact Upper Bound",
+    Sandbox_RedDays_healthEffectUpperBound_tooltip = "Scales the pain, discomfort, fatigue and endurance effects during your period.",
+
+    Sandbox_RedDays_healthEffectLowerBound = "Health Impact Lower Bound",
+    Sandbox_RedDays_healthEffectLowerBound_tooltip = "Scales the pain, discomfort, fatigue and endurance effects during your period.",
 }
