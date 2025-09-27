@@ -24,7 +24,7 @@ local function default_cycle() -- Default cycle values if a new cycle cannot be 
         ovulation_day = 14,
         luteal_start_day = 15,
         luteal_duration = 14,
-        stiffness_target = 100,
+        stiffness_target = 55,
         stiffness_increment = 2,
         discomfort_target = 100,
         endurance_decrement = 0.0005,
@@ -43,13 +43,15 @@ function CycleManager.sandboxValues()
     local range_ovulation_phase_duration = {sbv.ovulation_phase_duration_lowerBound, sbv.ovulation_phase_duration_upperBound}
     local range_luteal_phase_duration = {sbv.luteal_phase_duration_lowerBound, sbv.luteal_phase_duration_upperBound}
     local range_delay_duration = {sbv.phase_start_delay_lowerBound, sbv.phase_start_delay_upperBound}
+    local range_healthEffectLevel = {sbv.healthEffectLowerBound, sbv.healthEffectUpperBound}
     return {
         range_total_menstrual_cycle_duration = range_total_menstrual_cycle_duration,
         range_red_phase_duration = range_red_phase_duration,
         range_follicular_phase_duration = range_follicular_phase_duration,
         range_ovulation_phase_duration = range_ovulation_phase_duration,
         range_luteal_phase_duration = range_luteal_phase_duration,
-        range_delay_duration = range_delay_duration
+        range_delay_duration = range_delay_duration,
+        range_healthEffectLevel = range_healthEffectLevel,
     }
 end
 
@@ -61,6 +63,7 @@ function CycleManager.newCycle(whoDidThis)
     local range_ovulation_phase_duration = ranges.range_ovulation_phase_duration
     local range_luteal_phase_duration = ranges.range_luteal_phase_duration
     local range_delay_duration = ranges.range_delay_duration
+    local range_healthEffectLevel = ranges.range_healthEffectLevel
 
     -- local range_total_menstrual_cycle_duration = {28, 34}
     -- local range_red_phase_duration = {2, 5}
@@ -117,11 +120,14 @@ function CycleManager.newCycle(whoDidThis)
             local luteal_start_day = follicular_duration + ovulation_duration + offset
             local luteal_duration = cycle_duration - follicular_duration - ovulation_duration
 
-            local stiffness_target = 100
+            local healthEffectSeverity = random_between(range_healthEffectLevel) -- 0 to 100
+            local stiffness_target = healthEffectSeverity
             local stiffness_increment = 2
-            local discomfort_target = ZombRand(25,100)
-            local endurance_decrement = 0.0005
-            local fatigue_increment = 0.0001
+            local discomfort_target = healthEffectSeverity
+
+            local scaling = healthEffectSeverity / 50
+            local endurance_decrement = 0.001 * scaling
+            local fatigue_increment = 0.0002 * scaling
 
             return {
                 cycle_start_day = cycle_start_day,
