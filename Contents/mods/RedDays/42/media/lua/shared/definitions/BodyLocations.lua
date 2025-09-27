@@ -1,2 +1,3 @@
 local group = BodyLocations.getGroup("Human")
-group:getOrCreateLocation("HygieneItem")
+local bodyLocation = BodyLocation.new(group, "HygieneItem")
+group:getAllLocations():add(bodyLocation)
