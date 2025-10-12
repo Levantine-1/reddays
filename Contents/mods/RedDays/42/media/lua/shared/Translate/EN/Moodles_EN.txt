@@ -39,4 +39,5 @@ Moodles_EN {
     Moodles_Leak_Bad_desc_lvl3 = "This is not how you wanted your day to go.",
     Moodles_Leak_Bad_lvl4 = "Disaster Zone",
     Moodles_Leak_Bad_desc_lvl4 = "It’s everywhere...",
+
 }
