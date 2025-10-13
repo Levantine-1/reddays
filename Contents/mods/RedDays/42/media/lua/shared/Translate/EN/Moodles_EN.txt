@@ -2,8 +2,8 @@ Moodles_EN {
     Moodles_DirtyPantyLiner_Bad_lvl1 =         "Dirty Panty Liner",
     Moodles_DirtyPantyLiner_Bad_desc_lvl1 =    "A little too well-used for comfort.",
 
-    Moodles_BloodyPantyLiner_Bad_lvl1 =         "Leaking Panty Liner",
-    Moodles_BloodyPantyLiner_Bad_desc_lvl1 =    "Feels like wearing a wet napkin. Not recommended.",
+    Moodles_BloodyPantyLiner_Bad_lvl4 =         "Leaking Panty Liner",
+    Moodles_BloodyPantyLiner_Bad_desc_lvl4 =    "Feels like wearing a wet napkin. Not recommended.",
 
 
 
@@ -12,10 +12,12 @@ Moodles_EN {
 
     Moodles_BloodySanitaryPad_Bad_lvl1 =         "Bloody",
     Moodles_BloodySanitaryPad_Bad_desc_lvl1 =    "It’s done its job, and then some.",
-    Moodles_BloodySanitaryPad_Bad_lvl2 =         "Nearly Saturated",
-    Moodles_BloodySanitaryPad_Bad_desc_lvl2 =    "You’re one cough away from disaster.",
-    Moodles_BloodySanitaryPad_Bad_lvl3 =         "Saturated",
-    Moodles_BloodySanitaryPad_Bad_desc_lvl3 =    "You can feel it—time for a pit stop.",
+    Moodles_BloodySanitaryPad_Bad_lvl2 =         "Very Bloody",
+    Moodles_BloodySanitaryPad_Bad_desc_lvl2 =    "You’re starting to feel a little squishy.",
+    Moodles_BloodySanitaryPad_Bad_lvl3 =         "Nearly Saturated",
+    Moodles_BloodySanitaryPad_Bad_desc_lvl3 =    "You’re one cough away from disaster.",
+    Moodles_BloodySanitaryPad_Bad_lvl4 =         "Saturated",
+    Moodles_BloodySanitaryPad_Bad_desc_lvl4 =    "A damp sensation begins to spread.",
 
 
 
@@ -24,10 +26,12 @@ Moodles_EN {
 
     Moodles_BloodyTampon_Bad_lvl1 =         "Bloody",
     Moodles_BloodyTampon_Bad_desc_lvl1 =    "It’s done its job, and then some.",
-    Moodles_BloodyTampon_Bad_lvl2 =         "Nearly Saturated",
-    Moodles_BloodyTampon_Bad_desc_lvl2 =    "You’re one cough away from disaster.",
-    Moodles_BloodyTampon_Bad_lvl3 =         "Saturated",
-    Moodles_BloodyTampon_Bad_desc_lvl3 =    "You can feel it—time for a pit stop.",
+    Moodles_BloodyTampon_Bad_lvl2 =         "Very Bloody",
+    Moodles_BloodyTampon_Bad_desc_lvl2 =    "You’re starting to feel a little squishy.",
+    Moodles_BloodyTampon_Bad_lvl3 =         "Nearly Saturated",
+    Moodles_BloodyTampon_Bad_desc_lvl3 =    "You’re one cough away from disaster.",
+    Moodles_BloodyTampon_Bad_lvl4 =         "Saturated",
+    Moodles_BloodyTampon_Bad_desc_lvl4 =    "A damp sensation begins to spread.",
 
 
 
