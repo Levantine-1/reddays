@@ -16,15 +16,30 @@ local RedDaysMoodles = {}
 
 
 
-local MLevel = 0
+local MLevel = .50
 function flipFlopDebug()
     local playerNum = getPlayer():getPlayerNum()
-    local moodleName, level
-    moodleName = "DirtyPantyLiner"
 
-    print("Setting Moodle - " .. moodleName .. " to level " .. tostring(MLevel) .. " for player " .. tostring(playerNum))
-    MF.getMoodle(moodleName, playerNum):setValue(MLevel)
-    MLevel = MLevel + .05
+    print("FlipFlopDebug - setting all moodles to " .. MLevel)
+
+    MF.getMoodle("DirtyPantyLiner", playerNum):setValue(MLevel)
+    MF.getMoodle("BloodyPantyLiner", playerNum):setValue(MLevel)
+
+    MF.getMoodle("DirtySanitaryPad", playerNum):setValue(MLevel)
+    MF.getMoodle("BloodySanitaryPad", playerNum):setValue(MLevel)
+
+    MF.getMoodle("DirtyTampon", playerNum):setValue(MLevel)
+    MF.getMoodle("BloodyTampon", playerNum):setValue(MLevel)
+
+    MF.getMoodle("Leak", playerNum):setValue(MLevel)
+
+    if MLevel < 0 then
+        print("Resetting to .50")
+        MLevel = .50
+    else
+        print("Decreasing by .10")
+        MLevel = MLevel - .10
+    end
 end
 Events.EveryOneMinute.Add(flipFlopDebug)
 

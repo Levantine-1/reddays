@@ -14,7 +14,7 @@ Moodles_EN {
     Moodles_BloodySanitaryPad_Bad_desc_lvl1 =    "It’s done its job, and then some.",
     Moodles_BloodySanitaryPad_Bad_lvl2 =         "Nearly Saturated",
     Moodles_BloodySanitaryPad_Bad_desc_lvl2 =    "You’re one cough away from disaster.",
-    Moodles_BloodySanitaryPad_Bad_lvl3 =         "Saturated and Leaking",
+    Moodles_BloodySanitaryPad_Bad_lvl3 =         "Saturated",
     Moodles_BloodySanitaryPad_Bad_desc_lvl3 =    "You can feel it—time for a pit stop.",
 
 
