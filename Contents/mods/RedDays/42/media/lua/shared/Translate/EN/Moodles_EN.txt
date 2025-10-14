@@ -2,8 +2,10 @@ Moodles_EN {
     Moodles_DirtyPantyLiner_Bad_lvl1 =         "Dirty Panty Liner",
     Moodles_DirtyPantyLiner_Bad_desc_lvl1 =    "A little too well-used for comfort.",
 
+    Moodles_BloodyPantyLiner_Bad_lvl3 =         "It begins...",
+    Moodles_BloodyPantyLiner_Bad_desc_lvl3 =    "Feels like wearing a wet napkin. Not recommended.",
     Moodles_BloodyPantyLiner_Bad_lvl4 =         "Leaking Panty Liner",
-    Moodles_BloodyPantyLiner_Bad_desc_lvl4 =    "Feels like wearing a wet napkin. Not recommended.",
+    Moodles_BloodyPantyLiner_Bad_desc_lvl4 =    "A damp sensation begins to spread.",
 
 
 
