@@ -44,6 +44,9 @@
     - Writing tools aren't needed for now, but will be made necessary later.
     - If you are on a new character and delayed phase is enabled, no data will be recorded until your first period occurs. After that however, everything should work normally.
 
+- Moodles
+    - Moodles reminding players to change out products
+
 ## Planned features
 
 Feminine Hygiene products:
@@ -55,9 +58,6 @@ Pre-Menstrual Symptoms
 
 Not wearing hyginene items increases "dirtiness/bloodiness" for certain clothing locations
 - Potential for interaction with other mods that have dirt/blood attracts zombies
-
-Moodles
-    - Moodles reminding players to change out products
 
 Traits:
 - Hygiene product consumption and stat decrement rates vary by cycle trait:
@@ -81,8 +81,6 @@ Debuffs for insufficient hygienic care:
 - Moved change notes to workshop page: https://steamcommunity.com/sharedfiles/filedetails/changelog/3516166810
 
 ## FAQ
-- Groin bleeding time is set to 0 and should not kill you. However upon some testing, if bleeding and if you speed up time, it might decrement some HP so be careful if low HP.
-
 - Only female characters will experience the menstrual cycle by default, but you can enable for all genders in sandbox options
 
 - This should be safe to add mid save, however feminine hygiene items won't spawn in places you've already looted, but can spawn on corpses.
