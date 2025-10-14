@@ -10,8 +10,7 @@ local function LoadPlayerData()
     modData = player:getModData()
     modData.ICdata = modData.ICdata or {}
     modData.ICdata.LeakSwitchState = modData.ICdata.LeakSwitchState or false
-    modData.ICdata.LeakLevel = modData.ICdata.LeakLevel or 0.5
-    modData.ICdata.LeakCounter = modData.ICdata.LeakCounter or 0
+    modData.ICdata.LeakLevel = modData.ICdata.LeakLevel or 0.42
 end
 Events.OnGameStart.Add(LoadPlayerData)
 
@@ -74,17 +73,23 @@ local function getMoodleLevelForItem(moodletype, condition)
     end
 end
 
-local function updateLeakState() -- This is expected to run in the main loop which runs every in game minute
-    if modData.ICdata.LeakSwitchState then
-        if modData.ICdata.LeakLevel > 0.4 then
-            modData.ICdata.LeakLevel = 0.4 -- Leak has begun so start with level 1 moodle.
-        end
+local function getLeakDecrementValue(phase_percent_complete)
+    if (phase_percent_complete >= 0 and phase_percent_complete < 10) or (phase_percent_complete >= 85 and phase_percent_complete <= 100) then
+        return 0.001 -- Spotting
+    elseif (phase_percent_complete >= 10 and phase_percent_complete < 25) or (phase_percent_complete >= 70 and phase_percent_complete < 85) then
+        return 0.002 -- Light
+    elseif (phase_percent_complete >= 25 and phase_percent_complete < 35) or (phase_percent_complete >= 55 and phase_percent_complete < 70) then
+        return 0.003 -- Medium
+    elseif (phase_percent_complete >= 35 and phase_percent_complete < 55) then
+        return 0.007 -- Heavy
+    else
+        return 0.002 -- Fallback
+    end
+end
 
-        modData.ICdata.LeakCounter = modData.ICdata.LeakCounter + 1
-        if modData.ICdata.LeakCounter >= 30 and modData.ICdata.LeakLevel > 0 then -- Every 30 minutes increase leak level by 0.1
-            modData.ICdata.LeakCounter = 0
-            modData.ICdata.LeakLevel = modData.ICdata.LeakLevel - 0.1
-        end
+local function updateLeakState(phaseData) -- This is expected to run in the main loop which runs every in game minute
+    if modData.ICdata.LeakSwitchState then
+        modData.ICdata.LeakLevel = modData.ICdata.LeakLevel - getLeakDecrementValue(phaseData.percent_complete)
     end
     MF.getMoodle("Leak", getCurrentPlayerNum()):setValue(modData.ICdata.LeakLevel)
 end
@@ -106,18 +111,18 @@ end
 
 function mainLoop()
     local hygieneItem = getCurrentHygieneItem()
+    local phaseData = getCurrentPhaseData()
     if hygieneItem then
         local hygieneItemName = getHygieneItemName(hygieneItem)
         local hygieneItemCondition = hygieneItem:getCondition()
 
-        local phaseData = getCurrentPhaseData()
         local moodletype = getMoodleType(phaseData.phase)
         local moodleLevel = getMoodleLevelForItem(moodletype, hygieneItemCondition)
         local moodleName = moodletype .. hygieneItemName
 
         MF.getMoodle(moodleName, getCurrentPlayerNum()):setValue(moodleLevel)
     end
-    updateLeakState()
+    updateLeakState(phaseData)
 end
 Events.EveryOneMinute.Add(mainLoop)
 
@@ -146,8 +151,7 @@ end
 -- If the player washes themselves, reset the leak moodle
 local o_ISWashYourself_perform = ISWashYourself.perform
 function ISWashYourself:perform()
-    modData.ICdata.LeakLevel = 0.5
-    modData.ICdata.LeakCounter = 0
+    modData.ICdata.LeakLevel = 0.42
     o_ISWashYourself_perform(self)
 end
 
