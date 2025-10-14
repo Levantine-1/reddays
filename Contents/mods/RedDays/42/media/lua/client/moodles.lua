@@ -88,6 +88,10 @@ local function getLeakDecrementValue(phase_percent_complete)
 end
 
 local function updateLeakState(phaseData) -- This is expected to run in the main loop which runs every in game minute
+    if type(modData.ICdata.LeakLevel) ~= "number" then
+        modData.ICdata.LeakLevel = 0.42 -- If player dies and respawns, modData can get reset to nil, so reset it here if needed.
+    end
+
     if modData.ICdata.LeakSwitchState then
         modData.ICdata.LeakLevel = modData.ICdata.LeakLevel - getLeakDecrementValue(phaseData.percent_complete)
     end
