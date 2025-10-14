@@ -9,8 +9,8 @@ local function LoadPlayerData()
     local player = getPlayer()
     modData = player:getModData()
     modData.ICdata = modData.ICdata or {}
-    modData.ICdata.LeakSwitchState = modData.ICdata.LeakSwitchState or false
-    modData.ICdata.LeakLevel = modData.ICdata.LeakLevel or 0.42
+    modData.ICdata.LeakSwitchState = modData.ICdata.LeakSwitchState or false -- This value is updated by effects_manager methods
+    modData.ICdata.LeakLevel = modData.ICdata.LeakLevel or 0.42 -- 0.42 is an arbitrary value that clears the moodle, but is low enough to quickly trigger a moodle when needed.
 end
 Events.OnGameStart.Add(LoadPlayerData)
 
@@ -105,23 +105,32 @@ local function resetMoodles()
         "BloodyTampon"
     }
     for _, name in ipairs(moodleNames) do
-        MF.getMoodle(name, playerNum):setValue(0.5)
+        MF.getMoodle(name, playerNum):setValue(0.42)
     end
+end
+
+local function setHygieneMoodle(hygieneItem, phaseData)
+    local hygieneItemName = getHygieneItemName(hygieneItem)
+    local hygieneItemCondition = hygieneItem:getCondition()
+    local moodletype = getMoodleType(phaseData.phase)
+    local moodleLevel = getMoodleLevelForItem(moodletype, hygieneItemCondition)
+    local moodleName = moodletype .. hygieneItemName
+    MF.getMoodle(moodleName, getCurrentPlayerNum()):setValue(moodleLevel)
 end
 
 function mainLoop()
     local hygieneItem = getCurrentHygieneItem()
     local phaseData = getCurrentPhaseData()
+
     if hygieneItem then
-        local hygieneItemName = getHygieneItemName(hygieneItem)
-        local hygieneItemCondition = hygieneItem:getCondition()
+        if phaseData.phase == "redPhase" then
+            setHygieneMoodle(hygieneItem, phaseData)
 
-        local moodletype = getMoodleType(phaseData.phase)
-        local moodleLevel = getMoodleLevelForItem(moodletype, hygieneItemCondition)
-        local moodleName = moodletype .. hygieneItemName
-
-        MF.getMoodle(moodleName, getCurrentPlayerNum()):setValue(moodleLevel)
+        elseif hygieneItem:getCondition() == 1 then
+            setHygieneMoodle(hygieneItem, phaseData)
+        end
     end
+
     updateLeakState(phaseData)
 end
 Events.EveryOneMinute.Add(mainLoop)
@@ -151,7 +160,7 @@ end
 -- If the player washes themselves, reset the leak moodle
 local o_ISWashYourself_perform = ISWashYourself.perform
 function ISWashYourself:perform()
-    modData.ICdata.LeakLevel = 0.42
+    modData.ICdata.LeakLevel = 0.42 -- 0.42 is an arbitrary value that clears the moodle, but is low enough to quickly trigger a moodle when needed.
     o_ISWashYourself_perform(self)
 end
 
