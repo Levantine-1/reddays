@@ -75,22 +75,17 @@ local function getMoodleLevelForItem(moodletype, condition)
 end
 
 local function updateLeakState() -- This is expected to run in the main loop which runs every in game minute
-    print("Leak switch state - " .. tostring(modData.ICdata.LeakSwitchState))
-    print("Leak level - " .. tostring(modData.ICdata.LeakLevel))
-    print("Leak counter - " .. tostring(modData.ICdata.LeakCounter))
-
     if modData.ICdata.LeakSwitchState then
         if modData.ICdata.LeakLevel > 0.4 then
             modData.ICdata.LeakLevel = 0.4 -- Leak has begun so start with level 1 moodle.
         end
 
         modData.ICdata.LeakCounter = modData.ICdata.LeakCounter + 1
-        if modData.ICdata.LeakCounter >= 5 and modData.ICdata.LeakLevel > 0 then -- Every 30 minutes increase leak level by 0.1
+        if modData.ICdata.LeakCounter >= 30 and modData.ICdata.LeakLevel > 0 then -- Every 30 minutes increase leak level by 0.1
             modData.ICdata.LeakCounter = 0
             modData.ICdata.LeakLevel = modData.ICdata.LeakLevel - 0.1
         end
     end
-    print("Leak moodle")
     MF.getMoodle("Leak", getCurrentPlayerNum()):setValue(modData.ICdata.LeakLevel)
 end
 
@@ -133,7 +128,6 @@ Events.EveryOneMinute.Add(mainLoop)
 local o_ISUnequipAction_perform = ISUnequipAction.perform
 function ISUnequipAction:perform()
     if self.item:getBodyLocation() == "HygieneItem" then
-        print("Resetting moodles due to unequip")
         resetMoodles()
     end
     o_ISUnequipAction_perform(self)
@@ -143,10 +137,18 @@ end
 local o_ISWearClothing_perform = ISWearClothing.perform
 function ISWearClothing:perform()
     if self.item:getBodyLocation() == "HygieneItem" then
-        print("Resetting moodles due to equipping a new hygiene item")
         resetMoodles()
     end
     o_ISWearClothing_perform(self)
+end
+
+
+-- If the player washes themselves, reset the leak moodle
+local o_ISWashYourself_perform = ISWashYourself.perform
+function ISWashYourself:perform()
+    modData.ICdata.LeakLevel = 0.5
+    modData.ICdata.LeakCounter = 0
+    o_ISWashYourself_perform(self)
 end
 
 return moodles
