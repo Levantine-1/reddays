@@ -3,7 +3,17 @@ require "MF_ISMoodle"
 require "RedDays/hygiene_manager"
 require "RedDays/cycle_manager"
 
-local RedDaysMoodles = {}
+local moodles = {}
+
+local function LoadPlayerData()
+    local player = getPlayer()
+    modData = player:getModData()
+    modData.ICdata = modData.ICdata or {}
+    modData.ICdata.LeakSwitchState = modData.ICdata.LeakSwitchState or false
+    modData.ICdata.LeakLevel = modData.ICdata.LeakLevel or 0.5
+    modData.ICdata.LeakCounter = modData.ICdata.LeakCounter or 0
+end
+Events.OnGameStart.Add(LoadPlayerData)
 
 MF.createMoodle("DirtyPantyLiner");
 MF.createMoodle("BloodyPantyLiner");
@@ -17,13 +27,8 @@ MF.createMoodle("BloodyTampon");
 MF.createMoodle("Leak");
 
 
--- Moodle level is a float value between 0 and 1 where 0 is worst moodle state and 1 is best moodle state and .5 is neutral
-function RedDaysMoodles.setMoodle(name, level, playerID)
-    MF.getMoodle(name, playerID):setValue(level)
-end
-
 -- Determine if player bathed based on clothes/body dirtiness/bloody
-function getMoodleLevel(hygieneItemCondition)
+local function getMoodleLevel(hygieneItemCondition)
     local moodleLevel = 0.5
     if hygieneItemCondition == 4 then
         moodleLevel = 0.4
@@ -69,6 +74,26 @@ local function getMoodleLevelForItem(moodletype, condition)
     end
 end
 
+local function updateLeakState() -- This is expected to run in the main loop which runs every in game minute
+    print("Leak switch state - " .. tostring(modData.ICdata.LeakSwitchState))
+    print("Leak level - " .. tostring(modData.ICdata.LeakLevel))
+    print("Leak counter - " .. tostring(modData.ICdata.LeakCounter))
+
+    if modData.ICdata.LeakSwitchState then
+        if modData.ICdata.LeakLevel > 0.4 then
+            modData.ICdata.LeakLevel = 0.4 -- Leak has begun so start with level 1 moodle.
+        end
+
+        modData.ICdata.LeakCounter = modData.ICdata.LeakCounter + 1
+        if modData.ICdata.LeakCounter >= 5 and modData.ICdata.LeakLevel > 0 then -- Every 30 minutes increase leak level by 0.1
+            modData.ICdata.LeakCounter = 0
+            modData.ICdata.LeakLevel = modData.ICdata.LeakLevel - 0.1
+        end
+    end
+    print("Leak moodle")
+    MF.getMoodle("Leak", getCurrentPlayerNum()):setValue(modData.ICdata.LeakLevel)
+end
+
 local function resetMoodles()
     local playerNum = getCurrentPlayerNum()
     local moodleNames = {
@@ -85,28 +110,19 @@ local function resetMoodles()
 end
 
 function mainLoop()
-    print("RedDaysMoodles.mainLoop")
     local hygieneItem = getCurrentHygieneItem()
-    if not hygieneItem then
-        print("No hygiene item found.")
-        return
+    if hygieneItem then
+        local hygieneItemName = getHygieneItemName(hygieneItem)
+        local hygieneItemCondition = hygieneItem:getCondition()
+
+        local phaseData = getCurrentPhaseData()
+        local moodletype = getMoodleType(phaseData.phase)
+        local moodleLevel = getMoodleLevelForItem(moodletype, hygieneItemCondition)
+        local moodleName = moodletype .. hygieneItemName
+
+        MF.getMoodle(moodleName, getCurrentPlayerNum()):setValue(moodleLevel)
     end
-
-    print("Hygiene item found")
-    local playerNum = getCurrentPlayerNum()
-    local hygieneItemCondition = hygieneItem:getCondition()
-    local hygieneItemName = getHygieneItemName(hygieneItem)
-    print("Hygiene Item - " .. hygieneItemName .. " Condition - " .. hygieneItemCondition)
-
-    local phaseData = getCurrentPhaseData()
-    print("Current phase: " .. tostring(phaseData.phase) .. " Time remaining: " .. tostring(phaseData.time_remaining) .. " Percent complete: " .. tostring(phaseData.percent_complete))
-
-    local moodletype = getMoodleType(phaseData.phase)
-    local moodleLevel = getMoodleLevelForItem(moodletype, hygieneItemCondition)
-    local moodleName = moodletype .. hygieneItemName
-
-    print("Setting moodle - " .. moodleName .. " to level - " .. moodleLevel)
-    MF.getMoodle(moodleName, playerNum):setValue(moodleLevel)
+    updateLeakState()
 end
 Events.EveryOneMinute.Add(mainLoop)
 
@@ -133,4 +149,4 @@ function ISWearClothing:perform()
     o_ISWearClothing_perform(self)
 end
 
-return RedDaysMoodles
+return moodles

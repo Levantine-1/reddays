@@ -1,4 +1,5 @@
 require "RedDays/hygiene_manager"
+require "RedDays/moodles"
 
 EffectsManager = {}
 
@@ -49,8 +50,12 @@ local function stat_Adjustment()
 
     local cycle = modData.ICdata.currentCycle -- The event system calls the function with no arguments, so cycle is nil, so that's why it's set here
 
-    if not HygieneManager:consumeHygieneProduct() then
-        groin:setBleeding(true)
+    if HygieneManager:consumeHygieneProduct() then
+        -- groin:setBleeding(false)
+        modData.ICdata.LeakSwitchState = false
+    elseif not HygieneManager:consumeHygieneProduct() then
+        -- groin:setBleeding(true)
+        modData.ICdata.LeakSwitchState = true
     end
 
     if pill_effect_active then
@@ -103,7 +108,8 @@ local function stopGroinBleeding()
     local groin = bodyDamage:getBodyPart(BodyPartType.Groin)
     local bleedingTime = groin:getBleedingTime()
     if bleedingTime == 0 then -- Clear bleeding if no wounds. Cycle generates bleeding time of 0, so assumed no wounds.
-        groin:setBleeding(false)
+        -- groin:setBleeding(false)
+        modData.ICdata.LeakSwitchState = false
     end
 end
 
