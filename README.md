@@ -64,7 +64,8 @@ Traits:
 - Light, Normal, Heavy Cycle Traits
 - Right now player starts on red day, but eventually a different start date could be a trait
 - Endometriosis by popular request
-- Health affects menstrual cycle
+
+Health affects menstrual cycle
     - Severe underweight/malnutrition can stop the cycle
     - Severe stress can alter the cycle
 
