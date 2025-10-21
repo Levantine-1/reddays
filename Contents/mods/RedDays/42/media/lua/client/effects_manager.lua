@@ -6,9 +6,7 @@ EffectsManager = {}
 local pill_effect_counter_max = SandboxVars.RedDays.painkillerEffectDuration or 36
 local pill_recently_taken = false
 local function takePillsStiffness()
-    print("Current pill effect counter: " .. pill_effect_counter)
 	if pill_effect_counter < pill_effect_counter_max then -- Pills are effective for 6 hours (36 * 10 = 360 minutes)
-		print("Incrementing pill effect counter")
         pill_effect_counter = pill_effect_counter + 1
         modData.ICdata.pill_effect_counter = pill_effect_counter -- Saving the counter here is fine because it only saves every 10 minutes``
 	else
@@ -17,7 +15,6 @@ local function takePillsStiffness()
         modData.ICdata.pill_effect_active = pill_effect_active -- Save the pill effect state
         pill_effect_counter = 0
         modData.ICdata.pill_effect_counter = pill_effect_counter -- Reset the counter
-        print("Painkiller effect has worn off.")
 		return
 	end
 end
@@ -32,7 +29,6 @@ function ISTakePillAction:perform()
         modData.ICdata.pill_effect_active = pill_effect_active -- Save the pill effect state
         pill_recently_taken = true
 		Events.EveryTenMinutes.Add(takePillsStiffness)
-        print("Just took a pill, painkiller effect is now active.")
 	end
 	o_ISTakePillAction_perform(self)
 end
@@ -119,7 +115,6 @@ function EffectsManager.determineEffects(cycle)
         if not player:isFemale() then
             if stat_Adjustment_isEnabled then
                 Events.EveryOneMinute.Remove(stat_Adjustment)
-                print("Disabling stat adjustment for non female player")
             end
             return
         end
@@ -129,24 +124,20 @@ function EffectsManager.determineEffects(cycle)
 
     if current_phase == "redPhase" then
         if not stat_Adjustment_isEnabled then
-            print("Red phase has begun, applying debuffs")
             Events.EveryOneMinute.Add(stat_Adjustment)
         end
         if consumingDischargeItem then
-            print("Stopping to consume hygiene product for discharge")
             Events.EveryDays.Remove(consumeDischargeProduct)
             consumingDischargeItem = false
         end
     else
         if stat_Adjustment_isEnabled then
             Events.EveryOneMinute.Remove(stat_Adjustment)
-            print("Red phase has ended, removing debuffs")
             stopGroinBleeding() -- Stop bleeding if it was caused by the red phase
         end
         stat_Adjustment_isEnabled = false
 
         if not consumingDischargeItem then
-            print("Starting to consume hygiene product for discharge")
             Events.EveryDays.Add(consumeDischargeProduct)
             consumingDischargeItem = true
         end
