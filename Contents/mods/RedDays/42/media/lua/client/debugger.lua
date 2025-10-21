@@ -44,7 +44,7 @@ local function PrintStatus(cycle)
     if phaseStatus then
         print("Phase Status ---------------------------- " .. phaseStatus.phase)
         print("Time remaining in current phase --------- " .. phaseStatus.time_remaining .. " days")
-        print("Percentage complete --------------------- " .. phaseStatus.percent_complete .. "%")
+        print("Phase percent complete ------------------ " .. phaseStatus.percent_complete .. "%")
     else
         print("No valid phase status found for the current cycle.")
     end
@@ -55,6 +55,12 @@ local function PrintStatus(cycle)
     else
         print("No data codes available for the current cycle phase.")
     end
+    print("PMS Symptom - Agitation ----------------- " .. tostring(cycle.pms_agitation))
+    print("PMS Symptom - Cramps -------------------- " .. tostring(cycle.pms_cramps))
+    print("PMS Symptom - Fatigue ------------------- " .. tostring(cycle.pms_fatigue))
+    print("PMS Symptom - Tender Breasts ------------ " .. tostring(cycle.pms_tenderBreasts))
+    print("PMS Symptom - Crave Food ---------------- " .. tostring(cycle.pms_craveFood))
+    print("PMS Symptom - Sadness ------------------- " .. tostring(cycle.pms_Sadness))
     print("This log output was formatted to be read in a separate terminal window with a monospace font, not the in-game console.")
     print("==========================================================================================")
 end
@@ -62,7 +68,7 @@ end
 
 local print_counter = 0
 local hasPrintedOnStart = false -- Don't change this one manually
-local debugPrinting = false -- Set to true to enable debug printing every 10 minutes
+local debugPrinting = true -- Set to true to enable debug printing every 10 minutes
 function CycleDebugger.printWrapper(cycle) -- Wrapper to control printing frequency when running from main function
     if debugPrinting then
         PrintStatus(cycle)

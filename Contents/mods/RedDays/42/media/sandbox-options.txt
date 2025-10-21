@@ -32,60 +32,12 @@ option RedDays.phase_start_delay_enabled
 	translation = RedDays_phase_start_delay_enabled,
 }
 
-option RedDays.PMS_RandomSymptomsPerCycle
+option RedDays.PMS_ConsistentVsRandom
 {
 	type = boolean,
 	default = true,
 	page = RedDays,
-	translation = PMS_RandomSymptomsPerCycle,
-}
-
-option RedDays.PMS_CONFIG_Agitation
-{
-	type = boolean,
-	default = true,
-	page = RedDays,
-	translation = PMS_CONFIG_Agitation,
-}
-
-option RedDays.PMS_CONFIG_Cramps
-{
-	type = boolean,
-	default = true,
-	page = RedDays,
-	translation = PMS_CONFIG_Cramps,
-}
-
-option RedDays.PMS_CONFIG_Fatigue
-{
-	type = boolean,
-	default = true,
-	page = RedDays,
-	translation = PMS_CONFIG_Fatigue,
-}
-
-option RedDays.PMS_CONFIG_TenderBreasts
-{
-	type = boolean,
-	default = true,
-	page = RedDays,
-	translation = PMS_CONFIG_TenderBreasts,
-}
-
-option RedDays.PMS_CONFIG_CraveFood
-{
-	type = boolean,
-	default = true,
-	page = RedDays,
-	translation = PMS_CONFIG_CraveFood,
-}
-
-option RedDays.PMS_CONFIG_Sadness
-{
-	type = boolean,
-	default = true,
-	page = RedDays,
-	translation = PMS_CONFIG_Sadness,
+	translation = RedDays_PMS_ConsistentVsRandom,
 }
 
 option RedDays.painkillerEffectDuration
@@ -173,7 +125,7 @@ option RedDays.ovulation_phase_duration_upperBound
 	type = integer,
 	min = -100,
 	max = 100,
-	default = 1,
+	default = 2,
 	page = RedDays,
 	translation = RedDays_ovulation_phase_duration_upperBound,
 }

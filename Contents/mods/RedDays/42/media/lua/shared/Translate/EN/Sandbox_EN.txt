@@ -13,26 +13,8 @@ Sandbox_EN = {
     Sandbox_RedDays_phase_start_delay_enabled = "Randomize menstrual start date",
     Sandbox_RedDays_phase_start_delay_enabled_tooltip = "This is mainly for newly spawned players so players don't always start on the menstrual phase.",
 
-    Sandbox_RedDays_PMS_RandomSymptomsPerCycle = "Random PMS symptoms each cycle",
-    Sandbox_RedDays_PMS_RandomSymptomsPerCycle_tooltip = "Enable to randomize which PMS symptoms appear each cycle.",
-
-    Sandbox_RedDays_PMS_CONFIG_Agitation = "PMS: Agitation",
-    Sandbox_RedDays_PMS_CONFIG_Agitation_tooltip = "Enable agitation as a possible PMS symptom.",
-
-    Sandbox_RedDays_PMS_CONFIG_Cramps = "PMS: Cramps",
-    Sandbox_RedDays_PMS_CONFIG_Cramps_tooltip = "Enable cramps as a possible PMS symptom.",
-
-    Sandbox_RedDays_PMS_CONFIG_Fatigue = "PMS: Fatigue",
-    Sandbox_RedDays_PMS_CONFIG_Fatigue_tooltip = "Enable fatigue as a possible PMS symptom.",
-
-    Sandbox_RedDays_PMS_CONFIG_TenderBreasts = "PMS: Tender Breasts",
-    Sandbox_RedDays_PMS_CONFIG_TenderBreasts_tooltip = "Enable breast tenderness as a possible PMS symptom.",
-
-    Sandbox_RedDays_PMS_CONFIG_CraveFood = "PMS: Food Cravings",
-    Sandbox_RedDays_PMS_CONFIG_CraveFood_tooltip = "Enable craving specific foods as a possible PMS symptom.",
-
-    Sandbox_RedDays_PMS_CONFIG_Sadness = "PMS: Sadness",
-    Sandbox_RedDays_PMS_CONFIG_Sadness_tooltip = "Enable feelings of sadness as a possible PMS symptom.",
+    Sandbox_RedDays_PMS_ConsistentVsRandom = "Consistent/Random PMS symptoms",
+    Sandbox_RedDays_PMS_ConsistentVsRandom_tooltip = "Enable for consistent PMS symptoms every cycle. The symptoms are randomly assigned at character creation. Disable for random PMS symptoms every cycle.",
 
     Sandbox_RedDays_painkillerEffectDuration = "Painkiller Effect Duration",
     Sandbox_RedDays_painkillerEffectDuration_tooltip = "Each point is 10 mins. Default is 36x10=360 mins or 6 hours",

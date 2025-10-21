@@ -5,6 +5,7 @@ local function LoadPlayerData()
     modData = player:getModData()
     modData.ICdata = modData.ICdata or {}
     cycleDelayed = modData.ICdata.cycleDelayed or false
+    PMS_Symptoms = modData.ICdata.pmsSymptoms or CycleManager.generateRandomPMSsymptoms()
 end
 Events.OnGameStart.Add(LoadPlayerData)
 
@@ -30,7 +31,13 @@ local function default_cycle() -- Default cycle values if a new cycle cannot be 
         endurance_decrement = 0.0005,
         fatigue_increment = 0.0001,
         reason_for_cycle = "defaultCycle",
-        timeToDelaycycle = 0
+        timeToDelaycycle = 0,
+        pms_agitation = false,
+        pms_cramps = true,
+        pms_fatigue = true,
+        pms_tenderBreasts = true,
+        pms_craveFood = true,
+        pms_Sadness = false
     }
 end
 
@@ -54,6 +61,66 @@ function CycleManager.sandboxValues()
         range_healthEffectLevel = range_healthEffectLevel,
     }
 end
+
+function CycleManager.generateRandomPMSsymptoms()
+    local symptoms = {
+        { key = "pms_agitation",     chance = 35 },
+        { key = "pms_cramps",        chance = 75 },
+        { key = "pms_fatigue",       chance = 70 },
+        { key = "pms_tenderBreasts", chance = 60 },
+        { key = "pms_craveFood",     chance = 55 },
+        { key = "pms_Sadness",       chance = 45 },
+    }
+
+    local result = {}
+    local trues = {}
+
+    for _, s in ipairs(symptoms) do
+        local ok = (ZombRand(100) < s.chance)
+        result[s.key] = ok
+        if ok then table.insert(trues, s.key) end
+    end
+    -- Ensure at most 4 true values by randomly turning extras off
+    while #trues > 4 do
+        local pick = ZombRand(#trues) + 1 -- ZombRand(n) yields 0..n-1
+        local key = table.remove(trues, pick)
+        result[key] = false
+    end
+    return result
+end
+
+
+function CycleManager.getPMSymptoms()
+    PMS_Symptoms = modData.ICdata.pmsSymptoms or CycleManager.generateRandomPMSsymptoms() -- Use symptoms assigned at character creation
+    local pms_agitation = PMS_Symptoms.pms_agitation
+    local pms_cramps = PMS_Symptoms.pms_cramps
+    local pms_fatigue = PMS_Symptoms.pms_fatigue
+    local pms_tenderBreasts = PMS_Symptoms.pms_tenderBreasts
+    local pms_craveFood = PMS_Symptoms.pms_craveFood
+    local pms_Sadness = PMS_Symptoms.pms_Sadness
+
+    local sbv = SandboxVars.RedDays
+    if sbv.PMS_ConsistentVsRandom == false then
+        random_pms_symptoms = CycleManager.generateRandomPMSsymptoms()
+        pms_agitation = random_pms_symptoms.pms_agitation
+        pms_cramps = random_pms_symptoms.pms_cramps
+        pms_fatigue = random_pms_symptoms.pms_fatigue
+        pms_tenderBreasts = random_pms_symptoms.pms_tenderBreasts
+        pms_craveFood = random_pms_symptoms.pms_craveFood
+        pms_Sadness = random_pms_symptoms.pms_Sadness
+    end
+
+    local symptoms = {
+        pms_agitation = pms_agitation,
+        pms_cramps = pms_cramps,
+        pms_fatigue = pms_fatigue,
+        pms_tenderBreasts = pms_tenderBreasts,
+        pms_craveFood = pms_craveFood,
+        pms_Sadness = pms_Sadness
+    }
+    return symptoms
+end
+
 
 function CycleManager.newCycle(whoDidThis)
     local ranges = CycleManager.sandboxValues()
@@ -129,6 +196,8 @@ function CycleManager.newCycle(whoDidThis)
             local endurance_decrement = 0.001 * scaling
             local fatigue_increment = 0.0002 * scaling
 
+            local pms_symptoms = CycleManager.getPMSymptoms()
+
             return {
                 cycle_start_day = cycle_start_day,
                 cycle_duration = cycle_duration,
@@ -146,7 +215,13 @@ function CycleManager.newCycle(whoDidThis)
                 endurance_decrement = endurance_decrement,
                 fatigue_increment = fatigue_increment,
                 reason_for_cycle = whoDidThis, -- This is used for debugging purposes to know what generated the cycle, for example on game load, no message is printed.
-                timeToDelaycycle = timeToDelaycycle
+                timeToDelaycycle = timeToDelaycycle,
+                pms_agitation = pms_symptoms.pms_agitation,
+                pms_cramps = pms_symptoms.pms_cramps,
+                pms_fatigue = pms_symptoms.pms_fatigue,
+                pms_tenderBreasts = pms_symptoms.pms_tenderBreasts,
+                pms_craveFood = pms_symptoms.pms_craveFood,
+                pms_Sadness = pms_symptoms.pms_Sadness
             }
         end
     end
