@@ -155,6 +155,21 @@ local function symptomShuffle(possibleValues, valuesToReturnLowerBound, valuesTo
     return result
 end
 
+local PMS_CODE_MAP = {
+    pms_agitation      = "A",
+    pms_cramps         = "C",
+    pms_fatigue        = "F",
+    pms_tenderBreasts  = "T",
+    pms_craveFood      = "Y",
+    pms_Sadness        = "U",
+}
+
+local function addPMSdatacodes(datacodes, cycle)
+    for key, code in pairs(PMS_CODE_MAP) do
+        if cycle[key] then table.insert(datacodes, code) end
+    end
+end
+
 function CycleTrackerText.redPhaseDataCodes(cycle, stat)
     local datacodes = {}
     local statusMap = {
@@ -173,11 +188,7 @@ function CycleTrackerText.redPhaseDataCodes(cycle, stat)
         end
     end
 
-    local extraSymptomCodes = {"A", "C", "F"} -- Agitated, Cramps, Fatigue
-    local randomSymptoms = symptomShuffle(extraSymptomCodes, 1, 3) -- returns 1 to 3 random symptoms
-    for _, code in ipairs(randomSymptoms) do
-        table.insert(datacodes, code)
-    end
+    addPMSdatacodes(datacodes, cycle)
 
     return datacodes
 end
@@ -218,7 +229,7 @@ function CycleTrackerText.lutealPhaseDataCodes(cycle, stat)
     local validDischargeCodes = {"Dc", "Dcw"}
     local randomDischargeCode = validDischargeCodes[ZombRand(#validDischargeCodes) + 1]
     local statusMap = {
-                        {threshold = 75, code = randomDischargeCode},
+                        {threshold = 85, code = randomDischargeCode},
                         {threshold = 100, code = "D"}, -- Starting to menstruate
                     }
     for _, entry in ipairs(statusMap) do
@@ -228,13 +239,8 @@ function CycleTrackerText.lutealPhaseDataCodes(cycle, stat)
         end
     end
 
-    -- NOTE 2025-09-27: Modify this later when adding PMS symptoms and have it correspond to health effect level
-    if stat.percent_complete >= 75 then
-        local extraSymptomCodes = {"A", "C", "F", "T", "Y", "U"} -- Agitated, Cramps, Fatigue, Tender Breasts, Crave Food, Sadness
-        local randomSymptoms = symptomShuffle(extraSymptomCodes, 1, 3) -- returns 1 to 3 random symptoms
-        for _, code in ipairs(randomSymptoms) do
-            table.insert(datacodes, code)
-        end
+    if stat.percent_complete >= 85 then
+        addPMSdatacodes(datacodes, cycle)
     end
     return datacodes
 end

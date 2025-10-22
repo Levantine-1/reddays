@@ -35,8 +35,8 @@ local function default_cycle() -- Default cycle values if a new cycle cannot be 
         pms_agitation = false,
         pms_cramps = true,
         pms_fatigue = true,
-        pms_tenderBreasts = true,
-        pms_craveFood = true,
+        pms_tenderBreasts = false,
+        pms_craveFood = false,
         pms_Sadness = false
     }
 end
@@ -80,8 +80,8 @@ function CycleManager.generateRandomPMSsymptoms()
         result[s.key] = ok
         if ok then table.insert(trues, s.key) end
     end
-    -- Ensure at most 4 true values by randomly turning extras off
-    while #trues > 4 do
+    -- Ensure at most 3 true values by randomly turning extras off
+    while #trues > 3 do
         local pick = ZombRand(#trues) + 1 -- ZombRand(n) yields 0..n-1
         local key = table.remove(trues, pick)
         result[key] = false
