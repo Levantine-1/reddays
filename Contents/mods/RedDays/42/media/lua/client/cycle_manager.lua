@@ -32,6 +32,7 @@ local function default_cycle() -- Default cycle values if a new cycle cannot be 
         fatigue_increment = 0.0001,
         reason_for_cycle = "defaultCycle",
         timeToDelaycycle = 0,
+        healthEffectSeverity = 50,
         pms_agitation = false,
         pms_cramps = true,
         pms_fatigue = true,
@@ -216,6 +217,7 @@ function CycleManager.newCycle(whoDidThis)
                 fatigue_increment = fatigue_increment,
                 reason_for_cycle = whoDidThis, -- This is used for debugging purposes to know what generated the cycle, for example on game load, no message is printed.
                 timeToDelaycycle = timeToDelaycycle,
+                healthEffectSeverity = healthEffectSeverity,
                 pms_agitation = pms_symptoms.pms_agitation,
                 pms_cramps = pms_symptoms.pms_cramps,
                 pms_fatigue = pms_symptoms.pms_fatigue,
