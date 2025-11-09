@@ -37,7 +37,7 @@ local function PrintStatus(cycle)
         print("Currently worn sanitary item ------------ " .. sanitaryItem:getName())
         print("Sanitary item condition ----------------- " .. sanitaryItem:getCondition())
     else
-        print("No sanitary item currently worn.")
+        print("Currently worn sanitary item ------------ None")
     end
 
     local phaseStatus = CycleManager.getPhaseStatus(cycle)

@@ -32,14 +32,6 @@ option RedDays.phase_start_delay_enabled
 	translation = RedDays_phase_start_delay_enabled,
 }
 
-option RedDays.PMS_ConsistentVsRandom
-{
-	type = boolean,
-	default = true,
-	page = RedDays,
-	translation = RedDays_PMS_ConsistentVsRandom,
-}
-
 option RedDays.painkillerEffectDuration
 {
 	type = integer,
@@ -48,6 +40,54 @@ option RedDays.painkillerEffectDuration
 	default = 36,
 	page = RedDays,
 	translation = RedDays_painkillerEffectDuration,
+}
+
+option RedDays.healthEffectLowerBound
+{
+	type = integer,
+	min = 0,
+	max = 100,
+	default = 30,
+	page = RedDays,
+	translation = RedDays_healthEffectLowerBound,
+}
+
+option RedDays.healthEffectUpperBound
+{
+	type = integer,
+	min = 0,
+	max = 100,
+	default = 100,
+	page = RedDays,
+	translation = RedDays_healthEffectUpperBound,
+}
+
+option RedDays.PMS_ConsistentVsRandom
+{
+	type = boolean,
+	default = true,
+	page = RedDays,
+	translation = RedDays_PMS_ConsistentVsRandom,
+}
+
+option RedDays.PMS_duration_upperbound
+{
+	type = integer,
+	min = 0,
+	max = 100,
+	default = 10,
+	page = RedDays,
+	translation = RedDays_PMS_duration_upperbound,
+}
+
+option RedDays.PMS_duration_lowerbound
+{
+	type = integer,
+	min = 0,
+	max = 99,
+	default = 2,
+	page = RedDays,
+	translation = RedDays_PMS_duration_lowerbound,
 }
 
 option RedDays.menstrual_cycle_duration_lowerBound
@@ -168,24 +208,4 @@ option RedDays.phase_start_delay_upperBound
 	default = 5,
 	page = RedDays,
 	translation = RedDays_phase_start_delay_upperBound,
-}
-
-option RedDays.healthEffectLowerBound
-{
-	type = integer,
-	min = 0,
-	max = 100,
-	default = 30,
-	page = RedDays,
-	translation = RedDays_healthEffectLowerBound,
-}
-
-option RedDays.healthEffectUpperBound
-{
-	type = integer,
-	min = 0,
-	max = 100,
-	default = 100,
-	page = RedDays,
-	translation = RedDays_healthEffectUpperBound,
 }

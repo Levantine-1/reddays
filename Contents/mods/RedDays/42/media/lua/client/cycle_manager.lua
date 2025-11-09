@@ -53,6 +53,8 @@ function CycleManager.sandboxValues()
     local range_luteal_phase_duration = {sbv.luteal_phase_duration_lowerBound, sbv.luteal_phase_duration_upperBound}
     local range_delay_duration = {sbv.phase_start_delay_lowerBound, sbv.phase_start_delay_upperBound}
     local range_healthEffectLevel = {sbv.healthEffectLowerBound, sbv.healthEffectUpperBound}
+    local range_pms_duration = {sbv.PMS_duration_lowerbound, sbv.PMS_duration_upperbound}
+
     return {
         range_total_menstrual_cycle_duration = range_total_menstrual_cycle_duration,
         range_red_phase_duration = range_red_phase_duration,
@@ -61,6 +63,7 @@ function CycleManager.sandboxValues()
         range_luteal_phase_duration = range_luteal_phase_duration,
         range_delay_duration = range_delay_duration,
         range_healthEffectLevel = range_healthEffectLevel,
+        range_pms_duration = range_pms_duration
     }
 end
 
@@ -112,9 +115,7 @@ function CycleManager.getPMSymptoms()
         pms_Sadness = random_pms_symptoms.pms_Sadness
     end
 
-    local pms_duration = ZombRand(2,10) -- Make this configurable later
     local symptoms = {
-        pms_duration = pms_duration,
         pms_agitation = pms_agitation,
         pms_cramps = pms_cramps,
         pms_fatigue = pms_fatigue,
@@ -135,6 +136,7 @@ function CycleManager.newCycle(whoDidThis)
     local range_luteal_phase_duration = ranges.range_luteal_phase_duration
     local range_delay_duration = ranges.range_delay_duration
     local range_healthEffectLevel = ranges.range_healthEffectLevel
+    local range_pms_duration = ranges.range_pms_duration
 
     -- local range_total_menstrual_cycle_duration = {28, 34}
     -- local range_red_phase_duration = {2, 5}
@@ -143,6 +145,7 @@ function CycleManager.newCycle(whoDidThis)
     -- local range_luteal_phase_duration = {11, 18}
     -- local range_delay_duration = {0, 5}
     -- local range_healthEffectLevel = {30, 70}
+    -- local range_pms_duration = {2, 10}
 
     -- local range_total_menstrual_cycle_duration = {7, 9}
     -- local range_red_phase_duration = {1, 2}
@@ -151,6 +154,7 @@ function CycleManager.newCycle(whoDidThis)
     -- local range_luteal_phase_duration = {3, 5}
     -- local range_delay_duration = {1, 1}
     -- local range_healthEffectLevel = {30, 70}
+    -- local range_pms_duration = {1, 2}
 
 
     local max_attempts = 10 -- Duration values can be user-defined and may not always yield a valid cycle, so we try multiple times to find a valid one and return a default cycle if we fail
@@ -202,6 +206,7 @@ function CycleManager.newCycle(whoDidThis)
             local endurance_decrement = 0.001 * scaling
             local fatigue_increment = 0.0002 * scaling
 
+            local pms_duration = random_between(range_pms_duration)
             local pms_symptoms = CycleManager.getPMSymptoms()
 
             return {
@@ -223,7 +228,7 @@ function CycleManager.newCycle(whoDidThis)
                 reason_for_cycle = whoDidThis, -- This is used for debugging purposes to know what generated the cycle, for example on game load, no message is printed.
                 timeToDelaycycle = timeToDelaycycle,
                 healthEffectSeverity = healthEffectSeverity,
-                pms_duration = pms_symptoms.pms_duration,
+                pms_duration = pms_duration,
                 pms_agitation = pms_symptoms.pms_agitation,
                 pms_cramps = pms_symptoms.pms_cramps,
                 pms_fatigue = pms_symptoms.pms_fatigue,
@@ -234,14 +239,14 @@ function CycleManager.newCycle(whoDidThis)
         end
     end
 
-    print("Error: Failed to generate a valid menstrual cycle after " .. max_attempts .. " attempts. Returning default cycle values.")
+    print("Failed to generate a valid menstrual cycle after " .. max_attempts .. " attempts. Returning default cycle values.")
     return default_cycle()
 end
 
 function CycleManager.getCurrentCyclePhase(cycle)
     local current_day = getGameTime():getWorldAgeHours() / 24 
     if not cycle then
-        print("Error: Invalid cycle structure detected.")
+        print("Invalid cycle structure detected.")
         return "invalidCycle"
     end
     local days_into_cycle = current_day - cycle.cycle_start_day
@@ -261,7 +266,7 @@ function CycleManager.getCurrentCyclePhase(cycle)
     elseif days_into_cycle > cycle.cycle_duration then
         return "endOfCycle"
     end
-    print("Error: Unable to determine current cycle phase.")
+    print("Unable to determine current cycle phase.")
     return "unknownPhase"
 end
 

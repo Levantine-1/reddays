@@ -19,6 +19,12 @@ Sandbox_EN = {
     Sandbox_RedDays_painkillerEffectDuration = "Painkiller Effect Duration",
     Sandbox_RedDays_painkillerEffectDuration_tooltip = "Each point is 10 mins. Default is 36x10=360 mins or 6 hours",
 
+    Sandbox_RedDays_PMS_duration_upperbound = "Maximum PMS duration",
+    Sandbox_RedDays_PMS_duration_upperbound_tooltip = "Max time for PMS. PMS will ramp up towards the end of the luteal cycle and into the first day of the period.",
+
+    Sandbox_RedDays_PMS_duration_lowerbound = "Minimum PMS duration",
+    Sandbox_RedDays_PMS_duration_lowerbound_tooltip = "Min time for PMS. PMS will ramp up towards the end of the luteal cycle and into the first day of the period.",
+
     Sandbox_RedDays_menstrual_cycle_duration_lowerBound = "Minimum Cycle Length",
     Sandbox_RedDays_menstrual_cycle_duration_lowerBound_tooltip = "The shortest possible length (in days) for a menstrual cycle.",
 
