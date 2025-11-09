@@ -33,6 +33,7 @@ local function default_cycle() -- Default cycle values if a new cycle cannot be 
         reason_for_cycle = "defaultCycle",
         timeToDelaycycle = 0,
         healthEffectSeverity = 50,
+        pms_duration = 7,
         pms_agitation = false,
         pms_cramps = true,
         pms_fatigue = true,
@@ -111,7 +112,9 @@ function CycleManager.getPMSymptoms()
         pms_Sadness = random_pms_symptoms.pms_Sadness
     end
 
+    local pms_duration = ZombRand(2,10) -- Make this configurable later
     local symptoms = {
+        pms_duration = pms_duration,
         pms_agitation = pms_agitation,
         pms_cramps = pms_cramps,
         pms_fatigue = pms_fatigue,
@@ -139,6 +142,7 @@ function CycleManager.newCycle(whoDidThis)
     -- local range_ovulation_phase_duration = {1, 1}
     -- local range_luteal_phase_duration = {11, 18}
     -- local range_delay_duration = {0, 5}
+    -- local range_healthEffectLevel = {30, 70}
 
     -- local range_total_menstrual_cycle_duration = {7, 9}
     -- local range_red_phase_duration = {1, 2}
@@ -146,6 +150,7 @@ function CycleManager.newCycle(whoDidThis)
     -- local range_ovulation_phase_duration = {1, 1}
     -- local range_luteal_phase_duration = {3, 5}
     -- local range_delay_duration = {1, 1}
+    -- local range_healthEffectLevel = {30, 70}
 
 
     local max_attempts = 10 -- Duration values can be user-defined and may not always yield a valid cycle, so we try multiple times to find a valid one and return a default cycle if we fail
@@ -218,6 +223,7 @@ function CycleManager.newCycle(whoDidThis)
                 reason_for_cycle = whoDidThis, -- This is used for debugging purposes to know what generated the cycle, for example on game load, no message is printed.
                 timeToDelaycycle = timeToDelaycycle,
                 healthEffectSeverity = healthEffectSeverity,
+                pms_duration = pms_symptoms.pms_duration,
                 pms_agitation = pms_symptoms.pms_agitation,
                 pms_cramps = pms_symptoms.pms_cramps,
                 pms_fatigue = pms_symptoms.pms_fatigue,
@@ -259,6 +265,39 @@ function CycleManager.getCurrentCyclePhase(cycle)
     return "unknownPhase"
 end
 
+function CycleManager.getPMSseverity()
+    local currentCycle = modData.ICdata.currentCycle
+    if not currentCycle then return 0 end
+
+    local stat = CycleManager.getPhaseStatus(currentCycle)
+    if not stat or (stat.phase ~= "lutealPhase" and stat.phase ~= "redPhase") then
+        return 0
+    end
+
+    local pmsDuration = currentCycle.pms_duration  -- total PMS duration (days)
+    local timeRemaining = stat.time_remaining
+    local PMSSeverity = 0
+
+    if stat.phase == "lutealPhase" then
+        -- PMS ramps up in the last pmsDuration days before red phase
+        if timeRemaining <= pmsDuration then
+            local daysIntoPMS = pmsDuration - timeRemaining
+            PMSSeverity = math.min(100, math.max(0, (daysIntoPMS / pmsDuration) * 100))
+        end
+
+    elseif stat.phase == "redPhase" then
+        -- PMS severity drains from 100 → 0 over first day of red phase
+        local redDayDuration = currentCycle.red_days_duration or 5
+        local timeIntoRed = redDayDuration - timeRemaining
+        if timeIntoRed <= 1 then
+            PMSSeverity = math.max(0, 100 * (1 - timeIntoRed))
+        else
+            PMSSeverity = 0
+        end
+    end
+
+    return PMSSeverity
+end
 
 function CycleManager.getPhaseStatus(cycle)
     local current_day = getGameTime():getWorldAgeHours() / 24

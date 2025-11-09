@@ -55,6 +55,8 @@ local function PrintStatus(cycle)
     else
         print("No data codes available for the current cycle phase.")
     end
+    print("PMS Duration ---------------------------- " .. tostring(cycle.pms_duration) .. " days")
+    print("PMS Severity ---------------------------- " .. tostring(CycleManager.getPMSseverity()))
     print("PMS Symptom - Agitation ----------------- " .. tostring(cycle.pms_agitation))
     print("PMS Symptom - Cramps -------------------- " .. tostring(cycle.pms_cramps))
     print("PMS Symptom - Fatigue ------------------- " .. tostring(cycle.pms_fatigue))
