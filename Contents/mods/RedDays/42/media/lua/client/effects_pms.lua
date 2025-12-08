@@ -12,23 +12,21 @@ EffectsPMS = {}
         -- Often linked to progesterone dominance and serotonin fluctuations.
         -- Peaks just before menstruation and resolves quickly once bleeding begins.
         -- Typically short-lived bursts of frustration or low patience.
-        print("Setting Anger Moodle to target - " .. tostring(target_value))
 
-        local player = getPlayer()
-        if not player then
-            print("No player found for setting Anger Moodle")
-            return
-        end
-        local stats = player:getStats()
-        local angerLevel = stats:getAnger()
-        print("Current Anger Level - " .. tostring(angerLevel))
+        -- Anger moodle is a float from 0 to 1 where 1 is max anger
+        -- By default, anger decrements at a rate of 0.35 per ingame hour
 
-        local randomInt = ZombRand(1, 100)
-        local randomFloat = randomInt / 100
+        local severity = target_value / 100
 
-        print("Setting Random Float for Anger Moodle - " .. tostring(randomFloat))
-        stats:setAnger(randomFloat)
-        print("New Anger Level - " .. tostring(stats:getAnger()))
+        -- Default Anger decrement is -0.35 per ingame hour
+        local angerLevel_change_rate = .02 -- This is an arbitrary value to gradually ramp anger up
+        local currentAngerLevel = stats:getAnger()
+        stats:setAnger(math.min(severity, currentAngerLevel + angerLevel_change_rate))
+
+        -- Default Endurance Recovery is +0.160 per ingame hour or +0.0268/min, so +0.0053/min is a 100% buff rate at max PMS Severity
+        local endurance_change_rate = (0.0053 * severity) * rate_multiplier
+        local current_endurance = stats:getEndurance()
+        stats:setEndurance(math.min(1, current_endurance + endurance_change_rate))
     end
 
     function EffectsPMS.setCrampsEffect(player, stats, target_value, rate_multiplier)
@@ -106,7 +104,7 @@ EffectsPMS = {}
         -- May involve lower energy, sensitivity, or tearfulness.
         -- Often starts 3–5 days before menstruation and resolves within 1–2 days of bleeding onset.
         -- Related to serotonin and estrogen drops.
-        print("Setting Sadness Moodle to target - " .. tostring(target_value))
+        -- print("Setting Sadness Moodle to target - " .. tostring(target_value))
 
         -- Level 1 mooodle at 20
         -- Level 2 moodle at 40
@@ -116,6 +114,8 @@ EffectsPMS = {}
 
     local function applyEnabledSymptomEffects(currentCycle, pms_severity, rate_multiplier)
         local player = getPlayer()
+        if not player then return end
+
         local stats = player:getStats()
 
         local target_value = (pms_severity / 100) * currentCycle.healthEffectSeverity
@@ -142,10 +142,8 @@ EffectsPMS = {}
 
     function EffectsPMS.applyPMSEffectsMain()
         local pms_severity = CycleManager.getPMSseverity()
-        if pms_severity < 0.1 then
-            print("Not PMSing")
-            return
-        end
+        if pms_severity < 0.1 then return end
+
         -- print("Applying PMS Effects with severity - " .. tostring(pms_severity))
         local currentCycle = modData.ICdata.currentCycle
         if not currentCycle then return 0 end
