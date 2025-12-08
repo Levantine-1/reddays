@@ -78,6 +78,16 @@ EffectsPMS = {}
         -- Intensity ranges from mild tenderness to noticeable soreness when touched.
         -- Often correlates with hormonal water retention.
         print("Setting Tender Breasts Effect to target - " .. tostring(target_value))
+
+        local change_rate = 2 * rate_multiplier
+
+        local bodyDamage = player:getBodyDamage()
+        local upperTorso = bodyDamage:getBodyPart(BodyPartType.Torso_Upper)
+
+        local current_upper_torso_stiffness = upperTorso:getStiffness()
+        if current_upper_torso_stiffness < target_value then
+            upperTorso:setStiffness(math.max(0, current_upper_torso_stiffness + change_rate))
+        end
     end
 
     function EffectsPMS.setFoodCravingEffect(player, stats, target_value, rate_multiplier)
@@ -108,23 +118,25 @@ EffectsPMS = {}
         local player = getPlayer()
         local stats = player:getStats()
 
+        local target_value = (pms_severity / 100) * currentCycle.healthEffectSeverity
+
         if currentCycle.pms_agitation then
-            EffectsPMS.setAngerMoodle(player, stats, pms_severity, rate_multiplier)
+            EffectsPMS.setAngerMoodle(player, stats, target_value, rate_multiplier)
         end
         if currentCycle.pms_cramps then
-            EffectsPMS.setCrampsEffect(player, stats, pms_severity, rate_multiplier)
+            EffectsPMS.setCrampsEffect(player, stats, target_value, rate_multiplier)
         end
         if currentCycle.pms_fatigue then
-            EffectsPMS.setFatigueEffect(player, stats, pms_severity, rate_multiplier)
+            EffectsPMS.setFatigueEffect(player, stats, target_value, rate_multiplier)
         end
         if currentCycle.pms_tenderBreasts then
-            EffectsPMS.setTenderBreastsEffect(player, stats, pms_severity, rate_multiplier)
+            EffectsPMS.setTenderBreastsEffect(player, stats, target_value, rate_multiplier)
         end
         if currentCycle.pms_craveFood then
-            EffectsPMS.setFoodCravingEffect(player, stats, pms_severity, rate_multiplier)
+            EffectsPMS.setFoodCravingEffect(player, stats, target_value, rate_multiplier)
         end
         if currentCycle.pms_Sadness then
-            EffectsPMS.setSadnessMoodle(player, stats, pms_severity, rate_multiplier)
+            EffectsPMS.setSadnessMoodle(player, stats, target_value, rate_multiplier)
         end
     end
 
