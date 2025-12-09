@@ -1,12 +1,5 @@
 EffectsPMS = {}
 
-        -- pms_agitation = false, -- Set Anger moodle, boost endurance recovery
-        -- pms_cramps = true, --  Set stiffness effects lower torso
-        -- pms_fatigue = true, -- Set fatigue effects
-        -- pms_tenderBreasts = false, --  set chest stiffness
-        -- pms_craveFood = false, -- No need for moodle, just more hungry
-        -- pms_Sadness = false -- Set Sadness moodle, reduce endurance recovery
-
     function EffectsPMS.setAngerMoodle(player, stats, target_value, rate_multiplier)
         -- Anger or irritability tends to rise during the late luteal phase (about 1 week before period).
         -- Often linked to progesterone dominance and serotonin fluctuations.
@@ -87,15 +80,36 @@ EffectsPMS = {}
         end
     end
 
+    local setFoodCravingEffect_lastHunger = 0
+    local setFoodCravingEffect_jumpedToHungry = false
     function EffectsPMS.setFoodCravingEffect(player, stats, target_value, rate_multiplier)
         -- Starts about 5–7 days before menstruation.
         -- Common cravings: carbs, sweets, salty or fatty foods due to serotonin and blood sugar changes.
         -- Peaks just before menstruation and fades within the first day of bleeding.
         -- Can be reduced by stable blood sugar or exercise in simulation.
-        print("Setting Food Craving Effect to target - " .. tostring(target_value))
 
-        -- Hunger moodle pops up at 0.15 to 0.25 severity
         -- Pop this moodle up as soon as Eaten food timer is below 3200
+        -- However, if food eaten timer is counting down, hunger does not decrement
+        -- So we should be able to safely assume if hunger is above 0.01, hunger satiety timer is over.
+
+        -- Hunger is a float from 0 to 1 where 1 is max hunger
+        -- Hunger increments by +0.035 per ingame hour or +0.000583/min by default
+        -- local increment_rate = 0.000583
+
+        -- Since hunger has a real negative effect, we'll only pop the peckish moodle and hold it there
+        -- until enough time passed to make up for how much red days deducts
+
+        local currentHunger = stats:getHunger()
+
+        if currentHunger < setFoodCravingEffect_lastHunger then
+            setFoodCravingEffect_jumpedToHungry = false
+        end
+
+        if currentHunger > 0.01 and currentHunger < 0.16 and not setFoodCravingEffect_jumpedToHungry then
+            stats:setHunger(0.16)  -- Jump to peckish threshold
+            setFoodCravingEffect_jumpedToHungry = true
+        end
+        setFoodCravingEffect_lastHunger = currentHunger
     end
 
     function EffectsPMS.setSadnessMoodle(player, stats, target_value, rate_multiplier)
@@ -107,7 +121,6 @@ EffectsPMS = {}
         -- Depression moodle is an int from 0 - 100 where 100 is max sadness
         -- Moodles level up from 1-4 at these respective thresholds: 20, 40, 60, 80
 
-        print("Pushing Sadness Moodle to target - " .. tostring(target_value))
         local bodyDamage = player:getBodyDamage()
         local currentUnhappynessLevel = bodyDamage:getUnhappynessLevel()
         local change_rate = 1  -- Adjust unhappiness by 1 per minute toward target
@@ -115,11 +128,9 @@ EffectsPMS = {}
         -- Gradually move toward target value
         if currentUnhappynessLevel < target_value then
             -- Increase unhappiness toward target
-            print("Increasing Unhappyness Level")
             bodyDamage:setUnhappynessLevel(math.min(100, currentUnhappynessLevel + change_rate))
         elseif currentUnhappynessLevel > target_value then
             -- Decrease unhappiness toward target
-            print("Decreasing Unhappyness Level")
             bodyDamage:setUnhappynessLevel(math.max(0, currentUnhappynessLevel - change_rate))
         end
     end
@@ -148,13 +159,6 @@ EffectsPMS = {}
             EffectsPMS.setFoodCravingEffect(player, stats, target_value, rate_multiplier)
         end
         if currentCycle.pms_Sadness then
-            -- Small buffer to make sure these are clear values before condition to run method stops running this
-            -- as depression moodle does not decrement naturally
-            if pms_severity <= 2 then
-                modData.ICdata.pmsUnhappyAdded = nil
-                modData.ICdata.pmsPreviousTarget = nil
-                return
-            end
             EffectsPMS.setSadnessMoodle(player, stats, target_value, rate_multiplier)
         end
     end
