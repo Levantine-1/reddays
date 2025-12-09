@@ -75,7 +75,6 @@ EffectsPMS = {}
         -- Peaks right before the period starts, then subsides by about day 2–3 of menstruation.
         -- Intensity ranges from mild tenderness to noticeable soreness when touched.
         -- Often correlates with hormonal water retention.
-        print("Setting Tender Breasts Effect to target - " .. tostring(target_value))
 
         local change_rate = 2 * rate_multiplier
 
@@ -104,12 +103,25 @@ EffectsPMS = {}
         -- May involve lower energy, sensitivity, or tearfulness.
         -- Often starts 3–5 days before menstruation and resolves within 1–2 days of bleeding onset.
         -- Related to serotonin and estrogen drops.
-        -- print("Setting Sadness Moodle to target - " .. tostring(target_value))
 
-        -- Level 1 mooodle at 20
-        -- Level 2 moodle at 40
-        -- Level 3 moodle at 60
-        -- Level 4 moodle at 80
+        -- Depression moodle is an int from 0 - 100 where 100 is max sadness
+        -- Moodles level up from 1-4 at these respective thresholds: 20, 40, 60, 80
+
+        print("Pushing Sadness Moodle to target - " .. tostring(target_value))
+        local bodyDamage = player:getBodyDamage()
+        local currentUnhappynessLevel = bodyDamage:getUnhappynessLevel()
+        local change_rate = 1  -- Adjust unhappiness by 1 per minute toward target
+
+        -- Gradually move toward target value
+        if currentUnhappynessLevel < target_value then
+            -- Increase unhappiness toward target
+            print("Increasing Unhappyness Level")
+            bodyDamage:setUnhappynessLevel(math.min(100, currentUnhappynessLevel + change_rate))
+        elseif currentUnhappynessLevel > target_value then
+            -- Decrease unhappiness toward target
+            print("Decreasing Unhappyness Level")
+            bodyDamage:setUnhappynessLevel(math.max(0, currentUnhappynessLevel - change_rate))
+        end
     end
 
     local function applyEnabledSymptomEffects(currentCycle, pms_severity, rate_multiplier)
@@ -136,6 +148,13 @@ EffectsPMS = {}
             EffectsPMS.setFoodCravingEffect(player, stats, target_value, rate_multiplier)
         end
         if currentCycle.pms_Sadness then
+            -- Small buffer to make sure these are clear values before condition to run method stops running this
+            -- as depression moodle does not decrement naturally
+            if pms_severity <= 2 then
+                modData.ICdata.pmsUnhappyAdded = nil
+                modData.ICdata.pmsPreviousTarget = nil
+                return
+            end
             EffectsPMS.setSadnessMoodle(player, stats, target_value, rate_multiplier)
         end
     end
@@ -146,7 +165,7 @@ EffectsPMS = {}
 
         -- print("Applying PMS Effects with severity - " .. tostring(pms_severity))
         local currentCycle = modData.ICdata.currentCycle
-        if not currentCycle then return 0 end
+        if not currentCycle then return end
         
         local rate_multiplier = 1 -- Placeholder for future use if needed
         applyEnabledSymptomEffects(currentCycle, pms_severity, rate_multiplier)
