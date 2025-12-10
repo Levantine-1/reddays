@@ -63,11 +63,15 @@ EffectsPMS = {}
         stats:setEndurance(math.max(0, current_endurance - endurance_change_rate))
     end
 
-    function EffectsPMS.setTenderBreastsEffect(player, stats, target_value, rate_multiplier)
+    function EffectsPMS.setTenderBreastsEffect(player, stats, target_value, rate_multiplier, alsoHasCramps)
         -- Typically begins 3–5 days before menstruation due to rising progesterone levels.
         -- Peaks right before the period starts, then subsides by about day 2–3 of menstruation.
         -- Intensity ranges from mild tenderness to noticeable soreness when touched.
         -- Often correlates with hormonal water retention.
+
+        if alsoHasCramps then
+            target_value = target_value * 0.5 -- Reduce breast tenderness severity by 50% if cramps are also active as too much pain is unrealistic
+        end
 
         local change_rate = 2 * rate_multiplier
 
@@ -135,6 +139,33 @@ EffectsPMS = {}
         end
     end
 
+    local function clearStiffness(player, currentCycle)
+        local bodyDamage = player:getBodyDamage()
+        local resetValue = 22.5
+
+        if currentCycle.pms_cramps then
+            local groin = bodyDamage:getBodyPart(BodyPartType.Groin)
+            local lowerTorso = bodyDamage:getBodyPart(BodyPartType.Torso_Lower)
+
+            if groin:getStiffness() > resetValue then
+                groin:setStiffness(resetValue)
+            end
+            if lowerTorso:getStiffness() > resetValue then
+                lowerTorso:setStiffness(resetValue)
+            end
+        end
+
+        if currentCycle.pms_tenderBreasts then
+            local upperTorso = bodyDamage:getBodyPart(BodyPartType.Torso_Upper)
+
+            if upperTorso:getStiffness() > resetValue then
+                upperTorso:setStiffness(resetValue)
+            end
+        end
+
+        modData.ICdata.pill_recently_taken = false
+    end
+
     local function applyEnabledSymptomEffects(currentCycle, pms_severity, rate_multiplier)
         local player = getPlayer()
         if not player then return end
@@ -142,6 +173,15 @@ EffectsPMS = {}
         local stats = player:getStats()
 
         local target_value = (pms_severity / 100) * currentCycle.healthEffectSeverity
+
+        if modData.ICdata.pill_recently_taken then
+            print("PMS Painkiller Effect Active - Dropping Stiffness")
+            clearStiffness(player, currentCycle)
+        end
+
+        if modData.ICdata.pill_effect_active then
+            target_value = target_value * 0.25 -- Reduce severity by 75% if pills are active
+        end
 
         if currentCycle.pms_agitation then
             EffectsPMS.setAngerMoodle(player, stats, target_value, rate_multiplier)
@@ -153,7 +193,7 @@ EffectsPMS = {}
             EffectsPMS.setFatigueEffect(player, stats, target_value, rate_multiplier)
         end
         if currentCycle.pms_tenderBreasts then
-            EffectsPMS.setTenderBreastsEffect(player, stats, target_value, rate_multiplier)
+            EffectsPMS.setTenderBreastsEffect(player, stats, target_value, rate_multiplier, currentCycle.pms_cramps)
         end
         if currentCycle.pms_craveFood then
             EffectsPMS.setFoodCravingEffect(player, stats, target_value, rate_multiplier)
@@ -163,11 +203,48 @@ EffectsPMS = {}
         end
     end
 
+
+
+    local pill_effect_counter_max = SandboxVars.RedDays.painkillerEffectDuration or 36 -- Pills are effective for 6 hours (36 * 10 = 360 minutes)
+    local function takePillsStiffness()
+        if not modData.ICdata.pill_effect_counter then return end -- Safety check incase player dies and respawns
+        if modData.ICdata.pill_effect_counter < pill_effect_counter_max then
+            modData.ICdata.pill_effect_counter = modData.ICdata.pill_effect_counter + 1
+        else
+            print("PMS Painkiller Effect Ended")
+            Events.EveryTenMinutes.Remove(takePillsStiffness) -- Pills are no longer effective
+            modData.ICdata.pill_effect_active = false
+            modData.ICdata.pill_effect_counter = 0
+            return
+        end
+    end
+
+    local o_ISTakePillAction_perform = ISTakePillAction.perform
+    function ISTakePillAction:perform()
+        if self.item:getFullType() == "Base.Pills" then
+            print("Painkillers Taken, Reducing PMS Symptoms")
+            modData.ICdata.pill_recently_taken = true
+            modData.ICdata.pill_effect_active = true
+            modData.ICdata.pill_effect_counter = 0
+            Events.EveryTenMinutes.Add(takePillsStiffness)
+        end
+        o_ISTakePillAction_perform(self)
+    end
+
+
+    local function LoadPlayerData()
+        modData.ICdata.pill_recently_taken = modData.ICdata.pill_recently_taken or false
+        modData.ICdata.pill_effect_counter = modData.ICdata.pill_effect_counter or 0
+        modData.ICdata.pill_effect_active = modData.ICdata.pill_effect_active or false
+        if modData.ICdata.pill_effect_active then
+            Events.EveryTenMinutes.Add(takePillsStiffness) -- Start the timer if the effect is active
+        end
+    end
+    Events.OnGameStart.Add(LoadPlayerData)
+
     function EffectsPMS.applyPMSEffectsMain()
         local pms_severity = CycleManager.getPMSseverity()
         if pms_severity < 0.1 then return end
-
-        -- print("Applying PMS Effects with severity - " .. tostring(pms_severity))
         local currentCycle = modData.ICdata.currentCycle
         if not currentCycle then return end
         

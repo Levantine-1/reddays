@@ -3,91 +3,22 @@ require "RedDays/moodles"
 
 EffectsManager = {}
 
-local pill_effect_counter_max = SandboxVars.RedDays.painkillerEffectDuration or 36
-local pill_recently_taken = false
-local function takePillsStiffness()
-	if pill_effect_counter < pill_effect_counter_max then -- Pills are effective for 6 hours (36 * 10 = 360 minutes)
-        pill_effect_counter = pill_effect_counter + 1
-        modData.ICdata.pill_effect_counter = pill_effect_counter -- Saving the counter here is fine because it only saves every 10 minutes``
-	else
-		Events.EveryTenMinutes.Remove(takePillsStiffness) -- Pills are no longer effective
-        pill_effect_active = false
-        modData.ICdata.pill_effect_active = pill_effect_active -- Save the pill effect state
-        pill_effect_counter = 0
-        modData.ICdata.pill_effect_counter = pill_effect_counter -- Reset the counter
-		return
-	end
-end
-
--- takePillsStiffness and o_o_ISTakePillAction_perform is originally from [B42] Painkillers Remove Arm Muscle Strain created by lect 
--- Slightly modified to fit the RedDays mod
-local o_ISTakePillAction_perform = ISTakePillAction.perform
-function ISTakePillAction:perform()
-	if self.item:getFullType() == "Base.Pills" then
-		counter = 0
-        pill_effect_active = true
-        modData.ICdata.pill_effect_active = pill_effect_active -- Save the pill effect state
-        pill_recently_taken = true
-		Events.EveryTenMinutes.Add(takePillsStiffness)
-	end
-	o_ISTakePillAction_perform(self)
-end
-
 local stat_Adjustment_isEnabled = false
 local function stat_Adjustment()
-    local player = getPlayer()
-
     stat_Adjustment_isEnabled = true
-
-    local stats = player:getStats()
-    local bodyDamage = player:getBodyDamage()
-    local lowerTorso = bodyDamage:getBodyPart(BodyPartType.Torso_Lower)
-    local groin = bodyDamage:getBodyPart(BodyPartType.Groin)
-
     local cycle = modData.ICdata.currentCycle -- The event system calls the function with no arguments, so cycle is nil, so that's why it's set here
 
     if HygieneManager:consumeHygieneProduct() then
-        -- groin:setBleeding(false)
         modData.ICdata.LeakSwitchState = false
     elseif not HygieneManager:consumeHygieneProduct() then
-        -- groin:setBleeding(true)
         modData.ICdata.LeakSwitchState = true
     end
 
-    if pill_effect_active then
-        if pill_recently_taken then
-            if groin:getStiffness() > 22.5 then
-                groin:setStiffness(22.5)
-            end
-            if lowerTorso:getStiffness() > 22.5 then
-                lowerTorso:setStiffness(22.5)
-            end
-            pill_recently_taken = false
-        end
-        return
-    end
-
-    local current_groin_stiffness = groin:getStiffness()
-    if current_groin_stiffness < cycle.stiffness_target then
-        groin:setStiffness(math.max(0, current_groin_stiffness + cycle.stiffness_increment))
-    end
-    
-    local current_lower_torso_stiffness = lowerTorso:getStiffness()
-    if current_lower_torso_stiffness < cycle.stiffness_target then
-        lowerTorso:setStiffness(math.max(0, current_lower_torso_stiffness + cycle.stiffness_increment))
-    end
-
-    local current_fatigue = stats:getFatigue()
-    stats:setFatigue(math.min(1, current_fatigue + cycle.fatigue_increment))
-
-    local current_endurance = stats:getEndurance()
-    stats:setEndurance(math.min(1, current_endurance - cycle.endurance_decrement))
-
-    local current_discomfort = bodyDamage:getDiscomfortLevel()
-    local discomfort_target = cycle.discomfort_target
-    if current_discomfort < discomfort_target then
-        bodyDamage:setDiscomfortLevel(math.max(0, current_discomfort + 35))
-    end
+    -- local current_discomfort = bodyDamage:getDiscomfortLevel()
+    -- local discomfort_target = cycle.discomfort_target
+    -- if current_discomfort < discomfort_target then
+    --     bodyDamage:setDiscomfortLevel(math.max(0, current_discomfort + 35))
+    -- end
     -- I couldn't find the discomfort stat gets and sets in the API docuementation, but I found it in this mod:
     -- Nepenthe's Slower Discomfort, Credit to Nepenthe for that
 end
@@ -143,30 +74,5 @@ function EffectsManager.determineEffects(cycle)
         end
     end
 end
-
-local function LoadPlayerData()
-    local player = getPlayer()
-    modData = player:getModData()
-    modData.ICdata = modData.ICdata or {}
-    pill_effect_counter = modData.ICdata.pill_effect_counter or 0
-    pill_effect_active = modData.ICdata.pill_effect_active or false
-    if pill_effect_active then
-        Events.EveryTenMinutes.Add(takePillsStiffness) -- Start the timer if the effect is active
-    end
-end
-Events.OnGameStart.Add(LoadPlayerData)
-
--- NOTE: 2025-07-24 Disabled because this gets run on every load which means you always start on the first day of the cycle.
--- function EffectsManager.resetEffects()
---     local player = getPlayer()
---     modData = player:getModData()
---     modData.ICdata = modData.ICdata or {}
---     stat_Adjustment_isEnabled = false
---     modData.ICdata.pill_effect_counter = 0
---     modData.ICdata.pill_effect_active = false
---     Events.EveryDays.Remove(consumeDischargeProduct)
---     Events.EveryOneMinute.Remove(stat_Adjustment)
---     Events.EveryTenMinutes.Remove(takePillsStiffness)
--- end
 
 return EffectsManager
