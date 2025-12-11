@@ -2,6 +2,35 @@ require "RedDays/cycle_manager"
 require "RedDays/effects_manager"
 require "RedDays/hygiene_manager"
 
+-- local function setOldCycle() -- Test old cycle structure before publishing updates
+--     local player = getPlayer()
+--     if not player then return end
+--     modData = player:getModData()
+
+--     print("Setting old cycle values for testing purposes.")
+--     oldCycle = {
+--         cycle_start_day = getGameTime():getWorldAgeHours() / 24,
+--         cycle_duration = 28,
+--         follicular_duration = 14,
+--         red_days_duration = 4,
+--         follicle_stimulating_start_day = 5,
+--         follicle_stimulating_duration = 10,
+--         ovulation_duration = 1,
+--         ovulation_day = 14,
+--         luteal_start_day = 15,
+--         luteal_duration = 14,
+--         stiffness_target = 55,
+--         stiffness_increment = 2,
+--         discomfort_target = 100,
+--         endurance_decrement = 0.0005,
+--         fatigue_increment = 0.0001,
+--         reason_for_cycle = "defaultCycle",
+--         timeToDelaycycle = 0
+--     }
+--     modData.ICdata.currentCycle = oldCycle
+-- end
+-- Events.OnGameStart.Add(setOldCycle)
+
 local function LoadPlayerData()
 	local player = getPlayer()
 	modData = player:getModData()

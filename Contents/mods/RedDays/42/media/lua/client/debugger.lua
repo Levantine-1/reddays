@@ -30,6 +30,7 @@ local function PrintStatus(cycle)
 
     local currentPhase = CycleManager.getCurrentCyclePhase(cycle)
     print("Current cycle phase --------------------- " .. currentPhase)
+    if not cycle.healthEffectSeverity then return end -- If mod existed before PMS update, some values after this may be nil until a new cycle is generated.
     print("Target Health Effect Severity ----------- " .. cycle.healthEffectSeverity)
 
     local sanitaryItem = HygieneManager.getCurrentlyWornSanitaryItem()
@@ -83,5 +84,5 @@ function CycleDebugger.printWrapper(cycle) -- Wrapper to control printing freque
     end
     print_counter = print_counter + 1
 end
-
+-- Eventually move debug print to its own timed event and decouple it from other modules
 return CycleDebugger

@@ -69,6 +69,8 @@ Feminine Hygiene products:
 Not wearing hyginene items increases "dirtiness/bloodiness" for certain clothing locations
 - Potential for interaction with other mods that have dirt/blood attracts zombies
 
+Integrate with other lifestyle mods for features like bathing to remove leak moodles.
+
 Traits:
 - Hygiene product consumption and stat decrement rates vary by cycle trait:
 - Light, Normal, Heavy Cycle Traits

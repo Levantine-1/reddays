@@ -247,6 +247,7 @@ EffectsPMS = {}
         if pms_severity < 0.1 then return end
         local currentCycle = modData.ICdata.currentCycle
         if not currentCycle then return end
+        if not currentCycle.healthEffectSeverity then return end -- If mod existed before PMS update, some values after this may be nil until a new cycle is generated.
         
         local rate_multiplier = 1 -- Placeholder for future use if needed
         applyEnabledSymptomEffects(currentCycle, pms_severity, rate_multiplier)
