@@ -30,21 +30,22 @@ local function PrintStatus(cycle)
 
     local currentPhase = CycleManager.getCurrentCyclePhase(cycle)
     print("Current cycle phase --------------------- " .. currentPhase)
-    print("Target Health Effect Level -------------- " .. cycle.stiffness_target)
-    
+    if not cycle.healthEffectSeverity then return end -- If mod existed before PMS update, some values after this may be nil until a new cycle is generated.
+    print("Target Health Effect Severity ----------- " .. cycle.healthEffectSeverity)
+
     local sanitaryItem = HygieneManager.getCurrentlyWornSanitaryItem()
     if sanitaryItem then
         print("Currently worn sanitary item ------------ " .. sanitaryItem:getName())
         print("Sanitary item condition ----------------- " .. sanitaryItem:getCondition())
     else
-        print("No sanitary item currently worn.")
+        print("Currently worn sanitary item ------------ None")
     end
 
     local phaseStatus = CycleManager.getPhaseStatus(cycle)
     if phaseStatus then
         print("Phase Status ---------------------------- " .. phaseStatus.phase)
         print("Time remaining in current phase --------- " .. phaseStatus.time_remaining .. " days")
-        print("Percentage complete --------------------- " .. phaseStatus.percent_complete .. "%")
+        print("Phase percent complete ------------------ " .. phaseStatus.percent_complete .. "%")
     else
         print("No valid phase status found for the current cycle.")
     end
@@ -55,6 +56,14 @@ local function PrintStatus(cycle)
     else
         print("No data codes available for the current cycle phase.")
     end
+    print("PMS Duration ---------------------------- " .. tostring(cycle.pms_duration) .. " days")
+    print("PMS Severity ---------------------------- " .. tostring(CycleManager.getPMSseverity()))
+    print("PMS Symptom - Agitation ----------------- " .. tostring(cycle.pms_agitation))
+    print("PMS Symptom - Cramps -------------------- " .. tostring(cycle.pms_cramps))
+    print("PMS Symptom - Fatigue ------------------- " .. tostring(cycle.pms_fatigue))
+    print("PMS Symptom - Tender Breasts ------------ " .. tostring(cycle.pms_tenderBreasts))
+    print("PMS Symptom - Crave Food ---------------- " .. tostring(cycle.pms_craveFood))
+    print("PMS Symptom - Sadness ------------------- " .. tostring(cycle.pms_Sadness))
     print("This log output was formatted to be read in a separate terminal window with a monospace font, not the in-game console.")
     print("==========================================================================================")
 end
@@ -75,5 +84,5 @@ function CycleDebugger.printWrapper(cycle) -- Wrapper to control printing freque
     end
     print_counter = print_counter + 1
 end
-
+-- Eventually move debug print to its own timed event and decouple it from other modules
 return CycleDebugger

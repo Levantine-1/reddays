@@ -31,7 +31,7 @@
     - painkiller effect time
     - Upperbound and Lowerbound durations for cycle phases
 
-- Custom 3D models thanks to sudodski's commit: 6f10ac0bdc8b76750152ad8aa34118ff13c9fa64
+- Custom 3D models thanks to Sudodski
 
 - Craftable cycle tracker calendar:
     - If tracker book is in equipped bag or inventory and page 14 ID matches character ID
@@ -47,24 +47,38 @@
 - Moodles
     - Moodles reminding players to change out products
 
+- Pre-Menstrual Symptoms (PMS)
+    - Characters spawn with 3 randomly selected PMS symptoms that remain consistent throughout their life. Enable random symptoms per cycle in sandbox options if you prefer variety.
+    - PMS severity varies each cycle and can be reduced by 75% with painkillers.
+    - Effects gradually increase during late luteal phase, peak just before menstruation, then quickly subside within 24 hours of bleeding.
+    
+    PMS Effects:
+    - Agitation (A): Uses default unused anger moodle (may conflict with other mods). Doubles stamina/endurance recovery at peak severity. Cancels out Fatigue debuff.
+    - Fatigue (F): Halves stamina/endurance recovery and doubles fatigue gain at peak severity. Cancels out Agitation buff.
+    - Sadness/Depression (U): Depression level tracks PMS severity. Antidepressants provide relief, but depression naturally subsides as PMS fades.
+    - Tender Breasts (T): Causes upper torso muscle strain scaling with severity. Reduced by 50% if Cramps are also active. May interfere with sleep at high severity without painkillers when combined with cramps.
+    - Cramps (C): Causes lower torso and groin muscle strain scaling with severity. Stacks with Tender Breasts. May require painkillers for sleep at high severity.
+    - Food Cravings (Y): Player always wants to eat.
+    
 ## Planned features
 
 Feminine Hygiene products:
 - Craftable re-usable cloth pads
 - Menstrual cups
 
-Pre-Menstrual Symptoms
-- PMS symptoms leading up to the menstrual phase
-
 Not wearing hyginene items increases "dirtiness/bloodiness" for certain clothing locations
 - Potential for interaction with other mods that have dirt/blood attracts zombies
+
+Integrate with other lifestyle mods for features like bathing to remove leak moodles.
 
 Traits:
 - Hygiene product consumption and stat decrement rates vary by cycle trait:
 - Light, Normal, Heavy Cycle Traits
 - Right now player starts on red day, but eventually a different start date could be a trait
 - Endometriosis by popular request
-- Health affects menstrual cycle
+- PMS symptoms as traits
+
+Health affects menstrual cycle
     - Severe underweight/malnutrition can stop the cycle
     - Severe stress can alter the cycle
 
@@ -75,7 +89,8 @@ Debuffs for insufficient hygienic care:
 - Add more sandbox options:
     - Stat degrade rates
     - painkiller effectiveness
-    - Target discomfort/strain levels
+- Fix bug related to randomized starts
+- Player spawns with a few sanitary items
 
 ## Fixed Reported Bugs and minor feature change notes:
 - Moved change notes to workshop page: https://steamcommunity.com/sharedfiles/filedetails/changelog/3516166810
