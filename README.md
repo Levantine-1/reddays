@@ -89,6 +89,8 @@ Debuffs for insufficient hygienic care:
 - Add more sandbox options:
     - Stat degrade rates
     - painkiller effectiveness
+- Fix bug related to randomized starts
+- Player spawns with a few sanitary items
 
 ## Fixed Reported Bugs and minor feature change notes:
 - Moved change notes to workshop page: https://steamcommunity.com/sharedfiles/filedetails/changelog/3516166810
