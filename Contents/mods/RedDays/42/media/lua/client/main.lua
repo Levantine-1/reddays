@@ -41,7 +41,7 @@ local function LoadPlayerData()
         modData.ICdata.currentCycle = CycleManager.newCycle("LoadPlayerData_afterValidation")
     end
 end
-Events.OnGameStart.Add(LoadPlayerData)
+-- Events.OnGameStart.Add(LoadPlayerData)
 
 local function phaseIsValid(phase)
     local valid_phases = {"delayPhase", "redPhase", "follicularPhase", "ovulationPhase", "lutealPhase"}
@@ -66,4 +66,4 @@ local function main()
     EffectsManager.determineEffects(cycle) -- Apply effects based on the current cycle phase
     CycleDebugger.printWrapper(cycle)
 end
-Events.EveryTenMinutes.Add(main)
+-- Events.EveryTenMinutes.Add(main)
