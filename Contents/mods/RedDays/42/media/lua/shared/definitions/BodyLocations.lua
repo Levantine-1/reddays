@@ -1,3 +1,5 @@
-local group = BodyLocations.getGroup("Human")
-local bodyLocation = BodyLocation.new(group, "HygieneItem")
-group:getAllLocations():add(bodyLocation)
+-- BodyLocations are now registered in registries.lua using ItemBodyLocation.register()
+-- Do not manually create them here in 42.13+
+-- local group = BodyLocations.getGroup("Human")
+-- local bodyLocation = BodyLocation.new(group, "HygieneItem")
+-- group:getAllLocations():add(bodyLocation)
