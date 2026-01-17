@@ -9,8 +9,7 @@ module RedDays
         BodyLocation = RedDays:HygieneItem,
         ClothingItem = Sanitary_Pad,
         Icon = sanitarypad_clean,
-		WorldStaticModel = Pad,
-        BodyLocation = HygieneItem,
+		WorldStaticModel = RedDays.Pad,
 		ConditionMax = 10,
     }
 
@@ -21,8 +20,8 @@ module RedDays
 		Weight = 1,
         Icon	=	GenericMedicalParcel2,
 		Medical = TRUE,
-		WorldStaticModel = Padbox,
-		Tags = IgnoreZombieDensity;IsFireFuel,
+		WorldStaticModel = RedDays.Padbox,
+		Tags = base:IgnoreZombieDensity;base:IsFireFuel,
 		FireFuelRatio = 0.25,
 	}
 

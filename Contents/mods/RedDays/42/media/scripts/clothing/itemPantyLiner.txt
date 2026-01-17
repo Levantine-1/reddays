@@ -9,7 +9,6 @@ module RedDays
         ClothingItem = Panty_Liner,
         Icon = pantyliner_clean,
 		WorldStaticModel = RedDays.Liner,
-        BodyLocation = HygieneItem,
 		ConditionMax = 2,
     }
 
@@ -21,7 +20,7 @@ module RedDays
         Icon	=	GenericMedicalParcel2,
 		Medical = TRUE,
 		WorldStaticModel = RedDays.LinerBox,
-		Tags = IgnoreZombieDensity;IsFireFuel,
+		Tags = base:IgnoreZombieDensity;base:IsFireFuel,
 		FireFuelRatio = 0.25,
 	}
 

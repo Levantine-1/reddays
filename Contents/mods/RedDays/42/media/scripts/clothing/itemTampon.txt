@@ -9,8 +9,7 @@ module RedDays
         BodyLocation = RedDays:HygieneItem,
         ClothingItem = Tampon,
         Icon = tampon_clean,
-		WorldStaticModel = Tampon,
-        BodyLocation = HygieneItem,
+		WorldStaticModel = RedDays.Tampon,
 		ConditionMax = 10,
     }
 
@@ -21,8 +20,8 @@ module RedDays
 		Weight = 1,
         Icon	=	GenericMedicalParcel2,
 		Medical = TRUE,
-		WorldStaticModel = TamponBox,
-		Tags = IgnoreZombieDensity;IsFireFuel,
+		WorldStaticModel = RedDays.TamponBox,
+		Tags = base:IgnoreZombieDensity;base:IsFireFuel,
 		FireFuelRatio = 0.25,
 	}
 
