@@ -81,7 +81,7 @@ function HygieneManager.getCurrentlyWornSanitaryItem()
     -- And I'm too lazy to refactor all of it right now
     local player = getPlayer()
     local wornItems = player:getWornItems()
-    local hygieneItem = wornItems:getItem("HygieneItem") -- "HygieneItem" is the BodyLocation
+    local hygieneItem = wornItems:getItem(ItemBodyLocation.HygieneItem)
     if hygieneItem then
         return hygieneItem
     end
