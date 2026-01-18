@@ -120,7 +120,6 @@ function CycleTrackerLogic.getDataCodes(cycle)
     elseif stat.phase == "lutealPhase" then
         return CycleTrackerText.lutealPhaseDataCodes(cycle, stat)
     end
-    return false
 end
 
 function CycleTrackerLogic.cycleTrackerMainLogic(cycle)
@@ -169,7 +168,7 @@ end
 
 -- Below are intercept functions that are triggered when the player interacts with hygiene items.
 
-If player unequips the hygiene item, inspect the item and update the cycle tracker
+--If player unequips the hygiene item, inspect the item and update the cycle tracker
 local o_ISUnequipAction_perform = ISUnequipAction.perform
 function ISUnequipAction:perform()
     if self.item:getBodyLocation() == "HygieneItem" then
@@ -178,7 +177,7 @@ function ISUnequipAction:perform()
     o_ISUnequipAction_perform(self)
 end
 
-If the player replaces a hygiene item, inspect the item and update the cycle tracker
+-- If the player replaces a hygiene item, inspect the item and update the cycle tracker
 local o_ISWearClothing_perform = ISWearClothing.perform
 function ISWearClothing:perform()
     if self.item:getBodyLocation() == "HygieneItem" then

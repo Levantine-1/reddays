@@ -142,7 +142,7 @@ Events.EveryOneMinute.Add(mainLoop)
 
 -- Below are intercept functions that are triggered when the player interacts with hygiene items.
 
-If player unequips the hygiene item, inspect the item and update the cycle tracker
+-- If player unequips the hygiene item, inspect the item and update the cycle tracker
 local o_ISUnequipAction_perform = ISUnequipAction.perform
 function ISUnequipAction:perform()
     if self.item:getBodyLocation() == "HygieneItem" then
@@ -151,7 +151,7 @@ function ISUnequipAction:perform()
     o_ISUnequipAction_perform(self)
 end
 
-If the player replaces a hygiene item, inspect the item and update the cycle tracker
+-- If the player replaces a hygiene item, inspect the item and update the cycle tracker
 local o_ISWearClothing_perform = ISWearClothing.perform
 function ISWearClothing:perform()
     if self.item:getBodyLocation() == "HygieneItem" then
@@ -161,7 +161,7 @@ function ISWearClothing:perform()
 end
 
 
-If the player washes themselves, reset the leak moodle
+-- If the player washes themselves, reset the leak moodle
 local o_ISWashYourself_perform = ISWashYourself.perform
 function ISWashYourself:perform()
     modData.ICdata.LeakLevel = 0.42 -- 0.42 is an arbitrary value that clears the moodle, but is low enough to quickly trigger a moodle when needed.
