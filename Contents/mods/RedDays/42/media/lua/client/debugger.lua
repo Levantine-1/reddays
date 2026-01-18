@@ -1,4 +1,7 @@
 CycleDebugger = {}
+require "RedDays/cycle_tracker_logic"
+require "RedDays/cycle_manager"
+require "RedDays/hygiene_manager"
 
 -- Don't use colons in strings here because the game won't print the whole string before a colon
 local function PrintStatus(cycle)
