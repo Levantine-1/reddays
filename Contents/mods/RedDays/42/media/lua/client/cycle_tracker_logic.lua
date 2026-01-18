@@ -9,7 +9,7 @@ local function LoadPlayerData()
     modData.ICdata.calendarMonth = modData.ICdata.calendarMonth or getGameTime():getMonth() + 1
     modData.ICdata.journalID = modData.ICdata.journalID or CycleTrackerText.generateUID()
 end
--- Events.OnGameStart.Add(LoadPlayerData)
+Events.OnGameStart.Add(LoadPlayerData)
 
 local function checkIfJournalisBlank(journal)
     -- local allBlank = true
@@ -169,26 +169,26 @@ end
 
 -- Below are intercept functions that are triggered when the player interacts with hygiene items.
 
--- If player unequips the hygiene item, inspect the item and update the cycle tracker
--- local o_ISUnequipAction_perform = ISUnequipAction.perform
--- function ISUnequipAction:perform()
---     if self.item:getBodyLocation() == "HygieneItem" then
---         CycleTrackerLogic.cycleTrackerMainLogic(modData.ICdata.currentCycle)
---     end
---     o_ISUnequipAction_perform(self)
--- end
+If player unequips the hygiene item, inspect the item and update the cycle tracker
+local o_ISUnequipAction_perform = ISUnequipAction.perform
+function ISUnequipAction:perform()
+    if self.item:getBodyLocation() == "HygieneItem" then
+        CycleTrackerLogic.cycleTrackerMainLogic(modData.ICdata.currentCycle)
+    end
+    o_ISUnequipAction_perform(self)
+end
 
--- If the player replaces a hygiene item, inspect the item and update the cycle tracker
--- local o_ISWearClothing_perform = ISWearClothing.perform
--- function ISWearClothing:perform()
---     if self.item:getBodyLocation() == "HygieneItem" then
---         local hygieneItem = HygieneManager.getCurrentlyWornSanitaryItem()
---         if hygieneItem then
---             CycleTrackerLogic.cycleTrackerMainLogic(modData.ICdata.currentCycle)
---         end
---     end
---     o_ISWearClothing_perform(self)
--- end
+If the player replaces a hygiene item, inspect the item and update the cycle tracker
+local o_ISWearClothing_perform = ISWearClothing.perform
+function ISWearClothing:perform()
+    if self.item:getBodyLocation() == "HygieneItem" then
+        local hygieneItem = HygieneManager.getCurrentlyWornSanitaryItem()
+        if hygieneItem then
+            CycleTrackerLogic.cycleTrackerMainLogic(modData.ICdata.currentCycle)
+        end
+    end
+    o_ISWearClothing_perform(self)
+end
 
 return CycleTrackerLogic
 

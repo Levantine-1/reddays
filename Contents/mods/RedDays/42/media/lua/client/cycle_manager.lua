@@ -7,7 +7,7 @@ local function LoadPlayerData()
     cycleDelayed = modData.ICdata.cycleDelayed or false
     PMS_Symptoms = modData.ICdata.pmsSymptoms or CycleManager.generateRandomPMSsymptoms()
 end
--- Events.OnGameStart.Add(LoadPlayerData)
+Events.OnGameStart.Add(LoadPlayerData)
 
 local function random_between(range)
     return ZombRand(range[1], range[2])

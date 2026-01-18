@@ -10,7 +10,7 @@ local function LoadPlayerData()
         cSIHDC_counter = 0
     end
 end
--- Events.OnLoad.Add(LoadPlayerData)
+Events.OnLoad.Add(LoadPlayerData)
 
 -- NOTE: 2025-07-24 Disabled because this gets run on every load which means you always start on the first day of the cycle.
 -- function HygieneManager.resetHygieneData()
@@ -28,7 +28,7 @@ local function SavePlayerData()
     modData.ICdata.cSIHDC_counter = cSIHDC_counter or 0
 end
 -- Events.OnSave.Add(SavePlayerData) -- For some reason this doesn't work. It'll print the counter, but it doesn't seem save it as on load, value is 0.
--- Events.EveryTenMinutes.Add(SavePlayerData) -- Save every 10 minutes instead
+Events.EveryTenMinutes.Add(SavePlayerData) -- Save every 10 minutes instead
 
 local cSIHDC_counter_tgt = 100 -- Decrement 1 every 100 minutes, should get to very bloody condition around 10 hours and saturated around 20 hours
 local cSIHDC_counter_increment = 1

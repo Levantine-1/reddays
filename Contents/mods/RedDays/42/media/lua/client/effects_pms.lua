@@ -220,16 +220,16 @@ EffectsPMS = {}
     end
 
     local o_ISTakePillAction_perform = ISTakePillAction.perform
-    -- function ISTakePillAction:perform()
-    --     if self.item:getFullType() == "Base.Pills" then
-    --         print("Painkillers Taken, Reducing PMS Symptoms")
-    --         modData.ICdata.pill_recently_taken = true
-    --         modData.ICdata.pill_effect_active = true
-    --         modData.ICdata.pill_effect_counter = 0
-    --         Events.EveryTenMinutes.Add(takePillsStiffness)
-    --     end
-    --     o_ISTakePillAction_perform(self)
-    -- end
+    function ISTakePillAction:perform()
+        if self.item:getFullType() == "Base.Pills" then
+            print("Painkillers Taken, Reducing PMS Symptoms")
+            modData.ICdata.pill_recently_taken = true
+            modData.ICdata.pill_effect_active = true
+            modData.ICdata.pill_effect_counter = 0
+            Events.EveryTenMinutes.Add(takePillsStiffness)
+        end
+        o_ISTakePillAction_perform(self)
+    end
 
 
     local function LoadPlayerData()
@@ -240,7 +240,7 @@ EffectsPMS = {}
             Events.EveryTenMinutes.Add(takePillsStiffness) -- Start the timer if the effect is active
         end
     end
-    -- Events.OnGameStart.Add(LoadPlayerData)
+    Events.OnGameStart.Add(LoadPlayerData)
 
     function EffectsPMS.applyPMSEffectsMain()
         local pms_severity = CycleManager.getPMSseverity()
@@ -253,6 +253,6 @@ EffectsPMS = {}
         applyEnabledSymptomEffects(currentCycle, pms_severity, rate_multiplier)
 
     end
-    -- Events.EveryOneMinute.Add(EffectsPMS.applyPMSEffectsMain)
+    Events.EveryOneMinute.Add(EffectsPMS.applyPMSEffectsMain)
 
 return EffectsPMS
