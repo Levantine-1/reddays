@@ -13,13 +13,13 @@ EffectsPMS = {}
 
         -- Default Anger decrement is -0.35 per ingame hour
         local angerLevel_change_rate = .02 -- This is an arbitrary value to gradually ramp anger up
-        local currentAngerLevel = stats:getAnger()
-        stats:setAnger(math.min(severity, currentAngerLevel + angerLevel_change_rate))
+        local currentAngerLevel = stats:get(CharacterStat.ANGER)
+        stats:set(CharacterStat.ANGER, math.min(severity, currentAngerLevel + angerLevel_change_rate))
 
         -- Default Endurance Recovery is +0.160 per ingame hour or +0.0268/min, so +0.0053/min is a 100% buff rate at max PMS Severity
         local endurance_change_rate = (0.0053 * severity) * rate_multiplier
-        local current_endurance = stats:getEndurance()
-        stats:setEndurance(math.min(1, current_endurance + endurance_change_rate))
+        local current_endurance = stats:get(CharacterStat.ENDURANCE)
+        stats:set(CharacterStat.ENDURANCE, math.min(1, current_endurance + endurance_change_rate))
     end
 
     function EffectsPMS.setCrampsEffect(player, stats, target_value, rate_multiplier)
@@ -54,13 +54,13 @@ EffectsPMS = {}
 
         -- Default Fatigue decrement is -0.04 per ingame hour, so 0.00034 is a 50% debuff rate at max PMS Severity
         local fatigue_change_rate = (0.00034 * severity) * rate_multiplier
-        local current_fatigue = stats:getFatigue()
-        stats:setFatigue(math.min(1, current_fatigue + fatigue_change_rate))
+        local current_fatigue = stats:get(CharacterStat.FATIGUE)
+        stats:set(CharacterStat.FATIGUE, math.min(1, current_fatigue + fatigue_change_rate))
 
         -- Default Endurance Recovery is +0.160 per ingame hour, so 0.00134 is a 50% debuff rate at max PMS Severity
         local endurance_change_rate = (0.00134 * severity) * rate_multiplier
-        local current_endurance = stats:getEndurance()
-        stats:setEndurance(math.max(0, current_endurance - endurance_change_rate))
+        local current_endurance = stats:get(CharacterStat.ENDURANCE)
+        stats:set(CharacterStat.ENDURANCE, math.max(0, current_endurance - endurance_change_rate))
     end
 
     function EffectsPMS.setTenderBreastsEffect(player, stats, target_value, rate_multiplier, alsoHasCramps)
@@ -103,14 +103,14 @@ EffectsPMS = {}
         -- Since hunger has a real negative effect, we'll only pop the peckish moodle and hold it there
         -- until enough time passed to make up for how much red days deducts
 
-        local currentHunger = stats:getHunger()
+        local currentHunger = stats:get(CharacterStat.HUNGER)
 
         if currentHunger < setFoodCravingEffect_lastHunger then
             setFoodCravingEffect_jumpedToHungry = false
         end
 
         if currentHunger > 0.01 and currentHunger < 0.16 and not setFoodCravingEffect_jumpedToHungry then
-            stats:setHunger(0.16)  -- Jump to peckish threshold
+            stats:set(CharacterStat.HUNGER, 0.16)  -- Jump to peckish threshold
             setFoodCravingEffect_jumpedToHungry = true
         end
         setFoodCravingEffect_lastHunger = currentHunger
@@ -125,17 +125,16 @@ EffectsPMS = {}
         -- Depression moodle is an int from 0 - 100 where 100 is max sadness
         -- Moodles level up from 1-4 at these respective thresholds: 20, 40, 60, 80
 
-        local bodyDamage = player:getBodyDamage()
-        local currentUnhappynessLevel = bodyDamage:getUnhappynessLevel()
+        local currentUnhappynessLevel = stats:get(CharacterStat.UNHAPPINESS)
         local change_rate = 1  -- Adjust unhappiness by 1 per minute toward target
 
         -- Gradually move toward target value
         if currentUnhappynessLevel < target_value then
             -- Increase unhappiness toward target
-            bodyDamage:setUnhappynessLevel(math.min(100, currentUnhappynessLevel + change_rate))
+            stats:set(CharacterStat.UNHAPPINESS, math.min(100, currentUnhappynessLevel + change_rate))
         elseif currentUnhappynessLevel > target_value then
             -- Decrease unhappiness toward target
-            bodyDamage:setUnhappynessLevel(math.max(0, currentUnhappynessLevel - change_rate))
+            stats:set(CharacterStat.UNHAPPINESS, math.max(0, currentUnhappynessLevel - change_rate))
         end
     end
 
