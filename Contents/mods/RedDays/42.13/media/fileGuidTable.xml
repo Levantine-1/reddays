@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fileGuidTable>
+    <files>
+        <path>media/clothing/clothingItems/Sanitary_Pad.xml</path>
+        <guid>9237119d-010f-444d-905d-1e996b1f66cc</guid>
+    </files>
+        <files>
+        <path>media/clothing/clothingItems/Tampon.xml</path>
+        <guid>951a0b20-c3f2-4a64-b025-9e248d0cc86f</guid>
+    </files>
+    <files>
+        <path>media/clothing/clothingItems/Panty_Liner.xml</path>
+        <guid>54aef0c6-1e1f-416c-85e5-da04c272b871</guid>
+    </files>
+</fileGuidTable>
