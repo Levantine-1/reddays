@@ -111,10 +111,8 @@ EffectsPMS = {}
 
         -- Linear mapping: input 0 → 0.1, input 100 → 0.001
         local target_trigger_hunger_value = 0.1 - (target_value * 0.00099)
-        print("Food Craving Effect Input Target: " .. tostring(target_value) .. " Calculated Target Value: " .. tostring(target_trigger_hunger_value))
 
         if currentHunger > target_trigger_hunger_value and currentHunger < 0.16 and not setFoodCravingEffect_jumpedToHungry then
-            print("Jumping hunger to peckish threshold due to food craving effect.")
             stats:set(CharacterStat.HUNGER, 0.16)  -- Jump to peckish threshold
             setFoodCravingEffect_jumpedToHungry = true
         end
