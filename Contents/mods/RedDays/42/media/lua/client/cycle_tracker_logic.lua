@@ -171,7 +171,8 @@ end
 --If player unequips the hygiene item, inspect the item and update the cycle tracker
 local o_ISUnequipAction_perform = ISUnequipAction.perform
 function ISUnequipAction:perform()
-    if self.item:getBodyLocation() == "HygieneItem" then
+    local hygieneLocation = ItemBodyLocation.get(ResourceLocation.of("RedDays:HygieneItem"))
+    if hygieneLocation and self.item:isBodyLocation(hygieneLocation) then
         CycleTrackerLogic.cycleTrackerMainLogic(modData.ICdata.currentCycle)
     end
     o_ISUnequipAction_perform(self)
@@ -180,7 +181,8 @@ end
 -- If the player replaces a hygiene item, inspect the item and update the cycle tracker
 local o_ISWearClothing_perform = ISWearClothing.perform
 function ISWearClothing:perform()
-    if self.item:getBodyLocation() == "HygieneItem" then
+    local hygieneLocation = ItemBodyLocation.get(ResourceLocation.of("RedDays:HygieneItem"))
+    if hygieneLocation and self.item:isBodyLocation(hygieneLocation) then
         local hygieneItem = HygieneManager.getCurrentlyWornSanitaryItem()
         if hygieneItem then
             CycleTrackerLogic.cycleTrackerMainLogic(modData.ICdata.currentCycle)
