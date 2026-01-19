@@ -104,7 +104,7 @@ local function OnZombieDead(zombie)
         return -- Drops nothing about 40% of the time
     end
 end
--- Events.OnZombieDead.Add(OnZombieDead)
+Events.OnZombieDead.Add(OnZombieDead)
 
 -- NOTE 2025-08-07: For some reason I can't get the sandbox var before the event is added. So the condition is checked after game start and on zombie death
 -- if SandboxVars.RedDays.hygiene_items_spawn_on_corpses then

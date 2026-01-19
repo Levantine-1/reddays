@@ -2,8 +2,9 @@ module RedDays
 {
     item Period_Tracker
     {
+		DisplayName = Period Tracker,
 		DisplayCategory = Literature,
-		ItemType = base:literature,
+		Type = Literature,
 		Weight = 1,
 		Icon = Notebook,
 		CanBeWrite = true,

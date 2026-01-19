@@ -3,25 +3,27 @@ module RedDays
 {
     item Sanitary_Pad
     {
+        DisplayName = Sanitary Pad,
         DisplayCategory = FeminineHygiene,
-        ItemType = base:clothing,
+        Type = Clothing,
         Weight = 0.1,
-        BodyLocation = RedDays:HygieneItem,
         ClothingItem = Sanitary_Pad,
         Icon = sanitarypad_clean,
-		WorldStaticModel = RedDays.Pad,
+		WorldStaticModel = Pad,
+        BodyLocation = HygieneItem,
 		ConditionMax = 10,
     }
 
     item SanitaryPadBox
 	{
+		DisplayName = Box of Sanitary Pads,
 		DisplayCategory = FeminineHygiene,
-		ItemType = base:normal,
+		Type = Normal,
 		Weight = 1,
         Icon	=	GenericMedicalParcel2,
 		Medical = TRUE,
-		WorldStaticModel = RedDays.Padbox,
-		Tags = base:IgnoreZombieDensity;base:IsFireFuel,
+		WorldStaticModel = Padbox,
+		Tags = IgnoreZombieDensity;IsFireFuel,
 		FireFuelRatio = 0.25,
 	}
 

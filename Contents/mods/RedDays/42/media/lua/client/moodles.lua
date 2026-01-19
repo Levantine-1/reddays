@@ -12,7 +12,7 @@ local function LoadPlayerData()
     modData.ICdata.LeakSwitchState = modData.ICdata.LeakSwitchState or false -- This value is updated by effects_manager methods
     modData.ICdata.LeakLevel = modData.ICdata.LeakLevel or 0.42 -- 0.42 is an arbitrary value that clears the moodle, but is low enough to quickly trigger a moodle when needed.
 end
--- Events.OnGameStart.Add(LoadPlayerData)
+Events.OnGameStart.Add(LoadPlayerData)
 
 MF.createMoodle("DirtyPantyLiner");
 MF.createMoodle("BloodyPantyLiner");
@@ -145,8 +145,7 @@ Events.EveryOneMinute.Add(mainLoop)
 -- If player unequips the hygiene item, inspect the item and update the cycle tracker
 local o_ISUnequipAction_perform = ISUnequipAction.perform
 function ISUnequipAction:perform()
-    local hygieneLocation = ItemBodyLocation.get(ResourceLocation.of("RedDays:HygieneItem"))
-    if hygieneLocation and self.item:isBodyLocation(hygieneLocation) then
+    if self.item:getBodyLocation() == "HygieneItem" then
         resetMoodles()
     end
     o_ISUnequipAction_perform(self)
@@ -155,8 +154,7 @@ end
 -- If the player replaces a hygiene item, inspect the item and update the cycle tracker
 local o_ISWearClothing_perform = ISWearClothing.perform
 function ISWearClothing:perform()
-    local hygieneLocation = ItemBodyLocation.get(ResourceLocation.of("RedDays:HygieneItem"))
-    if hygieneLocation and self.item:isBodyLocation(hygieneLocation) then
+    if self.item:getBodyLocation() == "HygieneItem" then
         resetMoodles()
     end
     o_ISWearClothing_perform(self)

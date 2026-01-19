@@ -3,25 +3,27 @@ module RedDays
 {
     item Tampon
     {
+        DisplayName = Tampon,
         DisplayCategory = FeminineHygiene,
-        ItemType = base:clothing,
+        Type = Clothing,
         Weight = 0.1,
-        BodyLocation = RedDays:HygieneItem,
         ClothingItem = Tampon,
         Icon = tampon_clean,
-		WorldStaticModel = RedDays.Tampon,
+		WorldStaticModel = Tampon,
+        BodyLocation = HygieneItem,
 		ConditionMax = 10,
     }
 
     item TamponBox
 	{
+		DisplayName = Box of Tampons,
 		DisplayCategory = FeminineHygiene,
-		ItemType = base:normal,
+		Type = Normal,
 		Weight = 1,
         Icon	=	GenericMedicalParcel2,
 		Medical = TRUE,
-		WorldStaticModel = RedDays.TamponBox,
-		Tags = base:IgnoreZombieDensity;base:IsFireFuel,
+		WorldStaticModel = TamponBox,
+		Tags = IgnoreZombieDensity;IsFireFuel,
 		FireFuelRatio = 0.25,
 	}
 

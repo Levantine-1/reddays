@@ -81,11 +81,7 @@ function HygieneManager.getCurrentlyWornSanitaryItem()
     -- And I'm too lazy to refactor all of it right now
     local player = getPlayer()
     local wornItems = player:getWornItems()
-    local hygieneLocation = ItemBodyLocation.get(ResourceLocation.of("RedDays:HygieneItem"))
-    if not hygieneLocation then
-        return false
-    end
-    local hygieneItem = wornItems:getItem(hygieneLocation)
+    local hygieneItem = wornItems:getItem("HygieneItem") -- "HygieneItem" is the BodyLocation
     if hygieneItem then
         return hygieneItem
     end

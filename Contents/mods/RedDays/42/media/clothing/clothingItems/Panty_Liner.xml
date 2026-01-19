@@ -4,7 +4,7 @@
     <m_MaleModel></m_MaleModel>
 	<m_FemaleModel></m_FemaleModel>
 	<m_GUID>54aef0c6-1e1f-416c-85e5-da04c272b871</m_GUID>
-	<bodyLocation>RedDays:HygieneItem</bodyLocation>
+	<bodyLocation>HygieneItem</bodyLocation>
     <m_Static>false</m_Static>
 	<m_AllowRandomHue>false</m_AllowRandomHue>
 	<m_AllowRandomTint>false</m_AllowRandomTint>

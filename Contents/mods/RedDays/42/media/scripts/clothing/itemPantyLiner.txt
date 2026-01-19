@@ -2,25 +2,27 @@ module RedDays
 {
     item Panty_Liner
     {
+        DisplayName = Panty Liner,
         DisplayCategory = FeminineHygiene,
-        ItemType = base:clothing,
+        Type = Clothing,
         Weight = 0.1,
-        BodyLocation = RedDays:HygieneItem,
         ClothingItem = Panty_Liner,
         Icon = pantyliner_clean,
 		WorldStaticModel = RedDays.Liner,
+        BodyLocation = HygieneItem,
 		ConditionMax = 2,
     }
 
     item PantyLinerBox
 	{
+		DisplayName = Box of Panty Liners,
 		DisplayCategory = FeminineHygiene,
-		ItemType = base:normal,
+		Type = Normal,
 		Weight = 1,
         Icon	=	GenericMedicalParcel2,
 		Medical = TRUE,
 		WorldStaticModel = RedDays.LinerBox,
-		Tags = base:IgnoreZombieDensity;base:IsFireFuel,
+		Tags = IgnoreZombieDensity;IsFireFuel,
 		FireFuelRatio = 0.25,
 	}
 
