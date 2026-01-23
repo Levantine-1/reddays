@@ -36,7 +36,6 @@ function Main.main()
         cycle = modData.ICdata.currentCycle
     end
     EffectsManager.determineEffects(cycle) -- Apply effects based on the current cycle phase
-    CycleDebugger.printWrapper(cycle)
 end
 
 return Main

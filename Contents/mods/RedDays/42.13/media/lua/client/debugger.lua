@@ -72,20 +72,11 @@ local function PrintStatus(cycle)
 end
 -- Events.OnGameStart.Add(PrintStatus(modData.ICdata.currentCycle)) Sometimes this prints before the cycle is generated, so we call it in main() instead.
 
-local print_counter = 0
-local hasPrintedOnStart = false -- Don't change this one manually
-local debugPrinting = false -- Set to true to enable debug printing every 10 minutes
-function CycleDebugger.printWrapper(cycle) -- Wrapper to control printing frequency when running from main function
-    if debugPrinting then
-        PrintStatus(cycle)
-    elseif not hasPrintedOnStart then
-        PrintStatus(cycle) -- Print status only once at the start
-        hasPrintedOnStart = true
-    elseif print_counter >= 6 then
-        PrintStatus(cycle) -- Print status every 60 minutes (6 * 10 minutes)
-        print_counter = 0
-    end
-    print_counter = print_counter + 1
+
+function CycleDebugger.printWrapper() -- Wrapper to control printing frequency when running from main function
+    local cycle = modData.ICdata.currentCycle
+    if not cycle then return end
+    PrintStatus(cycle)
+    -- There used to be a lot more logic here, but keeping this to keep it consistent.
 end
--- Eventually move debug print to its own timed event and decouple it from other modules
 return CycleDebugger

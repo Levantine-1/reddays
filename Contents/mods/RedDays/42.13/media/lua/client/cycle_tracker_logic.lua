@@ -170,19 +170,17 @@ end
 
 -- Below are intercept functions that are triggered when the player interacts with hygiene items.
 
---If player unequips the hygiene item, inspect the item and update the cycle tracker
-local o_ISUnequipAction_perform = ISUnequipAction.perform
-function ISUnequipAction:perform()
+-- If player unequips the hygiene item, inspect the item and update the cycle tracker
+function CycleTrackerLogic.ISUnequipAction_perform(self)
     local hygieneLocation = ItemBodyLocation.get(ResourceLocation.of("RedDays:HygieneItem"))
     if hygieneLocation and self.item:isBodyLocation(hygieneLocation) then
         CycleTrackerLogic.cycleTrackerMainLogic(modData.ICdata.currentCycle)
     end
-    o_ISUnequipAction_perform(self)
 end
+-- 2026-01-23 Moved to events_intercepts.lua
 
 -- If the player replaces a hygiene item, inspect the item and update the cycle tracker
-local o_ISWearClothing_perform = ISWearClothing.perform
-function ISWearClothing:perform()
+function CycleTrackerLogic.ISWearClothing_perform(self)
     local hygieneLocation = ItemBodyLocation.get(ResourceLocation.of("RedDays:HygieneItem"))
     if hygieneLocation and self.item:isBodyLocation(hygieneLocation) then
         local hygieneItem = HygieneManager.getCurrentlyWornSanitaryItem()
@@ -190,8 +188,8 @@ function ISWearClothing:perform()
             CycleTrackerLogic.cycleTrackerMainLogic(modData.ICdata.currentCycle)
         end
     end
-    o_ISWearClothing_perform(self)
 end
+-- 2026-01-23 Moved to events_intercepts.lua
 
 return CycleTrackerLogic
 

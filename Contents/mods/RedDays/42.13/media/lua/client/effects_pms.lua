@@ -220,8 +220,7 @@ EffectsPMS = {}
         end
     end
 
-    local o_ISTakePillAction_perform = ISTakePillAction.perform
-    function ISTakePillAction:perform()
+    function EffectsPMS.ISTakePillAction_perform(self)
         if self.item:getFullType() == "Base.Pills" then
             print("Painkillers Taken, Reducing PMS Symptoms")
             modData.ICdata.pill_recently_taken = true
@@ -229,8 +228,8 @@ EffectsPMS = {}
             modData.ICdata.pill_effect_counter = 0
             Events.EveryTenMinutes.Add(takePillsStiffness)
         end
-        o_ISTakePillAction_perform(self)
     end
+    -- 2026-01-23 Moved to events_intercepts.lua
 
 
     function EffectsPMS.LoadPlayerData()
