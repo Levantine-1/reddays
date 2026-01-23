@@ -1,13 +1,14 @@
 CycleManager = {}
 
-local function LoadPlayerData()
+function CycleManager.LoadPlayerData()
     local player = getPlayer()
     modData = player:getModData()
     modData.ICdata = modData.ICdata or {}
     cycleDelayed = modData.ICdata.cycleDelayed or false
     PMS_Symptoms = modData.ICdata.pmsSymptoms or CycleManager.generateRandomPMSsymptoms()
 end
-Events.OnGameStart.Add(LoadPlayerData)
+-- Events.OnGameStart.Add(LoadPlayerData)
+-- 2026-01-22 Moved to events_intercepts.lua 
 
 local function random_between(range)
     return ZombRand(range[1], range[2])

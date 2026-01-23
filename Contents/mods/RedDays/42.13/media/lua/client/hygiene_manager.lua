@@ -1,6 +1,6 @@
 HygieneManager = {}
 
-local function LoadPlayerData()
+function HygieneManager.LoadPlayerData()
     local player = getPlayer()
     modData = player:getModData()
     modData.ICdata = modData.ICdata or {}
@@ -10,7 +10,8 @@ local function LoadPlayerData()
         cSIHDC_counter = 0
     end
 end
-Events.OnLoad.Add(LoadPlayerData)
+-- Events.OnLoad.Add(HygieneManager.LoadPlayerData)
+-- 2026-01-22 Moved to events_intercepts.lua
 
 -- NOTE: 2025-07-24 Disabled because this gets run on every load which means you always start on the first day of the cycle.
 -- function HygieneManager.resetHygieneData()

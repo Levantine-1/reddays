@@ -1,7 +1,7 @@
 CycleTrackerLogic = {}
 require "RedDays/cycle_tracker_text"
 
-local function LoadPlayerData()
+function CycleTrackerLogic.LoadPlayerData()
     local player = getPlayer()
     modData = player:getModData()
     modData.ICdata = modData.ICdata or {}
@@ -9,7 +9,8 @@ local function LoadPlayerData()
     modData.ICdata.calendarMonth = modData.ICdata.calendarMonth or getGameTime():getMonth() + 1
     modData.ICdata.journalID = modData.ICdata.journalID or CycleTrackerText.generateUID()
 end
-Events.OnGameStart.Add(LoadPlayerData)
+-- Events.OnGameStart.Add(CycleTrackerLogic.LoadPlayerData)
+-- 2026-01-22 Moved to events_intercepts.lua
 
 local function checkIfJournalisBlank(journal)
     -- local allBlank = true

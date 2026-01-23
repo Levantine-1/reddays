@@ -1,9 +1,9 @@
 require "RedDays/cycle_manager"
 require "RedDays/effects_manager"
 require "RedDays/hygiene_manager"
+Main = {}
 
-
-local function LoadPlayerData()
+function Main.LoadPlayerData()
 	local player = getPlayer()
 	modData = player:getModData()
 	modData.ICdata = modData.ICdata or {}
@@ -13,7 +13,7 @@ local function LoadPlayerData()
         modData.ICdata.currentCycle = CycleManager.newCycle("LoadPlayerData_afterValidation")
     end
 end
-Events.OnGameStart.Add(LoadPlayerData)
+-- 2026-01-22 - Hooked into OnGameStart event in events_intercepts.lua
 
 local function phaseIsValid(phase)
     local valid_phases = {"delayPhase", "redPhase", "follicularPhase", "ovulationPhase", "lutealPhase"}
@@ -25,7 +25,7 @@ local function phaseIsValid(phase)
     return false
 end
 
-local function main()
+function Main.main()
     local cycle = modData.ICdata.currentCycle
     local current_phase = CycleManager.getCurrentCyclePhase(cycle)
     if not phaseIsValid(current_phase) then
@@ -38,4 +38,5 @@ local function main()
     EffectsManager.determineEffects(cycle) -- Apply effects based on the current cycle phase
     CycleDebugger.printWrapper(cycle)
 end
-Events.EveryTenMinutes.Add(main)
+
+return Main
