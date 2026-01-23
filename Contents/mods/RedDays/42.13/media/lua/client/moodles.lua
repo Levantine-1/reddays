@@ -145,32 +145,28 @@ end
 -- Below are intercept functions that are triggered when the player interacts with hygiene items.
 
 -- If player unequips the hygiene item, inspect the item and update the cycle tracker
-function moodles.ISUnequipAction_perform()
-local o_ISUnequipAction_perform = ISUnequipAction.perform
-function ISUnequipAction:perform()
+function moodles.ISUnequipAction_perform(self)
     local hygieneLocation = ItemBodyLocation.get(ResourceLocation.of("RedDays:HygieneItem"))
     if hygieneLocation and self.item:isBodyLocation(hygieneLocation) then
         resetMoodles()
     end
-    o_ISUnequipAction_perform(self)
 end
+-- 2026-01-22 Moved to events_intercepts.lua
 
 -- If the player replaces a hygiene item, inspect the item and update the cycle tracker
-local o_ISWearClothing_perform = ISWearClothing.perform
-function ISWearClothing:perform()
+function moodles.ISWearClothing_perform(self)
     local hygieneLocation = ItemBodyLocation.get(ResourceLocation.of("RedDays:HygieneItem"))
     if hygieneLocation and self.item:isBodyLocation(hygieneLocation) then
         resetMoodles()
     end
-    o_ISWearClothing_perform(self)
 end
+-- 2026-01-22 Moved to events_intercepts.lua
 
 
 -- If the player washes themselves, reset the leak moodle
-local o_ISWashYourself_perform = ISWashYourself.perform
-function ISWashYourself:perform()
+function moodles.ISWashYourself_perform()
     modData.ICdata.LeakLevel = 0.42 -- 0.42 is an arbitrary value that clears the moodle, but is low enough to quickly trigger a moodle when needed.
-    o_ISWashYourself_perform(self)
 end
+-- 2026-01-22 Moved to events_intercepts.lua
 
 return moodles
