@@ -6,9 +6,43 @@ function CycleManager.LoadPlayerData()
     modData.ICdata = modData.ICdata or {}
     cycleDelayed = modData.ICdata.cycleDelayed or false
     PMS_Symptoms = modData.ICdata.pmsSymptoms or CycleManager.generateRandomPMSsymptoms()
+
+    -- Initialize or validate the current cycle
+    modData.ICdata.currentCycle = modData.ICdata.currentCycle or CycleManager.newCycle("LoadPlayerData")
+    if not CycleManager.isCycleValid(modData.ICdata.currentCycle) then
+        print("Cycle data structure mismatch! This could be due to a mod update. Regenerating cycle...")
+        modData.ICdata.currentCycle = CycleManager.newCycle("LoadPlayerData_afterValidation")
+    end
 end
--- Events.OnGameStart.Add(LoadPlayerData)
--- 2026-01-22 Moved to events_intercepts.lua 
+
+local function phaseIsValid(phase)
+    local valid_phases = {"delayPhase", "redPhase", "follicularPhase", "ovulationPhase", "lutealPhase"}
+    for _, valid_phase in ipairs(valid_phases) do
+        if phase == valid_phase then
+            return true
+        end
+    end
+    return false
+end
+
+-- Main cycle tick - validates phase and renews cycle if needed
+function CycleManager.tick()
+    local cycle = modData.ICdata.currentCycle
+    local current_phase = CycleManager.getCurrentCyclePhase(cycle)
+
+    if current_phase == "endOfCycle" then
+        modData.ICdata.currentCycle = CycleManager.newCycle("tick_endOfCycle")
+        print("Cycle ended. New cycle generated.")
+        cycle = modData.ICdata.currentCycle
+    elseif not phaseIsValid(current_phase) then
+        print("Invalid cycle phase detected: " .. current_phase .. ". Regenerating cycle...")
+        modData.ICdata.currentCycle = CycleManager.newCycle("tick_afterInvalidPhase_" .. current_phase)
+        print("New cycle generated. Current cycle start day: " .. modData.ICdata.currentCycle.cycle_start_day)
+        cycle = modData.ICdata.currentCycle
+    end
+
+    return cycle
+end
 
 local function random_between(range)
     return ZombRand(range[1], range[2])

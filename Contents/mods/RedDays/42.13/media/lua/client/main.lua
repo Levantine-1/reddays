@@ -1,41 +1,68 @@
 require "RedDays/cycle_manager"
+require "RedDays/cycle_tracker_logic"
 require "RedDays/effects_manager"
 require "RedDays/hygiene_manager"
-Main = {}
+require "RedDays/effects_pms"
+require "RedDays/moodles"
 
-function Main.LoadPlayerData()
-	local player = getPlayer()
-	modData = player:getModData()
-	modData.ICdata = modData.ICdata or {}
-    modData.ICdata.currentCycle = modData.ICdata.currentCycle or CycleManager.newCycle("LoadPlayerData") -- Initialize the current cycle or generate a new one if it doesn't exist
-    if not CycleManager.isCycleValid(modData.ICdata.currentCycle) then
-        print("Cycle data structure mismatch! This could be due to a mod update. Regenerating cycle...")
-        modData.ICdata.currentCycle = CycleManager.newCycle("LoadPlayerData_afterValidation")
-    end
+-- ================= GLOBAL EVENT HOOKS =================
+
+local function OnGameStart()
+    CycleManager.LoadPlayerData()
+    CycleTrackerLogic.LoadPlayerData()
+    EffectsPMS.LoadPlayerData()
+    HygieneManager.LoadPlayerData()
+    moodles.LoadPlayerData()
 end
--- 2026-01-22 - Hooked into OnGameStart event in events_intercepts.lua
+Events.OnGameStart.Add(OnGameStart)
 
-local function phaseIsValid(phase)
-    local valid_phases = {"delayPhase", "redPhase", "follicularPhase", "ovulationPhase", "lutealPhase"}
-    for _, valid_phase in ipairs(valid_phases) do
-        if phase == valid_phase then
-            return true
-        end
-    end
-    return false
+local function EveryHours()
+    return
+    CycleDebugger.printWrapper()
+end
+Events.EveryHours.Add(EveryHours)
+
+local function EveryTenMinutes()
+    local cycle = CycleManager.tick()
+    EffectsManager.determineEffects(cycle)
+    CycleDebugger.printWrapper()
+end
+Events.EveryTenMinutes.Add(EveryTenMinutes)
+
+local function EveryOneMinute()
+    EffectsPMS.applyPMSEffectsMain()
+    moodles.mainLoop()
+end
+Events.EveryOneMinute.Add(EveryOneMinute)
+
+-- ================= INTERCEPT FUNCTIONS =================
+
+-- If player unequips the hygiene item
+local o_ISUnequipAction_perform = ISUnequipAction.perform
+function ISUnequipAction:perform()
+    moodles.ISUnequipAction_perform(self)
+    CycleTrackerLogic.ISUnequipAction_perform(self)
+    o_ISUnequipAction_perform(self)
 end
 
-function Main.main()
-    local cycle = modData.ICdata.currentCycle
-    local current_phase = CycleManager.getCurrentCyclePhase(cycle)
-    if not phaseIsValid(current_phase) then
-        print("Invalid cycle phase detected: " .. current_phase .. ". Regenerating cycle...")
-        reason_for_newCycle = "main_afterInvalidPhase_" .. current_phase
-        modData.ICdata.currentCycle = CycleManager.newCycle(reason_for_newCycle)
-        print("New cycle generated. Current cycle start day: " .. modData.ICdata.currentCycle.cycle_start_day)
-        cycle = modData.ICdata.currentCycle
-    end
-    EffectsManager.determineEffects(cycle) -- Apply effects based on the current cycle phase
+-- If the player replaces a hygiene item
+local o_ISWearClothing_perform = ISWearClothing.perform
+function ISWearClothing:perform()
+    moodles.ISWearClothing_perform(self)
+    CycleTrackerLogic.ISWearClothing_perform(self)
+    o_ISWearClothing_perform(self)
 end
 
-return Main
+-- If the player washes themselves, reset the leak moodle
+local o_ISWashYourself_perform = ISWashYourself.perform
+function ISWashYourself:perform()
+    moodles.ISWashYourself_perform()
+    o_ISWashYourself_perform(self)
+end
+
+-- If the player takes painkillers, reduce PMS symptoms
+local o_ISTakePillAction_perform = ISTakePillAction.perform
+function ISTakePillAction:perform()
+    EffectsPMS.ISTakePillAction_perform(self)
+    o_ISTakePillAction_perform(self)
+end
