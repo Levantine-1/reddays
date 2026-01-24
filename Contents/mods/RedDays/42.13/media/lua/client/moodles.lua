@@ -2,12 +2,12 @@ require "MF_ISMoodle"
 
 require "RedDays/hygiene_manager"
 require "RedDays/cycle_manager"
+require "RedDays/game_api"
 
 moodles = {}
 
 function moodles.LoadPlayerData()
-    local player = getPlayer()
-    modData = player:getModData()
+    modData = zapi.getModData()
     modData.ICdata = modData.ICdata or {}
     modData.ICdata.LeakSwitchState = modData.ICdata.LeakSwitchState or false -- This value is updated by effects_manager methods
     modData.ICdata.LeakLevel = modData.ICdata.LeakLevel or 0.42 -- 0.42 is an arbitrary value that clears the moodle, but is low enough to quickly trigger a moodle when needed.
@@ -51,7 +51,7 @@ end
 
 
 local function getCurrentPlayerNum()
-    return getPlayer():getPlayerNum()
+    return zapi.getPlayerNum()
 end
 
 local function getCurrentHygieneItem()
@@ -146,8 +146,7 @@ end
 
 -- If player unequips the hygiene item, inspect the item and update the cycle tracker
 function moodles.ISUnequipAction_perform(self)
-    local hygieneLocation = ItemBodyLocation.get(ResourceLocation.of("RedDays:HygieneItem"))
-    if hygieneLocation and self.item:isBodyLocation(hygieneLocation) then
+    if zapi.isItemAtBodyLocation(self.item, "RedDays:HygieneItem") then
         resetMoodles()
     end
 end
@@ -155,8 +154,7 @@ end
 
 -- If the player replaces a hygiene item, inspect the item and update the cycle tracker
 function moodles.ISWearClothing_perform(self)
-    local hygieneLocation = ItemBodyLocation.get(ResourceLocation.of("RedDays:HygieneItem"))
-    if hygieneLocation and self.item:isBodyLocation(hygieneLocation) then
+    if zapi.isItemAtBodyLocation(self.item, "RedDays:HygieneItem") then
         resetMoodles()
     end
 end

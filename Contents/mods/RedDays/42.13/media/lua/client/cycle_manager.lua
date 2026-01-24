@@ -2,8 +2,7 @@ CycleManager = {}
 require "RedDays/game_api"
 
 function CycleManager.LoadPlayerData()
-    local player = getPlayer()
-    modData = player:getModData()
+    modData = zapi.getModData()
     modData.ICdata = modData.ICdata or {}
     cycleDelayed = modData.ICdata.cycleDelayed or false
     PMS_Symptoms = modData.ICdata.pmsSymptoms or CycleManager.generateRandomPMSsymptoms()
