@@ -220,8 +220,7 @@ EffectsPMS = {}
         end
     end
 
-    local o_ISTakePillAction_perform = ISTakePillAction.perform
-    function ISTakePillAction:perform()
+    function EffectsPMS.ISTakePillAction_perform(self)
         if self.item:getFullType() == "Base.Pills" then
             print("Painkillers Taken, Reducing PMS Symptoms")
             modData.ICdata.pill_recently_taken = true
@@ -229,11 +228,11 @@ EffectsPMS = {}
             modData.ICdata.pill_effect_counter = 0
             Events.EveryTenMinutes.Add(takePillsStiffness)
         end
-        o_ISTakePillAction_perform(self)
     end
+    -- 2026-01-23 Moved to events_intercepts.lua
 
 
-    local function LoadPlayerData()
+    function EffectsPMS.LoadPlayerData()
         modData.ICdata.pill_recently_taken = modData.ICdata.pill_recently_taken or false
         modData.ICdata.pill_effect_counter = modData.ICdata.pill_effect_counter or 0
         modData.ICdata.pill_effect_active = modData.ICdata.pill_effect_active or false
@@ -241,7 +240,8 @@ EffectsPMS = {}
             Events.EveryTenMinutes.Add(takePillsStiffness) -- Start the timer if the effect is active
         end
     end
-    Events.OnGameStart.Add(LoadPlayerData)
+    -- Events.OnGameStart.Add(EffectsPMS.LoadPlayerData)
+    -- Event hook moved to events_intercepts.lua 2026-01-22
 
     function EffectsPMS.applyPMSEffectsMain()
         local pms_severity = CycleManager.getPMSseverity()
@@ -254,6 +254,7 @@ EffectsPMS = {}
         applyEnabledSymptomEffects(currentCycle, pms_severity, rate_multiplier)
 
     end
-    Events.EveryOneMinute.Add(EffectsPMS.applyPMSEffectsMain)
+    -- Events.EveryOneMinute.Add(EffectsPMS.applyPMSEffectsMain)
+    -- Event hook moved to events_intercepts.lua 2026-01-22
 
 return EffectsPMS

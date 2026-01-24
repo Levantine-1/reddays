@@ -3,16 +3,17 @@ require "MF_ISMoodle"
 require "RedDays/hygiene_manager"
 require "RedDays/cycle_manager"
 
-local moodles = {}
+moodles = {}
 
-local function LoadPlayerData()
+function moodles.LoadPlayerData()
     local player = getPlayer()
     modData = player:getModData()
     modData.ICdata = modData.ICdata or {}
     modData.ICdata.LeakSwitchState = modData.ICdata.LeakSwitchState or false -- This value is updated by effects_manager methods
     modData.ICdata.LeakLevel = modData.ICdata.LeakLevel or 0.42 -- 0.42 is an arbitrary value that clears the moodle, but is low enough to quickly trigger a moodle when needed.
 end
--- Events.OnGameStart.Add(LoadPlayerData)
+-- Events.OnGameStart.Add(moodles.LoadPlayerData)
+-- 2026-01-22 Moved to events_intercepts.lua
 
 MF.createMoodle("DirtyPantyLiner");
 MF.createMoodle("BloodyPantyLiner");
@@ -122,7 +123,7 @@ local function setHygieneMoodle(hygieneItem, phaseData)
     MF.getMoodle(moodleName, getCurrentPlayerNum()):setValue(moodleLevel)
 end
 
-function mainLoop()
+function moodles.mainLoop()
     local hygieneItem = getCurrentHygieneItem()
     local phaseData = getCurrentPhaseData()
 
@@ -137,37 +138,35 @@ function mainLoop()
 
     updateLeakState(phaseData)
 end
-Events.EveryOneMinute.Add(mainLoop)
+-- Events.EveryOneMinute.Add(moodles.mainLoop)
+-- 2026-01-22 Moved to events_intercepts.lua
 
 
 -- Below are intercept functions that are triggered when the player interacts with hygiene items.
 
 -- If player unequips the hygiene item, inspect the item and update the cycle tracker
-local o_ISUnequipAction_perform = ISUnequipAction.perform
-function ISUnequipAction:perform()
+function moodles.ISUnequipAction_perform(self)
     local hygieneLocation = ItemBodyLocation.get(ResourceLocation.of("RedDays:HygieneItem"))
     if hygieneLocation and self.item:isBodyLocation(hygieneLocation) then
         resetMoodles()
     end
-    o_ISUnequipAction_perform(self)
 end
+-- 2026-01-22 Moved to events_intercepts.lua
 
 -- If the player replaces a hygiene item, inspect the item and update the cycle tracker
-local o_ISWearClothing_perform = ISWearClothing.perform
-function ISWearClothing:perform()
+function moodles.ISWearClothing_perform(self)
     local hygieneLocation = ItemBodyLocation.get(ResourceLocation.of("RedDays:HygieneItem"))
     if hygieneLocation and self.item:isBodyLocation(hygieneLocation) then
         resetMoodles()
     end
-    o_ISWearClothing_perform(self)
 end
+-- 2026-01-22 Moved to events_intercepts.lua
 
 
 -- If the player washes themselves, reset the leak moodle
-local o_ISWashYourself_perform = ISWashYourself.perform
-function ISWashYourself:perform()
+function moodles.ISWashYourself_perform()
     modData.ICdata.LeakLevel = 0.42 -- 0.42 is an arbitrary value that clears the moodle, but is low enough to quickly trigger a moodle when needed.
-    o_ISWashYourself_perform(self)
 end
+-- 2026-01-22 Moved to events_intercepts.lua
 
 return moodles
