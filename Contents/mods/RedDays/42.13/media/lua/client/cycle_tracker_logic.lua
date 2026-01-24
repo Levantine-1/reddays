@@ -1,12 +1,13 @@
 CycleTrackerLogic = {}
 require "RedDays/cycle_tracker_text"
+require "RedDays/game_api"
 
 function CycleTrackerLogic.LoadPlayerData()
     local player = getPlayer()
     modData = player:getModData()
     modData.ICdata = modData.ICdata or {}
     modData.ICdata.calendar = modData.ICdata.calendar or CycleTrackerText.newCalendar()
-    modData.ICdata.calendarMonth = modData.ICdata.calendarMonth or getGameTime():getMonth() + 1
+    modData.ICdata.calendarMonth = modData.ICdata.calendarMonth or zapi.getGameTime("getMonth") + 1
     modData.ICdata.journalID = modData.ICdata.journalID or CycleTrackerText.generateUID()
 end
 -- Events.OnGameStart.Add(CycleTrackerLogic.LoadPlayerData)
@@ -133,9 +134,9 @@ function CycleTrackerLogic.cycleTrackerMainLogic(cycle)
         playerJournalID = modData.ICdata.journalID
     end
 
-    local day = getGameTime():getDayPlusOne()
-    local month = getGameTime():getMonth() + 1
-    local year = getGameTime():getYear()
+    local day = zapi.getGameTime("getDayPlusOne")
+    local month = zapi.getGameTime("getMonth") + 1
+    local year = zapi.getGameTime("getYear")
 
     if modData.ICdata.calendarMonth ~= month then
         modData.ICdata.calendarMonth = month

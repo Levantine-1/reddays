@@ -1,4 +1,5 @@
 CycleManager = {}
+require "RedDays/game_api"
 
 function CycleManager.LoadPlayerData()
     local player = getPlayer()
@@ -50,7 +51,7 @@ end
 
 local function default_cycle() -- Default cycle values if a new cycle cannot be generated
     return {
-        cycle_start_day = getGameTime():getWorldAgeHours() / 24,
+        cycle_start_day = zapi.getGameTime("getWorldAgeHours") / 24,
         cycle_duration = 28,
         follicular_duration = 14,
         red_days_duration = 4,
@@ -198,7 +199,7 @@ function CycleManager.newCycle(whoDidThis)
             print("Attempt " .. attempt .. " to generate a new menstrual cycle...")
         end
 
-        local cycle_start_day = getGameTime():getWorldAgeHours() / 24
+        local cycle_start_day = zapi.getGameTime("getWorldAgeHours") / 24
 
         local timeToDelaycycle = 0
         cycleDelayed = modData.ICdata.cycleDelayed or false
@@ -279,7 +280,7 @@ function CycleManager.newCycle(whoDidThis)
 end
 
 function CycleManager.getCurrentCyclePhase(cycle)
-    local current_day = getGameTime():getWorldAgeHours() / 24 
+    local current_day = zapi.getGameTime("getWorldAgeHours") / 24
     if not cycle then
         print("Invalid cycle structure detected.")
         return "invalidCycle"
@@ -340,7 +341,7 @@ function CycleManager.getPMSseverity()
 end
 
 function CycleManager.getPhaseStatus(cycle)
-    local current_day = getGameTime():getWorldAgeHours() / 24
+    local current_day = zapi.getGameTime("getWorldAgeHours") / 24
     local days_into_cycle = current_day - cycle.cycle_start_day
     local phase = CycleManager.getCurrentCyclePhase(cycle)
 

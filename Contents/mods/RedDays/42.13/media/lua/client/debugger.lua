@@ -2,11 +2,12 @@ CycleDebugger = {}
 require "RedDays/cycle_tracker_logic"
 require "RedDays/cycle_manager"
 require "RedDays/hygiene_manager"
+require "RedDays/game_api"
 
 -- Don't use colons in strings here because the game won't print the whole string before a colon
 local function PrintStatus(cycle)
     print("=========================== Generated menstrual cycle details ==============================")
-    local currentDay = getGameTime():getWorldAgeHours() / 24
+    local currentDay = zapi.getGameTime("getWorldAgeHours") / 24
     print("Current time in days -------------------- " .. currentDay)
 
     print("The reason for last cycle generation ---- " .. cycle.reason_for_cycle)

@@ -112,8 +112,9 @@ function CycleTrackerText.newCalendar()
     return lines
 end
 
+require "RedDays/game_api"
 function CycleTrackerText.getCalendarText(calendar, month)
-    local year = getGameTime():getYear()
+    local year = zapi.getGameTime("getYear")
     local monthName = getMonthName(month)
 
     local text = monthName .. " " .. year .. "\n"

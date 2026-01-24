@@ -162,7 +162,6 @@ function moodles.ISWearClothing_perform(self)
 end
 -- 2026-01-22 Moved to events_intercepts.lua
 
-
 -- If the player washes themselves, reset the leak moodle
 function moodles.ISWashYourself_perform()
     modData.ICdata.LeakLevel = 0.42 -- 0.42 is an arbitrary value that clears the moodle, but is low enough to quickly trigger a moodle when needed.
