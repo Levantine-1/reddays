@@ -13,6 +13,7 @@ local function PrintStatus(cycle)
     print("Current time in days -------------------- " .. currentDay)
 
     print("The reason for last cycle generation ---- " .. cycle.reason_for_cycle)
+    print("Cycle delayed (first spawn delay used) -- " .. tostring(modData.ICdata.cycleDelayed or false))
     print("Current phase --------------------------- " .. cycle.current_phase)
     print("Phase minutes remaining ----------------- " .. cycle.phase_minutes_remaining .. " mins (" .. (cycle.phase_minutes_remaining / MINUTES_PER_DAY) .. " days)")
     print("Total cycle duration -------------------- " .. (cycle.cycle_duration_mins / MINUTES_PER_DAY) .. " days (" .. cycle.cycle_duration_mins .. " mins)")

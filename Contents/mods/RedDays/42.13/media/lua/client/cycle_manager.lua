@@ -185,7 +185,8 @@ function CycleManager.sandboxValues()
         range_luteal_phase_duration = range_luteal_phase_duration,
         range_delay_duration = range_delay_duration,
         range_healthEffectLevel = range_healthEffectLevel,
-        range_pms_duration = range_pms_duration
+        range_pms_duration = range_pms_duration,
+        phase_start_delay_enabled = sbv.phase_start_delay_enabled
     }
 end
 
@@ -315,11 +316,9 @@ function CycleManager.newCycle(whoDidThis)
     cycleDelayed = modData.ICdata.cycleDelayed or false
 
     if ranges.phase_start_delay_enabled and not cycleDelayed and whoDidThis ~= "isCycleValid" then
-        -- Start on follicular phase with duration = delay value only
+        -- Start on luteal phase with duration = delay value only, so when it ends the period starts
         local delay_days = random_between(range_delay_duration)
-        print("Delay enabled for new player - starting on follicular phase.")
-        print("Follicular phase set to delay duration: " .. delay_days .. " days.")
-        starting_phase = "follicularPhase"
+        starting_phase = "lutealPhase"
         starting_minutes = daysToMinutes(delay_days)
         modData.ICdata.cycleDelayed = true
     else
