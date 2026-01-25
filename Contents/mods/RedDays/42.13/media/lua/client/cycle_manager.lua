@@ -45,9 +45,11 @@ local function getNextPhase(currentPhase)
 end
 
 -- Main cycle tick - decrements time and transitions phases
--- tickMinutes: number of minutes to decrement (default 10 for EveryTenMinutes)
 function CycleManager.tick(tickMinutes)
-    tickMinutes = tickMinutes or 10
+    if not tickMinutes or tickMinutes <= 0 then
+        print("Invalid tickMinutes value: " .. tostring(tickMinutes))
+        return modData.ICdata.currentCycle
+    end
     local cycle = modData.ICdata.currentCycle
     
     if not cycle or not cycle.current_phase then
