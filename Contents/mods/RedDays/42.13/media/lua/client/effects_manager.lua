@@ -31,8 +31,7 @@ local function consumeDischargeProduct()
 end
 
 local function stopGroinBleeding()
-    local player = zapi.getPlayer()
-    local groin = zapi.getBodyPart(player, BodyPartType.Groin)
+    local groin = zapi.getBodyPart(BodyPartType.Groin)
     local bleedingTime = groin:getBleedingTime()
     if bleedingTime == 0 then -- Clear bleeding if no wounds. Cycle generates bleeding time of 0, so assumed no wounds.
         -- groin:setBleeding(false)
