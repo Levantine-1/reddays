@@ -26,7 +26,6 @@ MF.createMoodle("BloodyTampon");
 
 MF.createMoodle("Leak");
 
-
 -- Determine if player bathed based on clothes/body dirtiness/bloody
 local function getMoodleLevel(hygieneItemCondition)
     local moodleLevel = 0.5
@@ -41,7 +40,6 @@ local function getMoodleLevel(hygieneItemCondition)
     end
     return moodleLevel
 end
-
 
 function getHygieneItemName(hygieneItem)
     local hygieneItemName = hygieneItem:getType()

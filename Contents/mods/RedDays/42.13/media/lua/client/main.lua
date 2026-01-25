@@ -17,7 +17,6 @@ local function isValidGenderCheck()
 end
 
 -- ================= GLOBAL EVENT HOOKS =================
-
 local function initializePlayerData()
     CycleManager.LoadPlayerData()
     CycleTrackerLogic.LoadPlayerData()
@@ -32,37 +31,36 @@ local function OnGameStart()
 end
 Events.OnGameStart.Add(OnGameStart)
 
--- Handle respawns - OnCreatePlayer fires when player spawns/respawns
-local function OnCreatePlayer(playerIndex, player)
-    if playerIndex ~= 0 then return end  -- Only local player
+local function OnCreatePlayer(playerIndex, player) -- When player is created or respawned
+    if playerIndex ~= 0 then return end
     if not isValidGenderCheck() then return end
     initializePlayerData()
 end
 Events.OnCreatePlayer.Add(OnCreatePlayer)
 
+-- ================= TIMED EVENT HOOKS =================
 local function EveryHours()
     if not isValidGenderCheck() then return end
-    -- CycleDebugger.printWrapper() -- Disabled for release
+    -- CycleDebugger.printWrapper()
 end
 Events.EveryHours.Add(EveryHours)
 
 local function EveryTenMinutes()
     if not isValidGenderCheck() then return end
-    local cycle = CycleManager.tick()
-    EffectsManager.determineEffects(cycle)
     CycleDebugger.printWrapper()
 end
 Events.EveryTenMinutes.Add(EveryTenMinutes)
 
 local function EveryOneMinute()
     if not isValidGenderCheck() then return end
+    local cycle = CycleManager.tick(1)
+    EffectsManager.determineEffects(cycle)
     EffectsPMS.applyPMSEffectsMain()
     moodles.mainLoop()
 end
 Events.EveryOneMinute.Add(EveryOneMinute)
 
 -- ================= INTERCEPT FUNCTIONS =================
-
 local o_ISUnequipAction_perform = ISUnequipAction.perform
 function ISUnequipAction:perform()
     if isValidGenderCheck() then
