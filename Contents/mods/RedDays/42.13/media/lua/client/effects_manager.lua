@@ -31,7 +31,8 @@ local function consumeDischargeProduct()
 end
 
 local function stopGroinBleeding()
-    local groin = zapi.getBodyPart(BodyPartType.Groin)
+    local player = zapi.getPlayer()
+    local groin = zapi.getBodyPart(player, BodyPartType.Groin)
     local bleedingTime = groin:getBleedingTime()
     if bleedingTime == 0 then -- Clear bleeding if no wounds. Cycle generates bleeding time of 0, so assumed no wounds.
         -- groin:setBleeding(false)
@@ -40,15 +41,6 @@ local function stopGroinBleeding()
 end
 
 function EffectsManager.determineEffects(cycle)
-    if not SandboxVars.RedDays.affectsAllGenders then
-        if not zapi.isFemale() then
-            if stat_Adjustment_isEnabled then
-                Events.EveryOneMinute.Remove(stat_Adjustment)
-            end
-            return
-        end
-    end
-
     local current_phase = CycleManager.getCurrentCyclePhase(cycle)
 
     if current_phase == "redPhase" then
