@@ -23,34 +23,46 @@ end
 
 -- https://projectzomboid.com/modding/zombie/characters/IsoPlayer.html#getPlayerNum()
 function zapi.getPlayerNum()
-    return getPlayer():getPlayerNum()
+    local player = getPlayer()
+    if not player then return nil end
+    return player:getPlayerNum()
 end
 
 -- https://projectzomboid.com/modding/zombie/characters/IsoGameCharacter.html#isFemale()
 function zapi.isFemale()
-    return getPlayer():isFemale()
+    local player = getPlayer()
+    if not player then return nil end
+    return player:isFemale()
 end
 
 -- https://projectzomboid.com/modding/zombie/characters/IsoGameCharacter.html#getModData()
 function zapi.getModData()
-    return getPlayer():getModData()
+    local player = getPlayer()
+    if not player then return nil end
+    return player:getModData()
 end
 
 -- https://projectzomboid.com/modding/zombie/characters/IsoGameCharacter.html#getWornItems()
 function zapi.getWornItems()
-    return getPlayer():getWornItems()
+    local player = getPlayer()
+    if not player then return nil end
+    return player:getWornItems()
 end
 
 -- ================= BODY DAMAGE =================
 
 -- https://projectzomboid.com/modding/zombie/characters/IsoGameCharacter.html#getBodyDamage()
 function zapi.getBodyDamage()
-    return getPlayer():getBodyDamage()
+    local player = getPlayer()
+    if not player then return nil end
+    return player:getBodyDamage()
 end
 
 -- https://projectzomboid.com/modding/zombie/characters/BodyDamage/BodyDamage.html#getBodyPart(zombie.characters.BodyDamage.BodyPartType)
 function zapi.getBodyPart(bodyPartType)
-    return getPlayer():getBodyDamage():getBodyPart(bodyPartType)
+    local player = getPlayer()
+    if not player then return nil end
+    return player:getBodyDamage():getBodyPart(bodyPartType)
 end
 
 -- ================= BODY LOCATIONS =================
@@ -64,7 +76,7 @@ end
 -- https://projectzomboid.com/modding/zombie/inventory/ItemBodyLocation.html
 -- https://projectzomboid.com/modding/zombie/inventory/ItemContainer.html#getItem(zombie.inventory.ItemBodyLocation)
 function zapi.getWornItemAtLocation(locationString)
-    local wornItems = getPlayer():getWornItems()
+    local wornItems = zapi.getWornItems()
     local bodyLocation = zapi.getBodyLocation(locationString)
     if not bodyLocation then
         return nil

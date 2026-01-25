@@ -1,3 +1,4 @@
+require "RedDays/game_api"
 require "RedDays/cycle_manager"
 require "RedDays/cycle_tracker_logic"
 require "RedDays/effects_manager"
@@ -17,12 +18,14 @@ end
 Events.OnGameStart.Add(OnGameStart)
 
 local function EveryHours()
-    return
+    if not zapi.getPlayer() then return end
+    return -- Disable debug prints for release
     CycleDebugger.printWrapper()
 end
 Events.EveryHours.Add(EveryHours)
 
 local function EveryTenMinutes()
+    if not zapi.getPlayer() then return end
     local cycle = CycleManager.tick()
     EffectsManager.determineEffects(cycle)
     CycleDebugger.printWrapper()
@@ -30,6 +33,7 @@ end
 Events.EveryTenMinutes.Add(EveryTenMinutes)
 
 local function EveryOneMinute()
+    if not zapi.getPlayer() then return end
     EffectsPMS.applyPMSEffectsMain()
     moodles.mainLoop()
 end
