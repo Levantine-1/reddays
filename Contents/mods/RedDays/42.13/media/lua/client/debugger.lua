@@ -17,7 +17,6 @@ local function PrintStatus(cycle)
     print("Phase minutes remaining ----------------- " .. cycle.phase_minutes_remaining .. " mins (" .. (cycle.phase_minutes_remaining / MINUTES_PER_DAY) .. " days)")
     print("Total cycle duration -------------------- " .. (cycle.cycle_duration_mins / MINUTES_PER_DAY) .. " days (" .. cycle.cycle_duration_mins .. " mins)")
 
-    print("Delay phase duration -------------------- " .. (cycle.delayPhase_duration_mins / MINUTES_PER_DAY) .. " days (" .. cycle.delayPhase_duration_mins .. " mins)")
     print("Red phase duration ---------------------- " .. (cycle.redPhase_duration_mins / MINUTES_PER_DAY) .. " days (" .. cycle.redPhase_duration_mins .. " mins)")
     print("Follicular phase duration --------------- " .. (cycle.follicularPhase_duration_mins / MINUTES_PER_DAY) .. " days (" .. cycle.follicularPhase_duration_mins .. " mins)")
     print("Ovulation phase duration ---------------- " .. (cycle.ovulationPhase_duration_mins / MINUTES_PER_DAY) .. " days (" .. cycle.ovulationPhase_duration_mins .. " mins)")

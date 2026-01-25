@@ -5,7 +5,7 @@ require "RedDays/game_api"
 local MINUTES_PER_DAY = 1440  -- 24 hours * 60 minutes
 
 -- Phase order for cycling through phases
-local PHASE_ORDER = {"delayPhase", "redPhase", "follicularPhase", "ovulationPhase", "lutealPhase"}
+local PHASE_ORDER = {"redPhase", "follicularPhase", "ovulationPhase", "lutealPhase"}
 
 function CycleManager.LoadPlayerData()
     modData = zapi.getModData()
@@ -96,7 +96,6 @@ local function default_cycle() -- Default cycle values if a new cycle cannot be 
         phase_minutes_remaining = daysToMinutes(4),
         
         -- Phase durations in minutes
-        delayPhase_duration_mins = 0,
         redPhase_duration_mins = daysToMinutes(4),
         follicularPhase_duration_mins = daysToMinutes(10),
         ovulationPhase_duration_mins = daysToMinutes(1),
@@ -226,40 +225,38 @@ function CycleManager.newCycle(whoDidThis)
     end
 
     -- Generate phase durations in days, then convert to minutes
-    local delay_days = 0
-    cycleDelayed = modData.ICdata.cycleDelayed or false
-    if ranges.phase_start_delay_enabled and not cycleDelayed and whoDidThis ~= "isCycleValid" then
-        print("Assuming player recently spawned, adding a random delay to the cycle start.")
-        delay_days = random_between(range_delay_duration)
-        print("Cycle start will be delayed by " .. delay_days .. " days.")
-        modData.ICdata.cycleDelayed = true
-    end
-
     local red_days = random_between(range_red_phase_duration)
     local follicular_days = random_between(range_follicular_phase_duration)
     local ovulation_days = random_between(range_ovulation_phase_duration)
     local luteal_days = random_between(range_luteal_phase_duration)
     local pms_days = random_between(range_pms_duration)
 
+    -- Determine starting phase based on delay setting
+    local starting_phase = "redPhase"
+    local starting_minutes = 0
+    cycleDelayed = modData.ICdata.cycleDelayed or false
+
+    if ranges.phase_start_delay_enabled and not cycleDelayed and whoDidThis ~= "isCycleValid" then
+        -- Start on follicular phase with duration = delay value only
+        local delay_days = random_between(range_delay_duration)
+        print("Delay enabled for new player - starting on follicular phase.")
+        print("Follicular phase set to delay duration: " .. delay_days .. " days.")
+        starting_phase = "follicularPhase"
+        starting_minutes = daysToMinutes(delay_days)
+        modData.ICdata.cycleDelayed = true
+    else
+        starting_minutes = daysToMinutes(red_days)
+    end
+
     -- Convert to minutes
-    local delayPhase_duration_mins = daysToMinutes(delay_days)
     local redPhase_duration_mins = daysToMinutes(red_days)
     local follicularPhase_duration_mins = daysToMinutes(follicular_days)
     local ovulationPhase_duration_mins = daysToMinutes(ovulation_days)
     local lutealPhase_duration_mins = daysToMinutes(luteal_days)
     local pms_duration_mins = daysToMinutes(pms_days)
 
-    local cycle_duration_mins = delayPhase_duration_mins + redPhase_duration_mins + 
-                                 follicularPhase_duration_mins + ovulationPhase_duration_mins + 
-                                 lutealPhase_duration_mins
-
-    -- Determine starting phase and time remaining
-    local starting_phase = "redPhase"
-    local starting_minutes = redPhase_duration_mins
-    if delay_days > 0 then
-        starting_phase = "delayPhase"
-        starting_minutes = delayPhase_duration_mins
-    end
+    local cycle_duration_mins = redPhase_duration_mins + follicularPhase_duration_mins +
+                                 ovulationPhase_duration_mins + lutealPhase_duration_mins
 
     -- Health effects
     local healthEffectSeverity = random_between(range_healthEffectLevel)
@@ -280,7 +277,6 @@ function CycleManager.newCycle(whoDidThis)
         phase_minutes_remaining = starting_minutes,
         
         -- Phase durations in minutes
-        delayPhase_duration_mins = delayPhase_duration_mins,
         redPhase_duration_mins = redPhase_duration_mins,
         follicularPhase_duration_mins = follicularPhase_duration_mins,
         ovulationPhase_duration_mins = ovulationPhase_duration_mins,
@@ -394,7 +390,6 @@ function CycleManager.isCycleValid(cycle) -- If mod is updated and the cycle str
     local required_fields = {
         "current_phase",
         "phase_minutes_remaining",
-        "delayPhase_duration_mins",
         "redPhase_duration_mins",
         "follicularPhase_duration_mins",
         "ovulationPhase_duration_mins",
