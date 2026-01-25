@@ -1,6 +1,7 @@
 EffectsPMS = {}
+require "RedDays/game_api"
 
-    function EffectsPMS.setAngerMoodle(player, stats, target_value, rate_multiplier)
+    function EffectsPMS.setAngerMoodle(stats, target_value, rate_multiplier)
         -- Anger or irritability tends to rise during the late luteal phase (about 1 week before period).
         -- Often linked to progesterone dominance and serotonin fluctuations.
         -- Peaks just before menstruation and resolves quickly once bleeding begins.
@@ -22,16 +23,15 @@ EffectsPMS = {}
         stats:set(CharacterStat.ENDURANCE, math.min(1, current_endurance + endurance_change_rate))
     end
 
-    function EffectsPMS.setCrampsEffect(player, stats, target_value, rate_multiplier)
+    function EffectsPMS.setCrampsEffect(stats, target_value, rate_multiplier)
         -- Begins a few hours before menstruation or with its onset due to uterine contractions (prostaglandins).
         -- Peaks during the first 1–2 days of bleeding, then fades by day 3.
         -- Intensity varies; typically moderate in healthy individuals.
         -- May cause mild lower back or thigh ache.
         local change_rate = 2 * rate_multiplier
 
-        local bodyDamage = player:getBodyDamage()
-        local lowerTorso = bodyDamage:getBodyPart(BodyPartType.Torso_Lower)
-        local groin = bodyDamage:getBodyPart(BodyPartType.Groin)
+        local lowerTorso = zapi.getBodyPart(BodyPartType.Torso_Lower)
+        local groin = zapi.getBodyPart(BodyPartType.Groin)
 
         local current_lower_torso_stiffness = lowerTorso:getStiffness()
         if current_lower_torso_stiffness < target_value then
@@ -44,7 +44,7 @@ EffectsPMS = {}
         end
     end
 
-    function EffectsPMS.setFatigueEffect(player, stats, target_value, rate_multiplier)
+    function EffectsPMS.setFatigueEffect(stats, target_value, rate_multiplier)
         -- Fatigue builds gradually during the luteal phase (about 5–7 days pre-period).
         -- Peaks right before or at the start of menstruation due to hormonal shifts and poor sleep quality.
         -- Resolves around day 2–3 of the period.
@@ -63,7 +63,7 @@ EffectsPMS = {}
         stats:set(CharacterStat.ENDURANCE, math.max(0, current_endurance - endurance_change_rate))
     end
 
-    function EffectsPMS.setTenderBreastsEffect(player, stats, target_value, rate_multiplier, alsoHasCramps)
+    function EffectsPMS.setTenderBreastsEffect(stats, target_value, rate_multiplier, alsoHasCramps)
         -- Typically begins 3–5 days before menstruation due to rising progesterone levels.
         -- Peaks right before the period starts, then subsides by about day 2–3 of menstruation.
         -- Intensity ranges from mild tenderness to noticeable soreness when touched.
@@ -75,8 +75,7 @@ EffectsPMS = {}
 
         local change_rate = 2 * rate_multiplier
 
-        local bodyDamage = player:getBodyDamage()
-        local upperTorso = bodyDamage:getBodyPart(BodyPartType.Torso_Upper)
+        local upperTorso = zapi.getBodyPart(BodyPartType.Torso_Upper)
 
         local current_upper_torso_stiffness = upperTorso:getStiffness()
         if current_upper_torso_stiffness < target_value then
@@ -86,7 +85,7 @@ EffectsPMS = {}
 
     local setFoodCravingEffect_lastHunger = 0
     local setFoodCravingEffect_jumpedToHungry = false
-    function EffectsPMS.setFoodCravingEffect(player, stats, target_value, rate_multiplier)
+    function EffectsPMS.setFoodCravingEffect(stats, target_value, rate_multiplier)
         -- Starts about 5–7 days before menstruation.
         -- Common cravings: carbs, sweets, salty or fatty foods due to serotonin and blood sugar changes.
         -- Peaks just before menstruation and fades within the first day of bleeding.
@@ -119,7 +118,7 @@ EffectsPMS = {}
         setFoodCravingEffect_lastHunger = currentHunger
     end
 
-    function EffectsPMS.setSadnessMoodle(player, stats, target_value, rate_multiplier)
+    function EffectsPMS.setSadnessMoodle(stats, target_value, rate_multiplier)
         -- Mild sadness or mood dips commonly appear in the days leading up to menstruation.
         -- May involve lower energy, sensitivity, or tearfulness.
         -- Often starts 3–5 days before menstruation and resolves within 1–2 days of bleeding onset.
@@ -141,13 +140,12 @@ EffectsPMS = {}
         end
     end
 
-    local function clearStiffness(player, currentCycle)
-        local bodyDamage = player:getBodyDamage()
+    local function clearStiffness(currentCycle)
         local resetValue = 22.5
 
         if currentCycle.pms_cramps then
-            local groin = bodyDamage:getBodyPart(BodyPartType.Groin)
-            local lowerTorso = bodyDamage:getBodyPart(BodyPartType.Torso_Lower)
+            local groin = zapi.getBodyPart(BodyPartType.Groin)
+            local lowerTorso = zapi.getBodyPart(BodyPartType.Torso_Lower)
 
             if groin:getStiffness() > resetValue then
                 groin:setStiffness(resetValue)
@@ -158,7 +156,7 @@ EffectsPMS = {}
         end
 
         if currentCycle.pms_tenderBreasts then
-            local upperTorso = bodyDamage:getBodyPart(BodyPartType.Torso_Upper)
+            local upperTorso = zapi.getBodyPart(BodyPartType.Torso_Upper)
 
             if upperTorso:getStiffness() > resetValue then
                 upperTorso:setStiffness(resetValue)
@@ -169,7 +167,7 @@ EffectsPMS = {}
     end
 
     local function applyEnabledSymptomEffects(currentCycle, pms_severity, rate_multiplier)
-        local player = getPlayer()
+        local player = zapi.getPlayer()
         if not player then return end
 
         local stats = player:getStats()
@@ -177,7 +175,7 @@ EffectsPMS = {}
         local target_value = (pms_severity / 100) * currentCycle.healthEffectSeverity
 
         if modData.ICdata.pill_recently_taken then
-            clearStiffness(player, currentCycle)
+            clearStiffness(currentCycle)
         end
 
         if modData.ICdata.pill_effect_active then
@@ -185,22 +183,22 @@ EffectsPMS = {}
         end
 
         if currentCycle.pms_agitation then
-            EffectsPMS.setAngerMoodle(player, stats, target_value, rate_multiplier)
+            EffectsPMS.setAngerMoodle(stats, target_value, rate_multiplier)
         end
         if currentCycle.pms_cramps then
-            EffectsPMS.setCrampsEffect(player, stats, target_value, rate_multiplier)
+            EffectsPMS.setCrampsEffect(stats, target_value, rate_multiplier)
         end
         if currentCycle.pms_fatigue then
-            EffectsPMS.setFatigueEffect(player, stats, target_value, rate_multiplier)
+            EffectsPMS.setFatigueEffect(stats, target_value, rate_multiplier)
         end
         if currentCycle.pms_tenderBreasts then
-            EffectsPMS.setTenderBreastsEffect(player, stats, target_value, rate_multiplier, currentCycle.pms_cramps)
+            EffectsPMS.setTenderBreastsEffect(stats, target_value, rate_multiplier, currentCycle.pms_cramps)
         end
         if currentCycle.pms_craveFood then
-            EffectsPMS.setFoodCravingEffect(player, stats, target_value, rate_multiplier)
+            EffectsPMS.setFoodCravingEffect(stats, target_value, rate_multiplier)
         end
         if currentCycle.pms_Sadness then
-            EffectsPMS.setSadnessMoodle(player, stats, target_value, rate_multiplier)
+            EffectsPMS.setSadnessMoodle(stats, target_value, rate_multiplier)
         end
     end
 

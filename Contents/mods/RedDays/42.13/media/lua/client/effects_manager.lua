@@ -1,5 +1,6 @@
 require "RedDays/hygiene_manager"
 require "RedDays/moodles"
+require "RedDays/game_api"
 
 EffectsManager = {}
 
@@ -30,9 +31,7 @@ local function consumeDischargeProduct()
 end
 
 local function stopGroinBleeding()
-    local player = getPlayer()
-    local bodyDamage = player:getBodyDamage()
-    local groin = bodyDamage:getBodyPart(BodyPartType.Groin)
+    local groin = zapi.getBodyPart(BodyPartType.Groin)
     local bleedingTime = groin:getBleedingTime()
     if bleedingTime == 0 then -- Clear bleeding if no wounds. Cycle generates bleeding time of 0, so assumed no wounds.
         -- groin:setBleeding(false)
@@ -42,8 +41,7 @@ end
 
 function EffectsManager.determineEffects(cycle)
     if not SandboxVars.RedDays.affectsAllGenders then
-        local player = getPlayer()
-        if not player:isFemale() then
+        if not zapi.isFemale() then
             if stat_Adjustment_isEnabled then
                 Events.EveryOneMinute.Remove(stat_Adjustment)
             end

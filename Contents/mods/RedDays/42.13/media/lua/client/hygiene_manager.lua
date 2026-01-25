@@ -1,8 +1,8 @@
 HygieneManager = {}
+require "RedDays/game_api"
 
 function HygieneManager.LoadPlayerData()
-    local player = getPlayer()
-    modData = player:getModData()
+    modData = zapi.getModData()
     modData.ICdata = modData.ICdata or {}
     if modData.ICdata.cSIHDC_counter ~= nil then
         cSIHDC_counter = modData.ICdata.cSIHDC_counter
@@ -23,8 +23,7 @@ end
 -- end
 
 local function SavePlayerData()
-    local player = getPlayer()
-    modData = player:getModData()
+    modData = zapi.getModData()
     modData.ICdata = modData.ICdata or {}
     modData.ICdata.cSIHDC_counter = cSIHDC_counter or 0
 end
@@ -80,13 +79,7 @@ function HygieneManager.getCurrentlyWornSanitaryItem()
     -- There used to be a lot of logic in here but it has since been simplified
     -- However keeping this here because a lot of existing code relies on this function
     -- And I'm too lazy to refactor all of it right now
-    local player = getPlayer()
-    local wornItems = player:getWornItems()
-    local hygieneLocation = ItemBodyLocation.get(ResourceLocation.of("RedDays:HygieneItem"))
-    if not hygieneLocation then
-        return false
-    end
-    local hygieneItem = wornItems:getItem(hygieneLocation)
+    local hygieneItem = zapi.getWornItemAtLocation("RedDays:HygieneItem")
     if hygieneItem then
         return hygieneItem
     end
@@ -94,8 +87,6 @@ function HygieneManager.getCurrentlyWornSanitaryItem()
 end
 
 function HygieneManager.consumeDischargeProduct()
-    local player = getPlayer()
-
     local item = HygieneManager.getCurrentlyWornSanitaryItem()
     if not item then
         return false
@@ -124,8 +115,7 @@ function HygieneManager.consumeDischargeProduct()
 end
 
 local function consumeSanitaryItem()
-    local player = getPlayer()
-    local wornItems = player:getWornItems()
+    local wornItems = zapi.getWornItems()
 
     local isSanitaryItemEquipped = false
     local didConsumeSanitaryItem = false
@@ -187,9 +177,7 @@ end
 -- end
 
 function HygieneManager.consumeHygieneProduct()
-    local player = getPlayer()
-    local bodyDamage = player:getBodyDamage()
-    local groin = bodyDamage:getBodyPart(BodyPartType.Groin)
+    local groin = zapi.getBodyPart(BodyPartType.Groin)
 
     isSanitaryItemEquipped, didConsumeSanitaryItem = consumeSanitaryItem()
     if isSanitaryItemEquipped then
