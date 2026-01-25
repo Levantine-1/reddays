@@ -128,6 +128,43 @@ local function default_cycle() -- Default cycle values if a new cycle cannot be 
     }
 end
 
+local function test_debug_cycle() -- The faster cycle for testing purposes
+    return {
+        -- Current state
+        current_phase = "redPhase",
+        phase_minutes_remaining = daysToMinutes(1),
+
+        -- Phase durations in minutes
+        redPhase_duration_mins = daysToMinutes(1),
+        follicularPhase_duration_mins = daysToMinutes(1),
+        ovulationPhase_duration_mins = daysToMinutes(1),
+        lutealPhase_duration_mins = daysToMinutes(1),
+
+        -- Total cycle duration in minutes (for reference)
+        cycle_duration_mins = daysToMinutes(4),
+
+        -- Health effect settings
+        stiffness_target = 55,
+        stiffness_increment = 2,
+        discomfort_target = 100,
+        endurance_decrement = 0.0005,
+        fatigue_increment = 0.0001,
+        healthEffectSeverity = 50,
+
+        -- PMS settings
+        pms_duration_mins = daysToMinutes(0.5),
+        pms_agitation = false,
+        pms_cramps = true,
+        pms_fatigue = true,
+        pms_tenderBreasts = false,
+        pms_craveFood = false,
+        pms_Sadness = false,
+
+        -- Metadata
+        reason_for_cycle = "testDebugCycle"
+    }
+end
+
 function CycleManager.sandboxValues()
     -- Abstracted this to a function because this is used in multiple places
     sbv = SandboxVars.RedDays
@@ -211,8 +248,16 @@ function CycleManager.getPMSymptoms()
     return symptoms
 end
 
-
+local testCycle = false
 function CycleManager.newCycle(whoDidThis)
+    -- Debug mode: use fast test cycle if enabled
+    if testCycle then
+        print("Debug fast cycle enabled - using test_debug_cycle()")
+        local cycle = test_debug_cycle()
+        cycle.reason_for_cycle = whoDidThis .. "_debugFastCycle"
+        return cycle
+    end
+
     local ranges = CycleManager.sandboxValues()
     local range_red_phase_duration = ranges.range_red_phase_duration
     local range_follicular_phase_duration = ranges.range_follicular_phase_duration
@@ -221,16 +266,47 @@ function CycleManager.newCycle(whoDidThis)
     local range_delay_duration = ranges.range_delay_duration
     local range_healthEffectLevel = ranges.range_healthEffectLevel
     local range_pms_duration = ranges.range_pms_duration
+    local range_total_cycle = ranges.range_total_menstrual_cycle_duration
 
     if whoDidThis ~= "isCycleValid" then
         print("Generating a new menstrual cycle (countdown-based)...")
     end
 
-    -- Generate phase durations in days, then convert to minutes
-    local red_days = random_between(range_red_phase_duration)
-    local follicular_days = random_between(range_follicular_phase_duration)
-    local ovulation_days = random_between(range_ovulation_phase_duration)
-    local luteal_days = random_between(range_luteal_phase_duration)
+    -- Try up to 10 times to generate a valid cycle (up to 10 times because sometimes the ranges make it possible)
+    -- This is because the player can set ranges that make it impossible to generate a valid cycle
+    local max_attempts = 10
+    local red_days, follicular_days, ovulation_days, luteal_days, total_days
+    local valid_cycle_generated = false
+
+    for attempt = 1, max_attempts do
+        red_days = random_between(range_red_phase_duration)
+        follicular_days = random_between(range_follicular_phase_duration)
+        ovulation_days = random_between(range_ovulation_phase_duration)
+        luteal_days = random_between(range_luteal_phase_duration)
+        total_days = red_days + follicular_days + ovulation_days + luteal_days
+
+        -- Check if total falls within expected range
+        if total_days >= range_total_cycle[1] and total_days <= range_total_cycle[2] then
+            valid_cycle_generated = true
+            if whoDidThis ~= "isCycleValid" then
+                print("Valid cycle generated on attempt " .. attempt .. " (total: " .. total_days .. " days)")
+            end
+            break
+        else
+            if whoDidThis ~= "isCycleValid" then
+                print("Attempt " .. attempt .. ": total " .. total_days .. " days outside range [" .. range_total_cycle[1] .. "-" .. range_total_cycle[2] .. "]")
+            end
+        end
+    end
+
+    -- Fallback to default cycle if we couldn't generate a valid one
+    if not valid_cycle_generated then
+        print("Failed to generate valid cycle after " .. max_attempts .. " attempts. Using default cycle.")
+        local cycle = default_cycle()
+        cycle.reason_for_cycle = whoDidThis .. "_fallbackDefault"
+        return cycle
+    end
+
     local pms_days = random_between(range_pms_duration)
 
     -- Determine starting phase based on delay setting
