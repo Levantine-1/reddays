@@ -38,6 +38,7 @@ local function OnCreatePlayer(playerIndex, player) -- When player is created or 
 end
 Events.OnCreatePlayer.Add(OnCreatePlayer)
 
+-- ================= TIMED EVENT HOOKS =================
 local function EveryHours()
     if not isValidGenderCheck() then return end
     -- CycleDebugger.printWrapper()
