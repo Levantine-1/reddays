@@ -9,7 +9,7 @@ require "RedDays/moodles"
 -- Gender check
 local function isValidGenderCheck()
     if not SandboxVars.RedDays.affectsAllGenders then
-         if not zapi.isFemale() then
+        if not zapi.isFemale() then
             return false
         end
     end
