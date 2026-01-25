@@ -6,26 +6,48 @@ require "RedDays/hygiene_manager"
 require "RedDays/effects_pms"
 require "RedDays/moodles"
 
+-- Gender check
+local function isValidGenderCheck()
+    if not SandboxVars.RedDays.affectsAllGenders then
+        if not zapi.isFemale() then
+            return false
+        end
+    end
+    return true
+end
+
 -- ================= GLOBAL EVENT HOOKS =================
 
-local function OnGameStart()
+local function initializePlayerData()
     CycleManager.LoadPlayerData()
     CycleTrackerLogic.LoadPlayerData()
     EffectsPMS.LoadPlayerData()
     HygieneManager.LoadPlayerData()
     moodles.LoadPlayerData()
 end
+
+local function OnGameStart()
+    if not isValidGenderCheck() then return end
+    initializePlayerData()
+end
 Events.OnGameStart.Add(OnGameStart)
 
+-- Handle respawns - OnCreatePlayer fires when player spawns/respawns
+local function OnCreatePlayer(playerIndex, player)
+    if playerIndex ~= 0 then return end  -- Only local player
+    if not isValidGenderCheck() then return end
+    initializePlayerData()
+end
+Events.OnCreatePlayer.Add(OnCreatePlayer)
+
 local function EveryHours()
-    if not zapi.getPlayer() then return end
-    return -- Disable debug prints for release
-    CycleDebugger.printWrapper()
+    if not isValidGenderCheck() then return end
+    -- CycleDebugger.printWrapper() -- Disabled for release
 end
 Events.EveryHours.Add(EveryHours)
 
 local function EveryTenMinutes()
-    if not zapi.getPlayer() then return end
+    if not isValidGenderCheck() then return end
     local cycle = CycleManager.tick()
     EffectsManager.determineEffects(cycle)
     CycleDebugger.printWrapper()
@@ -33,7 +55,7 @@ end
 Events.EveryTenMinutes.Add(EveryTenMinutes)
 
 local function EveryOneMinute()
-    if not zapi.getPlayer() then return end
+    if not isValidGenderCheck() then return end
     EffectsPMS.applyPMSEffectsMain()
     moodles.mainLoop()
 end
@@ -41,32 +63,36 @@ Events.EveryOneMinute.Add(EveryOneMinute)
 
 -- ================= INTERCEPT FUNCTIONS =================
 
--- If player unequips the hygiene item
 local o_ISUnequipAction_perform = ISUnequipAction.perform
 function ISUnequipAction:perform()
-    moodles.ISUnequipAction_perform(self)
-    CycleTrackerLogic.ISUnequipAction_perform(self)
+    if isValidGenderCheck() then
+        moodles.ISUnequipAction_perform(self)
+        CycleTrackerLogic.ISUnequipAction_perform(self)
+    end
     o_ISUnequipAction_perform(self)
 end
 
--- If the player replaces a hygiene item
 local o_ISWearClothing_perform = ISWearClothing.perform
 function ISWearClothing:perform()
-    moodles.ISWearClothing_perform(self)
-    CycleTrackerLogic.ISWearClothing_perform(self)
+    if isValidGenderCheck() then
+        moodles.ISWearClothing_perform(self)
+        CycleTrackerLogic.ISWearClothing_perform(self)
+    end
     o_ISWearClothing_perform(self)
 end
 
--- If the player washes themselves, reset the leak moodle
 local o_ISWashYourself_perform = ISWashYourself.perform
 function ISWashYourself:perform()
-    moodles.ISWashYourself_perform()
+    if isValidGenderCheck() then
+        moodles.ISWashYourself_perform()
+    end
     o_ISWashYourself_perform(self)
 end
 
--- If the player takes painkillers, reduce PMS symptoms
 local o_ISTakePillAction_perform = ISTakePillAction.perform
 function ISTakePillAction:perform()
-    EffectsPMS.ISTakePillAction_perform(self)
+    if isValidGenderCheck() then
+        EffectsPMS.ISTakePillAction_perform(self)
+    end
     o_ISTakePillAction_perform(self)
 end

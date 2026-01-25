@@ -40,15 +40,6 @@ local function stopGroinBleeding()
 end
 
 function EffectsManager.determineEffects(cycle)
-    if not SandboxVars.RedDays.affectsAllGenders then
-        if not zapi.isFemale() then
-            if stat_Adjustment_isEnabled then
-                Events.EveryOneMinute.Remove(stat_Adjustment)
-            end
-            return
-        end
-    end
-
     local current_phase = CycleManager.getCurrentCyclePhase(cycle)
 
     if current_phase == "redPhase" then
