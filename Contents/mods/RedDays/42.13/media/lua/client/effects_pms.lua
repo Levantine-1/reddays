@@ -227,7 +227,7 @@ function EffectsPMS.ISTakePillAction_perform(self)
 end
 
 function EffectsPMS.LoadPlayerData()
-modData.ICdata.pill_recently_taken = modData.ICdata.pill_recently_taken or false
+    modData.ICdata.pill_recently_taken = modData.ICdata.pill_recently_taken or false
     modData.ICdata.pill_effect_counter = modData.ICdata.pill_effect_counter or 0
     modData.ICdata.pill_effect_active = modData.ICdata.pill_effect_active or false
     if modData.ICdata.pill_effect_active then
