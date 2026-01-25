@@ -1,7 +1,7 @@
 EffectsPMS = {}
 require "RedDays/game_api"
 
-    function EffectsPMS.setAngerMoodle(stats, target_value, rate_multiplier)
+function EffectsPMS.setAngerMoodle(stats, target_value, rate_multiplier)
         -- Anger or irritability tends to rise during the late luteal phase (about 1 week before period).
         -- Often linked to progesterone dominance and serotonin fluctuations.
         -- Peaks just before menstruation and resolves quickly once bleeding begins.
@@ -21,9 +21,9 @@ require "RedDays/game_api"
         local endurance_change_rate = (0.0053 * severity) * rate_multiplier
         local current_endurance = stats:get(CharacterStat.ENDURANCE)
         stats:set(CharacterStat.ENDURANCE, math.min(1, current_endurance + endurance_change_rate))
-    end
+end
 
-    function EffectsPMS.setCrampsEffect(stats, target_value, rate_multiplier)
+function EffectsPMS.setCrampsEffect(stats, target_value, rate_multiplier)
         -- Begins a few hours before menstruation or with its onset due to uterine contractions (prostaglandins).
         -- Peaks during the first 1–2 days of bleeding, then fades by day 3.
         -- Intensity varies; typically moderate in healthy individuals.
@@ -42,9 +42,9 @@ require "RedDays/game_api"
         if current_groin_stiffness < target_value then
             groin:setStiffness(math.max(0, current_groin_stiffness + change_rate))
         end
-    end
+end
 
-    function EffectsPMS.setFatigueEffect(stats, target_value, rate_multiplier)
+function EffectsPMS.setFatigueEffect(stats, target_value, rate_multiplier)
         -- Fatigue builds gradually during the luteal phase (about 5–7 days pre-period).
         -- Peaks right before or at the start of menstruation due to hormonal shifts and poor sleep quality.
         -- Resolves around day 2–3 of the period.
@@ -61,9 +61,9 @@ require "RedDays/game_api"
         local endurance_change_rate = (0.00134 * severity) * rate_multiplier
         local current_endurance = stats:get(CharacterStat.ENDURANCE)
         stats:set(CharacterStat.ENDURANCE, math.max(0, current_endurance - endurance_change_rate))
-    end
+end
 
-    function EffectsPMS.setTenderBreastsEffect(stats, target_value, rate_multiplier, alsoHasCramps)
+function EffectsPMS.setTenderBreastsEffect(stats, target_value, rate_multiplier, alsoHasCramps)
         -- Typically begins 3–5 days before menstruation due to rising progesterone levels.
         -- Peaks right before the period starts, then subsides by about day 2–3 of menstruation.
         -- Intensity ranges from mild tenderness to noticeable soreness when touched.
@@ -81,9 +81,9 @@ require "RedDays/game_api"
         if current_upper_torso_stiffness < target_value then
             upperTorso:setStiffness(math.max(0, current_upper_torso_stiffness + change_rate))
         end
-    end
+end
 
-    local setFoodCravingEffect_lastHunger = 0
+local setFoodCravingEffect_lastHunger = 0
     local setFoodCravingEffect_jumpedToHungry = false
     function EffectsPMS.setFoodCravingEffect(stats, target_value, rate_multiplier)
         -- Starts about 5–7 days before menstruation.
@@ -116,9 +116,9 @@ require "RedDays/game_api"
             setFoodCravingEffect_jumpedToHungry = true
         end
         setFoodCravingEffect_lastHunger = currentHunger
-    end
+end
 
-    function EffectsPMS.setSadnessMoodle(stats, target_value, rate_multiplier)
+function EffectsPMS.setSadnessMoodle(stats, target_value, rate_multiplier)
         -- Mild sadness or mood dips commonly appear in the days leading up to menstruation.
         -- May involve lower energy, sensitivity, or tearfulness.
         -- Often starts 3–5 days before menstruation and resolves within 1–2 days of bleeding onset.
@@ -138,9 +138,9 @@ require "RedDays/game_api"
             -- Decrease unhappiness toward target
             stats:set(CharacterStat.UNHAPPINESS, math.max(0, currentUnhappynessLevel - change_rate))
         end
-    end
+end
 
-    local function clearStiffness(currentCycle)
+local function clearStiffness(currentCycle)
         local resetValue = 22.5
 
         if currentCycle.pms_cramps then
@@ -164,9 +164,9 @@ require "RedDays/game_api"
         end
 
         modData.ICdata.pill_recently_taken = false
-    end
+end
 
-    local function applyEnabledSymptomEffects(currentCycle, pms_severity, rate_multiplier)
+local function applyEnabledSymptomEffects(currentCycle, pms_severity, rate_multiplier)
         local player = zapi.getPlayer()
         if not player then return end
 
@@ -200,59 +200,49 @@ require "RedDays/game_api"
         if currentCycle.pms_Sadness then
             EffectsPMS.setSadnessMoodle(stats, target_value, rate_multiplier)
         end
+end
+
+local pill_effect_counter_max = SandboxVars.RedDays.painkillerEffectDuration or 36
+local function takePillsStiffness()
+    if not modData.ICdata.pill_effect_counter then return end
+    if modData.ICdata.pill_effect_counter < pill_effect_counter_max then
+        modData.ICdata.pill_effect_counter = modData.ICdata.pill_effect_counter + 1
+    else
+        print("PMS Painkiller Effect Ended")
+        Events.EveryTenMinutes.Remove(takePillsStiffness)
+        modData.ICdata.pill_effect_active = false
+        modData.ICdata.pill_effect_counter = 0
+        return
     end
+end
 
-
-
-    local pill_effect_counter_max = SandboxVars.RedDays.painkillerEffectDuration or 36 -- Pills are effective for 6 hours (36 * 10 = 360 minutes)
-    local function takePillsStiffness()
-        if not modData.ICdata.pill_effect_counter then return end -- Safety check incase player dies and respawns
-        if modData.ICdata.pill_effect_counter < pill_effect_counter_max then
-            modData.ICdata.pill_effect_counter = modData.ICdata.pill_effect_counter + 1
-        else
-            print("PMS Painkiller Effect Ended")
-            Events.EveryTenMinutes.Remove(takePillsStiffness) -- Pills are no longer effective
-            modData.ICdata.pill_effect_active = false
-            modData.ICdata.pill_effect_counter = 0
-            return
-        end
+function EffectsPMS.ISTakePillAction_perform(self)
+if self.item:getFullType() == "Base.Pills" then
+        print("Painkillers Taken, Reducing PMS Symptoms")
+        modData.ICdata.pill_recently_taken = true
+        modData.ICdata.pill_effect_active = true
+        modData.ICdata.pill_effect_counter = 0
+        Events.EveryTenMinutes.Add(takePillsStiffness)
     end
+end
 
-    function EffectsPMS.ISTakePillAction_perform(self)
-        if self.item:getFullType() == "Base.Pills" then
-            print("Painkillers Taken, Reducing PMS Symptoms")
-            modData.ICdata.pill_recently_taken = true
-            modData.ICdata.pill_effect_active = true
-            modData.ICdata.pill_effect_counter = 0
-            Events.EveryTenMinutes.Add(takePillsStiffness)
-        end
+function EffectsPMS.LoadPlayerData()
+modData.ICdata.pill_recently_taken = modData.ICdata.pill_recently_taken or false
+    modData.ICdata.pill_effect_counter = modData.ICdata.pill_effect_counter or 0
+    modData.ICdata.pill_effect_active = modData.ICdata.pill_effect_active or false
+    if modData.ICdata.pill_effect_active then
+        Events.EveryTenMinutes.Add(takePillsStiffness)
     end
-    -- 2026-01-23 Moved to events_intercepts.lua
+end
 
-
-    function EffectsPMS.LoadPlayerData()
-        modData.ICdata.pill_recently_taken = modData.ICdata.pill_recently_taken or false
-        modData.ICdata.pill_effect_counter = modData.ICdata.pill_effect_counter or 0
-        modData.ICdata.pill_effect_active = modData.ICdata.pill_effect_active or false
-        if modData.ICdata.pill_effect_active then
-            Events.EveryTenMinutes.Add(takePillsStiffness) -- Start the timer if the effect is active
-        end
-    end
-    -- Events.OnGameStart.Add(EffectsPMS.LoadPlayerData)
-    -- Event hook moved to events_intercepts.lua 2026-01-22
-
-    function EffectsPMS.applyPMSEffectsMain()
-        local pms_severity = CycleManager.getPMSseverity()
-        if pms_severity < 0.1 then return end
-        local currentCycle = modData.ICdata.currentCycle
-        if not currentCycle then return end
-        if not currentCycle.healthEffectSeverity then return end -- If mod existed before PMS update, some values after this may be nil until a new cycle is generated.
-        
-        local rate_multiplier = 1 -- Placeholder for future use if needed
-        applyEnabledSymptomEffects(currentCycle, pms_severity, rate_multiplier)
-
-    end
-    -- Events.EveryOneMinute.Add(EffectsPMS.applyPMSEffectsMain)
-    -- Event hook moved to events_intercepts.lua 2026-01-22
-
+function EffectsPMS.applyPMSEffectsMain()
+    local pms_severity = CycleManager.getPMSseverity()
+    if pms_severity < 0.1 then return end
+    local currentCycle = modData.ICdata.currentCycle
+    if not currentCycle then return end
+    if not currentCycle.healthEffectSeverity then return end
+    
+    local rate_multiplier = 1
+    applyEnabledSymptomEffects(currentCycle, pms_severity, rate_multiplier)
+end
 return EffectsPMS

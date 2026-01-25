@@ -1,6 +1,12 @@
 CycleManager = {}
 require "RedDays/game_api"
 
+-- Constants
+local MINUTES_PER_DAY = 1440  -- 24 hours * 60 minutes
+
+-- Phase order for cycling through phases
+local PHASE_ORDER = {"delayPhase", "redPhase", "follicularPhase", "ovulationPhase", "lutealPhase"}
+
 function CycleManager.LoadPlayerData()
     modData = zapi.getModData()
     modData.ICdata = modData.ICdata or {}
@@ -16,8 +22,7 @@ function CycleManager.LoadPlayerData()
 end
 
 local function phaseIsValid(phase)
-    local valid_phases = {"delayPhase", "redPhase", "follicularPhase", "ovulationPhase", "lutealPhase"}
-    for _, valid_phase in ipairs(valid_phases) do
+    for _, valid_phase in ipairs(PHASE_ORDER) do
         if phase == valid_phase then
             return true
         end
@@ -25,22 +30,53 @@ local function phaseIsValid(phase)
     return false
 end
 
--- Main cycle tick - validates phase and renews cycle if needed
-function CycleManager.tick()
-    local cycle = modData.ICdata.currentCycle
-    local current_phase = CycleManager.getCurrentCyclePhase(cycle)
-
-    if current_phase == "endOfCycle" then
-        modData.ICdata.currentCycle = CycleManager.newCycle("tick_endOfCycle")
-        print("Cycle ended. New cycle generated.")
-        cycle = modData.ICdata.currentCycle
-    elseif not phaseIsValid(current_phase) then
-        print("Invalid cycle phase detected: " .. current_phase .. ". Regenerating cycle...")
-        modData.ICdata.currentCycle = CycleManager.newCycle("tick_afterInvalidPhase_" .. current_phase)
-        print("New cycle generated. Current cycle start day: " .. modData.ICdata.currentCycle.cycle_start_day)
-        cycle = modData.ICdata.currentCycle
+-- Get the next phase in the cycle order
+local function getNextPhase(currentPhase)
+    for i, phase in ipairs(PHASE_ORDER) do
+        if phase == currentPhase then
+            if i < #PHASE_ORDER then
+                return PHASE_ORDER[i + 1]
+            else
+                return "endOfCycle"  -- lutealPhase is the last, cycle ends
+            end
+        end
     end
+    return "endOfCycle"
+end
 
+-- Main cycle tick - decrements time and transitions phases
+-- tickMinutes: number of minutes to decrement (default 10 for EveryTenMinutes)
+function CycleManager.tick(tickMinutes)
+    tickMinutes = tickMinutes or 10
+    local cycle = modData.ICdata.currentCycle
+    
+    if not cycle or not cycle.current_phase then
+        print("Invalid cycle, regenerating...")
+        modData.ICdata.currentCycle = CycleManager.newCycle("tick_invalidCycle")
+        return modData.ICdata.currentCycle
+    end
+    
+    -- Decrement the countdown
+    cycle.phase_minutes_remaining = cycle.phase_minutes_remaining - tickMinutes
+    
+    -- Check if current phase has ended
+    while cycle.phase_minutes_remaining <= 0 do
+        local nextPhase = getNextPhase(cycle.current_phase)
+        
+        if nextPhase == "endOfCycle" then
+            -- Generate a new cycle
+            print("Cycle ended. New cycle generated.")
+            modData.ICdata.currentCycle = CycleManager.newCycle("tick_endOfCycle")
+            return modData.ICdata.currentCycle
+        else
+            -- Carry over any negative time to the next phase
+            local overflow = math.abs(cycle.phase_minutes_remaining)
+            cycle.current_phase = nextPhase
+            cycle.phase_minutes_remaining = cycle[nextPhase .. "_duration_mins"] - overflow
+            print("Phase transition: now in " .. nextPhase .. " with " .. cycle.phase_minutes_remaining .. " minutes remaining")
+        end
+    end
+    
     return cycle
 end
 
@@ -48,33 +84,46 @@ local function random_between(range)
     return ZombRand(range[1], range[2])
 end
 
+-- Convert days to minutes
+local function daysToMinutes(days)
+    return days * MINUTES_PER_DAY
+end
+
 local function default_cycle() -- Default cycle values if a new cycle cannot be generated
     return {
-        cycle_start_day = zapi.getGameTime("getWorldAgeHours") / 24,
-        cycle_duration = 28,
-        follicular_duration = 14,
-        red_days_duration = 4,
-        follicle_stimulating_start_day = 5,
-        follicle_stimulating_duration = 10,
-        ovulation_duration = 1,
-        ovulation_day = 14,
-        luteal_start_day = 15,
-        luteal_duration = 14,
+        -- Current state
+        current_phase = "redPhase",
+        phase_minutes_remaining = daysToMinutes(4),
+        
+        -- Phase durations in minutes
+        delayPhase_duration_mins = 0,
+        redPhase_duration_mins = daysToMinutes(4),
+        follicularPhase_duration_mins = daysToMinutes(10),
+        ovulationPhase_duration_mins = daysToMinutes(1),
+        lutealPhase_duration_mins = daysToMinutes(14),
+        
+        -- Total cycle duration in minutes (for reference)
+        cycle_duration_mins = daysToMinutes(28),
+        
+        -- Health effect settings
         stiffness_target = 55,
         stiffness_increment = 2,
         discomfort_target = 100,
         endurance_decrement = 0.0005,
         fatigue_increment = 0.0001,
-        reason_for_cycle = "defaultCycle",
-        timeToDelaycycle = 0,
         healthEffectSeverity = 50,
-        pms_duration = 7,
+        
+        -- PMS settings
+        pms_duration_mins = daysToMinutes(7),
         pms_agitation = false,
         pms_cramps = true,
         pms_fatigue = true,
         pms_tenderBreasts = false,
         pms_craveFood = false,
-        pms_Sadness = false
+        pms_Sadness = false,
+        
+        -- Metadata
+        reason_for_cycle = "defaultCycle"
     }
 end
 
@@ -164,7 +213,6 @@ end
 
 function CycleManager.newCycle(whoDidThis)
     local ranges = CycleManager.sandboxValues()
-    local range_total_menstrual_cycle_duration = ranges.range_total_menstrual_cycle_duration
     local range_red_phase_duration = ranges.range_red_phase_duration
     local range_follicular_phase_duration = ranges.range_follicular_phase_duration
     local range_ovulation_phase_duration = ranges.range_ovulation_phase_duration
@@ -173,164 +221,137 @@ function CycleManager.newCycle(whoDidThis)
     local range_healthEffectLevel = ranges.range_healthEffectLevel
     local range_pms_duration = ranges.range_pms_duration
 
-    -- local range_total_menstrual_cycle_duration = {28, 34}
-    -- local range_red_phase_duration = {2, 5}
-    -- local range_follicular_phase_duration = {11, 16}
-    -- local range_ovulation_phase_duration = {1, 1}
-    -- local range_luteal_phase_duration = {11, 18}
-    -- local range_delay_duration = {0, 5}
-    -- local range_healthEffectLevel = {30, 70}
-    -- local range_pms_duration = {2, 10}
-
-    -- local range_total_menstrual_cycle_duration = {7, 9}
-    -- local range_red_phase_duration = {1, 2}
-    -- local range_follicular_phase_duration = {3, 4}
-    -- local range_ovulation_phase_duration = {1, 1}
-    -- local range_luteal_phase_duration = {3, 5}
-    -- local range_delay_duration = {1, 1}
-    -- local range_healthEffectLevel = {30, 70}
-    -- local range_pms_duration = {1, 2}
-
-
-    local max_attempts = 10 -- Duration values can be user-defined and may not always yield a valid cycle, so we try multiple times to find a valid one and return a default cycle if we fail
-    for attempt = 1, max_attempts do
-        if whoDidThis ~= "isCycleValid" then
-            print("Attempt " .. attempt .. " to generate a new menstrual cycle...")
-        end
-
-        local cycle_start_day = zapi.getGameTime("getWorldAgeHours") / 24
-
-        local timeToDelaycycle = 0
-        cycleDelayed = modData.ICdata.cycleDelayed or false
-        if  ranges.phase_start_delay_enabled and not cycleDelayed and whoDidThis ~= "isCycleValid" then
-            print("Assuming player recently spawned, adding a random delay to the cycle start.")
-            timeToDelaycycle = random_between(range_delay_duration)
-            print("Cycle start will be delayed by " .. timeToDelaycycle .. " days.")
-            modData.ICdata.cycleDelayed = true -- Only run this once per life time.
-        end
-
-        local cycle_duration = random_between(range_total_menstrual_cycle_duration)
-
-        local min_follicular = math.max(range_follicular_phase_duration[1], cycle_duration - range_luteal_phase_duration[2])
-        local max_follicular = math.min(range_follicular_phase_duration[2], cycle_duration - range_luteal_phase_duration[1])
-
-        if min_follicular <= max_follicular then
-            local follicular_duration = ZombRand(min_follicular, max_follicular)
-
-            -- Red day always occurs at the start of the cycle
-            local red_days_duration = random_between(range_red_phase_duration)
-
-            local offset = ZombRand(0,1000) / 1000 -- For random start times
-            local follicle_stimulating_start_day = cycle_start_day + red_days_duration + 1 + offset
-            local follicle_stimulating_duration = follicular_duration - red_days_duration
-
-            local offset = ZombRand(0,200) / 1000 -- For random start times
-            local ovulation_duration = random_between(range_ovulation_phase_duration)
-            local ovulation_day = red_days_duration + follicle_stimulating_duration + offset
-
-            local offset = ZombRand(0,1000) / 1000 -- For random start times
-            local luteal_start_day = follicular_duration + ovulation_duration + offset
-            local luteal_duration = cycle_duration - follicular_duration - ovulation_duration
-
-            local healthEffectSeverity = random_between(range_healthEffectLevel) -- 0 to 100
-            local stiffness_target = healthEffectSeverity
-            local stiffness_increment = 2
-            local discomfort_target = healthEffectSeverity
-
-            local scaling = healthEffectSeverity / 50
-            local endurance_decrement = 0.001 * scaling
-            local fatigue_increment = 0.0002 * scaling
-
-            local pms_duration = random_between(range_pms_duration)
-            local pms_symptoms = CycleManager.getPMSymptoms()
-
-            return {
-                cycle_start_day = cycle_start_day,
-                cycle_duration = cycle_duration,
-                follicular_duration = follicular_duration,
-                red_days_duration = red_days_duration,
-                follicle_stimulating_start_day = follicle_stimulating_start_day,
-                follicle_stimulating_duration = follicle_stimulating_duration,
-                ovulation_duration = ovulation_duration,
-                ovulation_day = ovulation_day,
-                luteal_start_day = luteal_start_day,
-                luteal_duration = luteal_duration,
-                stiffness_target = stiffness_target,
-                stiffness_increment = stiffness_increment,
-                discomfort_target = discomfort_target,
-                endurance_decrement = endurance_decrement,
-                fatigue_increment = fatigue_increment,
-                reason_for_cycle = whoDidThis, -- This is used for debugging purposes to know what generated the cycle, for example on game load, no message is printed.
-                timeToDelaycycle = timeToDelaycycle,
-                healthEffectSeverity = healthEffectSeverity,
-                pms_duration = pms_duration,
-                pms_agitation = pms_symptoms.pms_agitation,
-                pms_cramps = pms_symptoms.pms_cramps,
-                pms_fatigue = pms_symptoms.pms_fatigue,
-                pms_tenderBreasts = pms_symptoms.pms_tenderBreasts,
-                pms_craveFood = pms_symptoms.pms_craveFood,
-                pms_Sadness = pms_symptoms.pms_Sadness
-            }
-        end
+    if whoDidThis ~= "isCycleValid" then
+        print("Generating a new menstrual cycle (countdown-based)...")
     end
 
-    print("Failed to generate a valid menstrual cycle after " .. max_attempts .. " attempts. Returning default cycle values.")
-    return default_cycle()
+    -- Generate phase durations in days, then convert to minutes
+    local delay_days = 0
+    cycleDelayed = modData.ICdata.cycleDelayed or false
+    if ranges.phase_start_delay_enabled and not cycleDelayed and whoDidThis ~= "isCycleValid" then
+        print("Assuming player recently spawned, adding a random delay to the cycle start.")
+        delay_days = random_between(range_delay_duration)
+        print("Cycle start will be delayed by " .. delay_days .. " days.")
+        modData.ICdata.cycleDelayed = true
+    end
+
+    local red_days = random_between(range_red_phase_duration)
+    local follicular_days = random_between(range_follicular_phase_duration)
+    local ovulation_days = random_between(range_ovulation_phase_duration)
+    local luteal_days = random_between(range_luteal_phase_duration)
+    local pms_days = random_between(range_pms_duration)
+
+    -- Convert to minutes
+    local delayPhase_duration_mins = daysToMinutes(delay_days)
+    local redPhase_duration_mins = daysToMinutes(red_days)
+    local follicularPhase_duration_mins = daysToMinutes(follicular_days)
+    local ovulationPhase_duration_mins = daysToMinutes(ovulation_days)
+    local lutealPhase_duration_mins = daysToMinutes(luteal_days)
+    local pms_duration_mins = daysToMinutes(pms_days)
+
+    local cycle_duration_mins = delayPhase_duration_mins + redPhase_duration_mins + 
+                                 follicularPhase_duration_mins + ovulationPhase_duration_mins + 
+                                 lutealPhase_duration_mins
+
+    -- Determine starting phase and time remaining
+    local starting_phase = "redPhase"
+    local starting_minutes = redPhase_duration_mins
+    if delay_days > 0 then
+        starting_phase = "delayPhase"
+        starting_minutes = delayPhase_duration_mins
+    end
+
+    -- Health effects
+    local healthEffectSeverity = random_between(range_healthEffectLevel)
+    local stiffness_target = healthEffectSeverity
+    local stiffness_increment = 2
+    local discomfort_target = healthEffectSeverity
+
+    local scaling = healthEffectSeverity / 50
+    local endurance_decrement = 0.001 * scaling
+    local fatigue_increment = 0.0002 * scaling
+
+    -- PMS symptoms
+    local pms_symptoms = CycleManager.getPMSymptoms()
+
+    local cycle = {
+        -- Current state
+        current_phase = starting_phase,
+        phase_minutes_remaining = starting_minutes,
+        
+        -- Phase durations in minutes
+        delayPhase_duration_mins = delayPhase_duration_mins,
+        redPhase_duration_mins = redPhase_duration_mins,
+        follicularPhase_duration_mins = follicularPhase_duration_mins,
+        ovulationPhase_duration_mins = ovulationPhase_duration_mins,
+        lutealPhase_duration_mins = lutealPhase_duration_mins,
+        
+        -- Total cycle duration in minutes
+        cycle_duration_mins = cycle_duration_mins,
+        
+        -- Health effect settings
+        stiffness_target = stiffness_target,
+        stiffness_increment = stiffness_increment,
+        discomfort_target = discomfort_target,
+        endurance_decrement = endurance_decrement,
+        fatigue_increment = fatigue_increment,
+        healthEffectSeverity = healthEffectSeverity,
+        
+        -- PMS settings
+        pms_duration_mins = pms_duration_mins,
+        pms_agitation = pms_symptoms.pms_agitation,
+        pms_cramps = pms_symptoms.pms_cramps,
+        pms_fatigue = pms_symptoms.pms_fatigue,
+        pms_tenderBreasts = pms_symptoms.pms_tenderBreasts,
+        pms_craveFood = pms_symptoms.pms_craveFood,
+        pms_Sadness = pms_symptoms.pms_Sadness,
+        
+        -- Metadata
+        reason_for_cycle = whoDidThis
+    }
+
+    if whoDidThis ~= "isCycleValid" then
+        print("New cycle created: starting in " .. starting_phase .. " with " .. starting_minutes .. " minutes (" .. (starting_minutes / MINUTES_PER_DAY) .. " days)")
+    end
+
+    return cycle
 end
 
 function CycleManager.getCurrentCyclePhase(cycle)
-    local current_day = zapi.getGameTime("getWorldAgeHours") / 24
-    if not cycle then
+    if not cycle or not cycle.current_phase then
         print("Invalid cycle structure detected.")
         return "invalidCycle"
     end
-    local days_into_cycle = current_day - cycle.cycle_start_day
-
-    if days_into_cycle < cycle.timeToDelaycycle then
-        return "delayPhase" -- This is for the random cycle start day for new characters
-    end
-
-    if days_into_cycle <= cycle.red_days_duration then
-        return "redPhase"
-    elseif days_into_cycle <= (cycle.red_days_duration + cycle.follicle_stimulating_duration) then
-        return "follicularPhase"
-    elseif days_into_cycle <= (cycle.red_days_duration + cycle.follicle_stimulating_duration + cycle.ovulation_duration) then
-        return "ovulationPhase"
-    elseif days_into_cycle <= cycle.cycle_duration then
-        return "lutealPhase"
-    elseif days_into_cycle > cycle.cycle_duration then
-        return "endOfCycle"
-    end
-    print("Unable to determine current cycle phase.")
-    return "unknownPhase"
+    return cycle.current_phase
 end
 
 function CycleManager.getPMSseverity()
     local currentCycle = modData.ICdata.currentCycle
     if not currentCycle then return 0 end
 
-    local stat = CycleManager.getPhaseStatus(currentCycle)
-    if not stat or (stat.phase ~= "lutealPhase" and stat.phase ~= "redPhase") then
+    local phase = currentCycle.current_phase
+    if phase ~= "lutealPhase" and phase ~= "redPhase" then
         return 0
     end
 
-    local pmsDuration = currentCycle.pms_duration  -- total PMS duration (days)
-    local timeRemaining = stat.time_remaining
+    local pms_duration_mins = currentCycle.pms_duration_mins or daysToMinutes(7)
+    local phase_minutes_remaining = currentCycle.phase_minutes_remaining or 0
     local PMSSeverity = 0
 
-    if stat.phase == "lutealPhase" then
-        -- PMS ramps up in the last pmsDuration days before red phase
-        if timeRemaining <= pmsDuration then
-            local daysIntoPMS = pmsDuration - timeRemaining
-            PMSSeverity = math.min(100, math.max(0, (daysIntoPMS / pmsDuration) * 100))
+    if phase == "lutealPhase" then
+        -- PMS ramps up as we approach the end of luteal phase
+        -- When time_remaining <= pms_duration_mins, PMS starts
+        if phase_minutes_remaining <= pms_duration_mins then
+            local mins_into_pms = pms_duration_mins - phase_minutes_remaining
+            PMSSeverity = math.min(100, math.max(0, (mins_into_pms / pms_duration_mins) * 100))
         end
 
-    elseif stat.phase == "redPhase" then
+    elseif phase == "redPhase" then
         -- PMS severity drains from 100 → 0 over first day of red phase
-        local redDayDuration = currentCycle.red_days_duration or 5
-        local timeIntoRed = redDayDuration - timeRemaining
-        if timeIntoRed <= 1 then
-            PMSSeverity = math.max(0, 100 * (1 - timeIntoRed))
+        local redPhase_duration_mins = currentCycle.redPhase_duration_mins or daysToMinutes(4)
+        local mins_into_red = redPhase_duration_mins - phase_minutes_remaining
+        if mins_into_red <= MINUTES_PER_DAY then
+            PMSSeverity = math.max(0, 100 * (1 - (mins_into_red / MINUTES_PER_DAY)))
         else
             PMSSeverity = 0
         end
@@ -340,67 +361,63 @@ function CycleManager.getPMSseverity()
 end
 
 function CycleManager.getPhaseStatus(cycle)
-    local current_day = zapi.getGameTime("getWorldAgeHours") / 24
-    local days_into_cycle = current_day - cycle.cycle_start_day
-    local phase = CycleManager.getCurrentCyclePhase(cycle)
-
-    local phase_start, phase_end
-
-    if phase == "redPhase" then
-        phase_start = 0
-        phase_end = cycle.red_days_duration
-    elseif phase == "follicularPhase" then
-        phase_start = cycle.red_days_duration
-        phase_end = cycle.red_days_duration + cycle.follicle_stimulating_duration
-    elseif phase == "ovulationPhase" then
-        phase_start = cycle.red_days_duration + cycle.follicle_stimulating_duration
-        phase_end = cycle.red_days_duration + cycle.follicle_stimulating_duration + cycle.ovulation_duration
-    elseif phase == "lutealPhase" then
-        phase_start = cycle.red_days_duration + cycle.follicle_stimulating_duration + cycle.ovulation_duration
-        phase_end = cycle.cycle_duration
-    else
+    if not cycle or not cycle.current_phase then
         return false
     end
 
-    local phase_length = phase_end - phase_start
-    local days_into_phase = days_into_cycle - phase_start
-    days_into_phase = math.max(0, math.min(days_into_phase, phase_length))
-    local percent = (days_into_phase / phase_length) * 100
-    percent = math.max(0, math.min(percent, 100))
+    local phase = cycle.current_phase
+    local phase_minutes_remaining = cycle.phase_minutes_remaining or 0
+    local phase_duration_key = phase .. "_duration_mins"
+    local phase_duration_mins = cycle[phase_duration_key] or MINUTES_PER_DAY
 
-    local time_remaining = phase_end - days_into_cycle
-    time_remaining = math.max(0, time_remaining)
+    -- Calculate progress
+    local mins_elapsed = phase_duration_mins - phase_minutes_remaining
+    local percent = 0
+    if phase_duration_mins > 0 then
+        percent = (mins_elapsed / phase_duration_mins) * 100
+        percent = math.max(0, math.min(percent, 100))
+    end
+
+    -- Convert remaining time to days for compatibility
+    local time_remaining_days = phase_minutes_remaining / MINUTES_PER_DAY
 
     return {
         phase = phase,
-        time_remaining = time_remaining,
+        time_remaining = time_remaining_days,  -- Keep in days for compatibility
+        time_remaining_mins = phase_minutes_remaining,
         percent_complete = percent
     }
 end
 
 function CycleManager.isCycleValid(cycle) -- If mod is updated and the cycle structure changes, this function will check if the cycle is valid
-    -- Generate a reference cycle to get the expected keys
-    local reference = CycleManager.newCycle("isCycleValid")
-    -- Collect keys from both tables
-    local function get_keys(tbl)
-        local keys = {}
-        for k, _ in pairs(tbl) do keys[k] = true end
-        return keys
-    end
-    local cycle_keys = get_keys(cycle)
-    local ref_keys = get_keys(reference)
-
-    -- Check for missing or extra keys
-    for k in pairs(ref_keys) do
-        if not cycle_keys[k] then
-            return false -- missing key
+    -- Check for required fields in the new countdown-based structure
+    local required_fields = {
+        "current_phase",
+        "phase_minutes_remaining",
+        "delayPhase_duration_mins",
+        "redPhase_duration_mins",
+        "follicularPhase_duration_mins",
+        "ovulationPhase_duration_mins",
+        "lutealPhase_duration_mins",
+        "cycle_duration_mins",
+        "healthEffectSeverity",
+        "pms_duration_mins",
+        "reason_for_cycle"
+    }
+    
+    for _, field in ipairs(required_fields) do
+        if cycle[field] == nil then
+            print("Cycle missing required field: " .. field)
+            return false
         end
     end
-    for k in pairs(cycle_keys) do
-        if not ref_keys[k] then
-            return false -- extra key
-        end
+    
+    -- Validate current_phase is a known phase
+    if not phaseIsValid(cycle.current_phase) then
+        print("Cycle has invalid current_phase: " .. tostring(cycle.current_phase))
+        return false
     end
+    
     return true
 end
 
