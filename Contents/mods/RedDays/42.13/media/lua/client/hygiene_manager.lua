@@ -1,5 +1,5 @@
 HygieneManager = {}
-require "RedDays/game_api"
+require "game_api"
 
 function HygieneManager.LoadPlayerData()
     modData = zapi.getModData()

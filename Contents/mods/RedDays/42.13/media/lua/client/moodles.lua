@@ -1,8 +1,8 @@
 require "MF_ISMoodle"
 
-require "RedDays/hygiene_manager"
-require "RedDays/cycle_manager"
-require "RedDays/game_api"
+require "hygiene_manager"
+require "cycle_manager"
+require "game_api"
 
 moodles = {}
 

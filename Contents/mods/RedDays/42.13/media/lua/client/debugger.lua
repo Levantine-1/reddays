@@ -1,8 +1,8 @@
 CycleDebugger = {}
-require "RedDays/cycle_tracker_logic"
-require "RedDays/cycle_manager"
-require "RedDays/hygiene_manager"
-require "RedDays/game_api"
+require "cycle_tracker_logic"
+require "cycle_manager"
+require "hygiene_manager"
+require "game_api"
 
 local MINUTES_PER_DAY = 1440
 

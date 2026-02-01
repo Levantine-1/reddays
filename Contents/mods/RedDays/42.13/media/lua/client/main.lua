@@ -1,10 +1,10 @@
-require "RedDays/game_api"
-require "RedDays/cycle_manager"
-require "RedDays/cycle_tracker_logic"
-require "RedDays/effects_manager"
-require "RedDays/hygiene_manager"
-require "RedDays/effects_pms"
-require "RedDays/moodles"
+require "game_api"
+require "cycle_manager"
+require "cycle_tracker_logic"
+require "effects_manager"
+require "hygiene_manager"
+require "effects_pms"
+require "moodles"
 
 -- Gender check
 local function isValidGenderCheck()

@@ -1,6 +1,6 @@
-require "RedDays/hygiene_manager"
-require "RedDays/moodles"
-require "RedDays/game_api"
+require "hygiene_manager"
+require "moodles"
+require "game_api"
 
 EffectsManager = {}
 
