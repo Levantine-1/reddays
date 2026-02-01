@@ -1,6 +1,6 @@
 CycleTrackerLogic = {}
-require "RedDays/cycle_tracker_text"
-require "RedDays/game_api"
+require "cycle_tracker_text"
+require "game_api"
 
 function CycleTrackerLogic.LoadPlayerData()
     modData = zapi.getModData()

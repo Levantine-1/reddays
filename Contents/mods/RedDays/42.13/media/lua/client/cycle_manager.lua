@@ -1,5 +1,5 @@
 CycleManager = {}
-require "RedDays/game_api"
+require "game_api"
 
 -- Constants
 local MINUTES_PER_DAY = 1440  -- 24 hours * 60 minutes
