@@ -4,15 +4,15 @@ require "RD_hygiene_manager"
 require "RD_cycle_manager"
 require "RD_game_api"
 
-moodles = {}
+RD_moodles = RD_moodles or {}
 
-function moodles.LoadPlayerData()
-    modData = zapi.getModData()
-    modData.ICdata = modData.ICdata or {}
-    modData.ICdata.LeakSwitchState = modData.ICdata.LeakSwitchState or false -- This value is updated by effects_manager methods
-    modData.ICdata.LeakLevel = modData.ICdata.LeakLevel or 0.42 -- 0.42 is an arbitrary value that clears the moodle, but is low enough to quickly trigger a moodle when needed.
+function RD_moodles.LoadPlayerData()
+    RD_modData = RD_zapi.getModData()
+    RD_modData.ICdata = RD_modData.ICdata or {}
+    RD_modData.ICdata.LeakSwitchState = RD_modData.ICdata.LeakSwitchState or false -- This value is updated by effects_manager methods
+    RD_modData.ICdata.LeakLevel = RD_modData.ICdata.LeakLevel or 0.42 -- 0.42 is an arbitrary value that clears the moodle, but is low enough to quickly trigger a moodle when needed.
 end
--- Events.OnGameStart.Add(moodles.LoadPlayerData)
+-- Events.OnGameStart.Add(RD_moodles.LoadPlayerData)
 -- 2026-01-22 Moved to events_intercepts.lua
 
 MF.createMoodle("DirtyPantyLiner");
@@ -49,15 +49,15 @@ end
 
 
 local function getCurrentPlayerNum()
-    return zapi.getPlayerNum()
+    return RD_zapi.getPlayerNum()
 end
 
 local function getCurrentHygieneItem()
-    return HygieneManager.getCurrentlyWornSanitaryItem()
+    return RD_HygieneManager.getCurrentlyWornSanitaryItem()
 end
 
 local function getCurrentPhaseData()
-    return CycleManager.getPhaseStatus(modData.ICdata.currentCycle)
+    return RD_CycleManager.getPhaseStatus(RD_modData.ICdata.currentCycle)
 end
 
 local function getMoodleType(phase)
@@ -87,14 +87,14 @@ local function getLeakDecrementValue(phase_percent_complete)
 end
 
 local function updateLeakState(phaseData) -- This is expected to run in the main loop which runs every in game minute
-    if type(modData.ICdata.LeakLevel) ~= "number" then
-        modData.ICdata.LeakLevel = 0.42 -- If player dies and respawns, modData can get reset to nil, so reset it here if needed.
+    if type(RD_modData.ICdata.LeakLevel) ~= "number" then
+        RD_modData.ICdata.LeakLevel = 0.42 -- If player dies and respawns, RD_modData can get reset to nil, so reset it here if needed.
     end
 
-    if modData.ICdata.LeakSwitchState then
-        modData.ICdata.LeakLevel = modData.ICdata.LeakLevel - getLeakDecrementValue(phaseData.percent_complete)
+    if RD_modData.ICdata.LeakSwitchState then
+        RD_modData.ICdata.LeakLevel = RD_modData.ICdata.LeakLevel - getLeakDecrementValue(phaseData.percent_complete)
     end
-    MF.getMoodle("Leak", getCurrentPlayerNum()):setValue(modData.ICdata.LeakLevel)
+    MF.getMoodle("Leak", getCurrentPlayerNum()):setValue(RD_modData.ICdata.LeakLevel)
 end
 
 local function resetMoodles()
@@ -121,7 +121,7 @@ local function setHygieneMoodle(hygieneItem, phaseData)
     MF.getMoodle(moodleName, getCurrentPlayerNum()):setValue(moodleLevel)
 end
 
-function moodles.mainLoop()
+function RD_moodles.mainLoop()
     local hygieneItem = getCurrentHygieneItem()
     local phaseData = getCurrentPhaseData()
 
@@ -136,32 +136,32 @@ function moodles.mainLoop()
 
     updateLeakState(phaseData)
 end
--- Events.EveryOneMinute.Add(moodles.mainLoop)
+-- Events.EveryOneMinute.Add(RD_moodles.mainLoop)
 -- 2026-01-22 Moved to events_intercepts.lua
 
 
 -- Below are intercept functions that are triggered when the player interacts with hygiene items.
 
 -- If player unequips the hygiene item, inspect the item and update the cycle tracker
-function moodles.ISUnequipAction_perform(self)
-    if zapi.isItemAtBodyLocation(self.item, "RedDays:HygieneItem") then
+function RD_moodles.ISUnequipAction_perform(self)
+    if RD_zapi.isItemAtBodyLocation(self.item, "RedDays:HygieneItem") then
         resetMoodles()
     end
 end
 -- 2026-01-22 Moved to events_intercepts.lua
 
 -- If the player replaces a hygiene item, inspect the item and update the cycle tracker
-function moodles.ISWearClothing_perform(self)
-    if zapi.isItemAtBodyLocation(self.item, "RedDays:HygieneItem") then
+function RD_moodles.ISWearClothing_perform(self)
+    if RD_zapi.isItemAtBodyLocation(self.item, "RedDays:HygieneItem") then
         resetMoodles()
     end
 end
 -- 2026-01-22 Moved to events_intercepts.lua
 
 -- If the player washes themselves, reset the leak moodle
-function moodles.ISWashYourself_perform()
-    modData.ICdata.LeakLevel = 0.42 -- 0.42 is an arbitrary value that clears the moodle, but is low enough to quickly trigger a moodle when needed.
+function RD_moodles.ISWashYourself_perform()
+    RD_modData.ICdata.LeakLevel = 0.42 -- 0.42 is an arbitrary value that clears the moodle, but is low enough to quickly trigger a moodle when needed.
 end
 -- 2026-01-22 Moved to events_intercepts.lua
 
-return moodles
+return RD_moodles

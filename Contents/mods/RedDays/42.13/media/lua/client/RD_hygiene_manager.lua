@@ -1,31 +1,32 @@
-HygieneManager = {}
+RD_HygieneManager = RD_HygieneManager or {}
+RDHygieneManager = RD_HygieneManager -- Alias for backward compatibility
 require "RD_game_api"
 
-function HygieneManager.LoadPlayerData()
-    modData = zapi.getModData()
-    modData.ICdata = modData.ICdata or {}
-    if modData.ICdata.cSIHDC_counter ~= nil then
-        cSIHDC_counter = modData.ICdata.cSIHDC_counter
+function RD_HygieneManager.LoadPlayerData()
+    RD_modData = RD_zapi.getModData()
+    RD_modData.ICdata = RD_modData.ICdata or {}
+    if RD_modData.ICdata.cSIHDC_counter ~= nil then
+        cSIHDC_counter = RD_modData.ICdata.cSIHDC_counter
     else
         cSIHDC_counter = 0
     end
 end
--- Events.OnLoad.Add(HygieneManager.LoadPlayerData)
+-- Events.OnLoad.Add(RD_HygieneManager.LoadPlayerData)
 -- 2026-01-22 Moved to events_intercepts.lua
 
 -- NOTE: 2025-07-24 Disabled because this gets run on every load which means you always start on the first day of the cycle.
--- function HygieneManager.resetHygieneData()
+-- function RD_HygieneManager.resetHygieneData()
 --     local player = getPlayer()
---     modData = player:getModData()
---     modData.ICdata = modData.ICdata or {}
---     modData.ICdata.cSIHDC_counter = 0
+--     RD_modData = player:getModData()
+--     RD_modData.ICdata = RD_modData.ICdata or {}
+--     RD_modData.ICdata.cSIHDC_counter = 0
 --     cSIHDC_counter = 0
 -- end
 
 local function SavePlayerData()
-    modData = zapi.getModData()
-    modData.ICdata = modData.ICdata or {}
-    modData.ICdata.cSIHDC_counter = cSIHDC_counter or 0
+    RD_modData = RD_zapi.getModData()
+    RD_modData.ICdata = RD_modData.ICdata or {}
+    RD_modData.ICdata.cSIHDC_counter = cSIHDC_counter or 0
 end
 -- Events.OnSave.Add(SavePlayerData) -- For some reason this doesn't work. It'll print the counter, but it doesn't seem save it as on load, value is 0.
 Events.EveryTenMinutes.Add(SavePlayerData) -- Save every 10 minutes instead
@@ -34,7 +35,7 @@ local cSIHDC_counter_tgt = 100 -- Decrement 1 every 100 minutes, should get to v
 local cSIHDC_counter_increment = 1
 local function consumeSanitaryItemHelperDecrementCondition(item, current_condition)
     cSIHDC_counter = cSIHDC_counter + cSIHDC_counter_increment
-    -- modData.ICdata.cSIHDC_counter = cSIHDC_counter -- debugging counter saving -- But don't save here because it'll save every second which may have performance issues
+    -- RD_modData.ICdata.cSIHDC_counter = cSIHDC_counter -- debugging counter saving -- But don't save here because it'll save every second which may have performance issues
     if current_condition == 10 or (current_condition > 1 and cSIHDC_counter > cSIHDC_counter_tgt) then
         item:setCondition(current_condition - 1)
         cSIHDC_counter = 0
@@ -74,20 +75,20 @@ local function consumeSanitaryItemHelperRenameItemAndLeakChance(item)
     return true -- No leak
 end
 
-function HygieneManager.getCurrentlyWornSanitaryItem()
+function RD_HygieneManager.getCurrentlyWornSanitaryItem()
     -- 2025-07-24
     -- There used to be a lot of logic in here but it has since been simplified
     -- However keeping this here because a lot of existing code relies on this function
     -- And I'm too lazy to refactor all of it right now
-    local hygieneItem = zapi.getWornItemAtLocation("RedDays:HygieneItem")
+    local hygieneItem = RD_zapi.getWornItemAtLocation("RedDays:HygieneItem")
     if hygieneItem then
         return hygieneItem
     end
     return false
 end
 
-function HygieneManager.consumeDischargeProduct()
-    local item = HygieneManager.getCurrentlyWornSanitaryItem()
+function RD_HygieneManager.consumeDischargeProduct()
+    local item = RD_HygieneManager.getCurrentlyWornSanitaryItem()
     if not item then
         return false
     end
@@ -115,12 +116,12 @@ function HygieneManager.consumeDischargeProduct()
 end
 
 local function consumeSanitaryItem()
-    local wornItems = zapi.getWornItems()
+    local wornItems = RD_zapi.getWornItems()
 
     local isSanitaryItemEquipped = false
     local didConsumeSanitaryItem = false
 
-    local item = HygieneManager.getCurrentlyWornSanitaryItem()
+    local item = RD_HygieneManager.getCurrentlyWornSanitaryItem()
     if not item then
         isSanitaryItemEquipped = false
         didConsumeSanitaryItem = false
@@ -176,8 +177,8 @@ end
 --     end
 -- end
 
-function HygieneManager.consumeHygieneProduct()
-    local groin = zapi.getBodyPart(BodyPartType.Groin)
+function RD_HygieneManager.consumeHygieneProduct()
+    local groin = RD_zapi.getBodyPart(BodyPartType.Groin)
 
     isSanitaryItemEquipped, didConsumeSanitaryItem = consumeSanitaryItem()
     if isSanitaryItemEquipped then
@@ -201,4 +202,4 @@ function HygieneManager.consumeHygieneProduct()
     return false -- No sanitary item equipped and no bandage
 end
 
-return HygieneManager
+return RD_HygieneManager

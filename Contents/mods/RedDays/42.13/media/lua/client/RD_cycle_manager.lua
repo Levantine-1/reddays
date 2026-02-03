@@ -1,4 +1,5 @@
-CycleManager = {}
+RD_CycleManager = RD_CycleManager or {}
+RDCycleManager = RD_CycleManager -- Alias for backward compatibility
 require "RD_game_api"
 
 -- Constants
@@ -7,17 +8,17 @@ local MINUTES_PER_DAY = 1440  -- 24 hours * 60 minutes
 -- Phase order for cycling through phases
 local PHASE_ORDER = {"redPhase", "follicularPhase", "ovulationPhase", "lutealPhase"}
 
-function CycleManager.LoadPlayerData()
-    modData = zapi.getModData()
-    modData.ICdata = modData.ICdata or {}
-    cycleDelayed = modData.ICdata.cycleDelayed or false
-    PMS_Symptoms = modData.ICdata.pmsSymptoms or CycleManager.generateRandomPMSsymptoms()
+function RD_CycleManager.LoadPlayerData()
+    RD_modData = RD_zapi.getModData()
+    RD_modData.ICdata = RD_modData.ICdata or {}
+    cycleDelayed = RD_modData.ICdata.cycleDelayed or false
+    PMS_Symptoms = RD_modData.ICdata.pmsSymptoms or RD_CycleManager.generateRandomPMSsymptoms()
 
     -- Initialize or validate the current cycle
-    modData.ICdata.currentCycle = modData.ICdata.currentCycle or CycleManager.newCycle("LoadPlayerData")
-    if not CycleManager.isCycleValid(modData.ICdata.currentCycle) then
+    RD_modData.ICdata.currentCycle = RD_modData.ICdata.currentCycle or RD_CycleManager.newCycle("LoadPlayerData")
+    if not RD_CycleManager.isCycleValid(RD_modData.ICdata.currentCycle) then
         print("Cycle data structure mismatch! This could be due to a mod update. Regenerating cycle...")
-        modData.ICdata.currentCycle = CycleManager.newCycle("LoadPlayerData_afterValidation")
+        RD_modData.ICdata.currentCycle = RD_CycleManager.newCycle("LoadPlayerData_afterValidation")
     end
 end
 
@@ -45,17 +46,17 @@ local function getNextPhase(currentPhase)
 end
 
 -- Main cycle tick - decrements time and transitions phases
-function CycleManager.tick(tickMinutes)
+function RD_CycleManager.tick(tickMinutes)
     if not tickMinutes or tickMinutes <= 0 then
         print("Invalid tickMinutes value: " .. tostring(tickMinutes))
-        return modData.ICdata.currentCycle
+        return RD_modData.ICdata.currentCycle
     end
-    local cycle = modData.ICdata.currentCycle
+    local cycle = RD_modData.ICdata.currentCycle
     
     if not cycle or not cycle.current_phase then
         print("Invalid cycle, regenerating...")
-        modData.ICdata.currentCycle = CycleManager.newCycle("tick_invalidCycle")
-        return modData.ICdata.currentCycle
+        RD_modData.ICdata.currentCycle = RD_CycleManager.newCycle("tick_invalidCycle")
+        return RD_modData.ICdata.currentCycle
     end
     
     -- Decrement the countdown
@@ -68,8 +69,8 @@ function CycleManager.tick(tickMinutes)
         if nextPhase == "endOfCycle" then
             -- Generate a new cycle
             print("Cycle ended. New cycle generated.")
-            modData.ICdata.currentCycle = CycleManager.newCycle("tick_endOfCycle")
-            return modData.ICdata.currentCycle
+            RD_modData.ICdata.currentCycle = RD_CycleManager.newCycle("tick_endOfCycle")
+            return RD_modData.ICdata.currentCycle
         else
             -- Carry over any negative time to the next phase
             local overflow = math.abs(cycle.phase_minutes_remaining)
@@ -165,7 +166,7 @@ local function test_debug_cycle() -- The faster cycle for testing purposes
     }
 end
 
-function CycleManager.sandboxValues()
+function RD_CycleManager.sandboxValues()
     -- Abstracted this to a function because this is used in multiple places
     sbv = SandboxVars.RedDays
     local range_total_menstrual_cycle_duration = {sbv.menstrual_cycle_duration_lowerBound, sbv.menstrual_cycle_duration_upperBound}
@@ -190,7 +191,7 @@ function CycleManager.sandboxValues()
     }
 end
 
-function CycleManager.generateRandomPMSsymptoms()
+function RD_CycleManager.generateRandomPMSsymptoms()
     local symptoms = {
         { key = "pms_agitation",     chance = 35 },
         { key = "pms_cramps",        chance = 75 },
@@ -218,8 +219,8 @@ function CycleManager.generateRandomPMSsymptoms()
 end
 
 
-function CycleManager.getPMSymptoms()
-    PMS_Symptoms = modData.ICdata.pmsSymptoms or CycleManager.generateRandomPMSsymptoms() -- Use symptoms assigned at character creation
+function RD_CycleManager.getPMSymptoms()
+    PMS_Symptoms = RD_modData.ICdata.pmsSymptoms or RD_CycleManager.generateRandomPMSsymptoms() -- Use symptoms assigned at character creation
     local pms_agitation = PMS_Symptoms.pms_agitation
     local pms_cramps = PMS_Symptoms.pms_cramps
     local pms_fatigue = PMS_Symptoms.pms_fatigue
@@ -229,7 +230,7 @@ function CycleManager.getPMSymptoms()
 
     local sbv = SandboxVars.RedDays
     if sbv.PMS_ConsistentVsRandom == false then
-        random_pms_symptoms = CycleManager.generateRandomPMSsymptoms()
+        random_pms_symptoms = RD_CycleManager.generateRandomPMSsymptoms()
         pms_agitation = random_pms_symptoms.pms_agitation
         pms_cramps = random_pms_symptoms.pms_cramps
         pms_fatigue = random_pms_symptoms.pms_fatigue
@@ -250,7 +251,7 @@ function CycleManager.getPMSymptoms()
 end
 
 local testCycle = false
-function CycleManager.newCycle(whoDidThis)
+function RD_CycleManager.newCycle(whoDidThis)
     -- Debug mode: use fast test cycle if enabled
     if testCycle then
         print("Debug fast cycle enabled - using test_debug_cycle()")
@@ -259,7 +260,7 @@ function CycleManager.newCycle(whoDidThis)
         return cycle
     end
 
-    local ranges = CycleManager.sandboxValues()
+    local ranges = RD_CycleManager.sandboxValues()
     local range_red_phase_duration = ranges.range_red_phase_duration
     local range_follicular_phase_duration = ranges.range_follicular_phase_duration
     local range_ovulation_phase_duration = ranges.range_ovulation_phase_duration
@@ -313,14 +314,14 @@ function CycleManager.newCycle(whoDidThis)
     -- Determine starting phase based on delay setting
     local starting_phase = "redPhase"
     local starting_minutes = 0
-    cycleDelayed = modData.ICdata.cycleDelayed or false
+    cycleDelayed = RD_modData.ICdata.cycleDelayed or false
 
     if ranges.phase_start_delay_enabled and not cycleDelayed and whoDidThis ~= "isCycleValid" then
         -- Start on luteal phase with duration = delay value only, so when it ends the period starts
         local delay_days = random_between(range_delay_duration)
         starting_phase = "lutealPhase"
         starting_minutes = daysToMinutes(delay_days)
-        modData.ICdata.cycleDelayed = true
+        RD_modData.ICdata.cycleDelayed = true
     else
         starting_minutes = daysToMinutes(red_days)
     end
@@ -346,7 +347,7 @@ function CycleManager.newCycle(whoDidThis)
     local fatigue_increment = 0.0002 * scaling
 
     -- PMS symptoms
-    local pms_symptoms = CycleManager.getPMSymptoms()
+    local pms_symptoms = RD_CycleManager.getPMSymptoms()
 
     local cycle = {
         -- Current state
@@ -390,7 +391,7 @@ function CycleManager.newCycle(whoDidThis)
     return cycle
 end
 
-function CycleManager.getCurrentCyclePhase(cycle)
+function RD_CycleManager.getCurrentCyclePhase(cycle)
     if not cycle or not cycle.current_phase then
         print("Invalid cycle structure detected.")
         return "invalidCycle"
@@ -398,8 +399,8 @@ function CycleManager.getCurrentCyclePhase(cycle)
     return cycle.current_phase
 end
 
-function CycleManager.getPMSseverity()
-    local currentCycle = modData.ICdata.currentCycle
+function RD_CycleManager.getPMSseverity()
+    local currentCycle = RD_modData.ICdata.currentCycle
     if not currentCycle then return 0 end
 
     local phase = currentCycle.current_phase
@@ -433,7 +434,7 @@ function CycleManager.getPMSseverity()
     return PMSSeverity
 end
 
-function CycleManager.getPhaseStatus(cycle)
+function RD_CycleManager.getPhaseStatus(cycle)
     if not cycle or not cycle.current_phase then
         return false
     end
@@ -462,7 +463,7 @@ function CycleManager.getPhaseStatus(cycle)
     }
 end
 
-function CycleManager.isCycleValid(cycle) -- If mod is updated and the cycle structure changes, this function will check if the cycle is valid
+function RD_CycleManager.isCycleValid(cycle) -- If mod is updated and the cycle structure changes, this function will check if the cycle is valid
     -- Check for required fields in the new countdown-based structure
     local required_fields = {
         "current_phase",
@@ -493,4 +494,4 @@ function CycleManager.isCycleValid(cycle) -- If mod is updated and the cycle str
     return true
 end
 
-return CycleManager
+return RDCycleManager

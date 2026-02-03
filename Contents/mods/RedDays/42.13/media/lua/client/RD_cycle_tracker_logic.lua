@@ -1,21 +1,22 @@
-CycleTrackerLogic = {}
+RD_CycleTrackerLogic = RD_CycleTrackerLogic or {}
+RDCycleTrackerLogic = RD_CycleTrackerLogic -- Alias for backward compatibility
 require "RD_cycle_tracker_text"
 require "RD_game_api"
 
-function CycleTrackerLogic.LoadPlayerData()
-    modData = zapi.getModData()
-    modData.ICdata = modData.ICdata or {}
-    modData.ICdata.calendar = modData.ICdata.calendar or CycleTrackerText.newCalendar()
-    modData.ICdata.calendarMonth = modData.ICdata.calendarMonth or zapi.getGameTime("getMonth") + 1
-    modData.ICdata.journalID = modData.ICdata.journalID or CycleTrackerText.generateUID()
+function RD_CycleTrackerLogic.LoadPlayerData()
+    RD_modData = RD_zapi.getModData()
+    RD_modData.ICdata = RD_modData.ICdata or {}
+    RD_modData.ICdata.calendar = RD_modData.ICdata.calendar or RD_CycleTrackerText.newCalendar()
+    RD_modData.ICdata.calendarMonth = RD_modData.ICdata.calendarMonth or RD_zapi.getGameTime("getMonth") + 1
+    RD_modData.ICdata.journalID = RD_modData.ICdata.journalID or RD_CycleTrackerText.generateUID()
 end
--- Events.OnGameStart.Add(CycleTrackerLogic.LoadPlayerData)
+-- Events.OnGameStart.Add(RD_CycleTrackerLogic.LoadPlayerData)
 -- 2026-01-22 Moved to events_intercepts.lua
 
 local function checkIfJournalisBlank(journal)
     -- local allBlank = true
     -- for pageNum = 1, 14 do
-    --     local pageData = CycleTrackerLogic.readJournal(journal, pageNum)
+    --     local pageData = RD_CycleTrackerLogic.readJournal(journal, pageNum)
     --     if pageData and pageData:match("%S") then -- if any non-whitespace found
     --         allBlank = false
     --         break
@@ -26,20 +27,20 @@ local function checkIfJournalisBlank(journal)
     -- end
 
     -- Just check if page 14 is blank as the user is instructed to blank it if they want to reuse the journal.
-    local pageData = CycleTrackerLogic.readJournal(journal, 14)
+    local pageData = RD_CycleTrackerLogic.readJournal(journal, 14)
     if pageData and pageData:match("%S") then
         return false -- ID page not blank
     end
     return journal -- Blank ID page found
 end
 
-function CycleTrackerLogic.getJournal(player, idSubstring, returnBlank)
+function RD_CycleTrackerLogic.getJournal(player, idSubstring, returnBlank)
     local function search(container)
         for i = 0, container:getItems():size() - 1 do
             local item = container:getItems():get(i)
 
             if item:getType() == "Period_Tracker" then
-                local pageData = CycleTrackerLogic.readJournal(item, 14)
+                local pageData = RD_CycleTrackerLogic.readJournal(item, 14)
                 if pageData and string.find(pageData, idSubstring) and not returnBlank then
                     return item
                 end
@@ -63,32 +64,32 @@ function CycleTrackerLogic.getJournal(player, idSubstring, returnBlank)
     return search(player:getInventory())
 end
 
-function CycleTrackerLogic.RegisterNewJournal(player, idSubstring)
+function RD_CycleTrackerLogic.RegisterNewJournal(player, idSubstring)
     print("Registering new journal with ID - " .. tostring(idSubstring))
-    journal = CycleTrackerLogic.getJournal(player, idSubstring, true)
+    journal = RD_CycleTrackerLogic.getJournal(player, idSubstring, true)
     if journal then
-        frontCoverData = CycleTrackerText.getFrontPage(player)
-        CycleTrackerLogic.writeToJournal(journal, 1, frontCoverData)
+        frontCoverData = RD_CycleTrackerText.getFrontPage(player)
+        RD_CycleTrackerLogic.writeToJournal(journal, 1, frontCoverData)
 
         -- Write monthly data for pages 2-13 for each month
         for month = 1, 12 do
-            local calendarData = CycleTrackerText.newCalendar()
-            local monthText = CycleTrackerText.getCalendarText(calendarData, month)
-            CycleTrackerLogic.writeToJournal(journal, month + 1, monthText) -- Pages 2-13 for months
+            local calendarData = RD_CycleTrackerText.newCalendar()
+            local monthText = RD_CycleTrackerText.getCalendarText(calendarData, month)
+            RD_CycleTrackerLogic.writeToJournal(journal, month + 1, monthText) -- Pages 2-13 for months
         end
 
-        idPageData = CycleTrackerText.getBackPage(idSubstring)
-        CycleTrackerLogic.writeToJournal(journal, 14, idPageData)
+        idPageData = RD_CycleTrackerText.getBackPage(idSubstring)
+        RD_CycleTrackerLogic.writeToJournal(journal, 14, idPageData)
         return journal
     end
 end
 
-function CycleTrackerLogic.readJournal(journal, pageNum)
+function RD_CycleTrackerLogic.readJournal(journal, pageNum)
     -- There used to be a lot of logic here, but keeping this to keep it consistent.
     return journal:seePage(pageNum)
 end
 
-function CycleTrackerLogic.writeToJournal(journal, pageNum, data)
+function RD_CycleTrackerLogic.writeToJournal(journal, pageNum, data)
     -- There used to be a lot of logic here, but keeping this to keep it consistent.
     journal:addPage(pageNum, data)
 end
@@ -97,55 +98,55 @@ local function updateCalendar(calendar, day, value)
     for lineIndex, line in ipairs(calendar) do
         if line.days[day] then
             line.days[day] = value
-            modData.ICdata.calendar = calendar
+            RD_modData.ICdata.calendar = calendar
             return true
         end
     end
     return false
 end
 
-function CycleTrackerLogic.getDataCodes(cycle)
-    stat = CycleManager.getPhaseStatus(cycle) -- returns: phase, time_remaining, percent_complete
+function RD_CycleTrackerLogic.getDataCodes(cycle)
+    stat = RD_CycleManager.getPhaseStatus(cycle) -- returns: phase, time_remaining, percent_complete
     if not stat or not stat.phase then
         return false
     end
     if stat.phase == "redPhase" then
-        return CycleTrackerText.redPhaseDataCodes(cycle, stat)
+        return RD_CycleTrackerText.redPhaseDataCodes(cycle, stat)
 
     elseif stat.phase == "follicularPhase" then
-        return CycleTrackerText.follicularPhaseDataCodes(cycle, stat)
+        return RD_CycleTrackerText.follicularPhaseDataCodes(cycle, stat)
 
     elseif stat.phase == "ovulationPhase" then
-        return CycleTrackerText.OvulationPhaseDataCodes(cycle, stat)
+        return RD_CycleTrackerText.OvulationPhaseDataCodes(cycle, stat)
 
     elseif stat.phase == "lutealPhase" then
-        return CycleTrackerText.lutealPhaseDataCodes(cycle, stat)
+        return RD_CycleTrackerText.lutealPhaseDataCodes(cycle, stat)
     end
     return false
 end
 
-function CycleTrackerLogic.cycleTrackerMainLogic(cycle)
-    local player = zapi.getPlayer()
-    local playerJournalID = modData.ICdata.journalID
+function RD_CycleTrackerLogic.cycleTrackerMainLogic(cycle)
+    local player = RD_zapi.getPlayer()
+    local playerJournalID = RD_modData.ICdata.journalID
     if not playerJournalID then
         print("It appears the player has died and respawned without reloading the game. Generating a new journal ID.")
-        modData.ICdata.journalID = CycleTrackerText.generateUID()
-        playerJournalID = modData.ICdata.journalID
+        RD_modData.ICdata.journalID = RD_CycleTrackerText.generateUID()
+        playerJournalID = RD_modData.ICdata.journalID
     end
 
-    local day = zapi.getGameTime("getDayPlusOne")
-    local month = zapi.getGameTime("getMonth") + 1
-    local year = zapi.getGameTime("getYear")
+    local day = RD_zapi.getGameTime("getDayPlusOne")
+    local month = RD_zapi.getGameTime("getMonth") + 1
+    local year = RD_zapi.getGameTime("getYear")
 
-    if modData.ICdata.calendarMonth ~= month then
-        modData.ICdata.calendarMonth = month
-        modData.ICdata.calendar = CycleTrackerText.newCalendar() -- Reset calendar for the new month
+    if RD_modData.ICdata.calendarMonth ~= month then
+        RD_modData.ICdata.calendarMonth = month
+        RD_modData.ICdata.calendar = RD_CycleTrackerText.newCalendar() -- Reset calendar for the new month
         print("Cycle Tracker Logic: New month detected, resetting calendar.")
     end
 
-    local journal = CycleTrackerLogic.getJournal(player, playerJournalID, false)
+    local journal = RD_CycleTrackerLogic.getJournal(player, playerJournalID, false)
     if not journal then
-        journal = CycleTrackerLogic.RegisterNewJournal(player, playerJournalID)
+        journal = RD_CycleTrackerLogic.RegisterNewJournal(player, playerJournalID)
         if not journal then
             print("No valid journal found or registered. Cycle tracking data will not be saved.")
             return
@@ -153,43 +154,43 @@ function CycleTrackerLogic.cycleTrackerMainLogic(cycle)
     end
 
     -- Front cover should exist, but this mainly refreshes the inspirational quotes
-    frontCoverData = CycleTrackerText.getFrontPage(player)
-    CycleTrackerLogic.writeToJournal(journal, 1, frontCoverData)
+    frontCoverData = RD_CycleTrackerText.getFrontPage(player)
+    RD_CycleTrackerLogic.writeToJournal(journal, 1, frontCoverData)
 
-    local dataCodes = CycleTrackerLogic.getDataCodes(cycle)
+    local dataCodes = RD_CycleTrackerLogic.getDataCodes(cycle)
     if dataCodes then
-        local dataCodeString = CycleTrackerText.dataCodeFormatter(dataCodes)
+        local dataCodeString = RD_CycleTrackerText.dataCodeFormatter(dataCodes)
 
-        updateCalendar(modData.ICdata.calendar, day, dataCodeString)
-        local calendarData = CycleTrackerText.getCalendarText(modData.ICdata.calendar, month)
+        updateCalendar(RD_modData.ICdata.calendar, day, dataCodeString)
+        local calendarData = RD_CycleTrackerText.getCalendarText(RD_modData.ICdata.calendar, month)
 
         local pageMonthNumber = month + 1 -- Adjusted for front cover page
-        CycleTrackerLogic.writeToJournal(journal, pageMonthNumber, calendarData)
+        RD_CycleTrackerLogic.writeToJournal(journal, pageMonthNumber, calendarData)
     end
 end
 
 -- Below are intercept functions that are triggered when the player interacts with hygiene items.
 
 -- If player unequips the hygiene item, inspect the item and update the cycle tracker
-function CycleTrackerLogic.ISUnequipAction_perform(self)
-    if zapi.isItemAtBodyLocation(self.item, "RedDays:HygieneItem") then
-        CycleTrackerLogic.cycleTrackerMainLogic(modData.ICdata.currentCycle)
+function RD_CycleTrackerLogic.ISUnequipAction_perform(self)
+    if RD_zapi.isItemAtBodyLocation(self.item, "RedDays:HygieneItem") then
+        RD_CycleTrackerLogic.cycleTrackerMainLogic(RD_modData.ICdata.currentCycle)
     end
 end
 -- 2026-01-23 Moved to events_intercepts.lua
 
 -- If the player replaces a hygiene item, inspect the item and update the cycle tracker
-function CycleTrackerLogic.ISWearClothing_perform(self)
-    if zapi.isItemAtBodyLocation(self.item, "RedDays:HygieneItem") then
-        local hygieneItem = HygieneManager.getCurrentlyWornSanitaryItem()
+function RD_CycleTrackerLogic.ISWearClothing_perform(self)
+    if RD_zapi.isItemAtBodyLocation(self.item, "RedDays:HygieneItem") then
+        local hygieneItem = RD_HygieneManager.getCurrentlyWornSanitaryItem()
         if hygieneItem then
-            CycleTrackerLogic.cycleTrackerMainLogic(modData.ICdata.currentCycle)
+            RD_CycleTrackerLogic.cycleTrackerMainLogic(RD_modData.ICdata.currentCycle)
         end
     end
 end
 -- 2026-01-23 Moved to events_intercepts.lua
 
-return CycleTrackerLogic
+return RD_CycleTrackerLogic
 
 -- Notes:
 -- Add writing tool requirements

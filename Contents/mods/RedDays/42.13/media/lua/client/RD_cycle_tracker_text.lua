@@ -1,6 +1,7 @@
-CycleTrackerText = {}
+RD_CycleTrackerText = RD_CycleTrackerText or {}
+RDCycleTrackerText = RD_CycleTrackerText -- Alias for backward compatibility
 
-function CycleTrackerText.getInspirationalQuote()
+function RD_CycleTrackerText.getInspirationalQuote()
     local quotes = {
         -- Quotes from International Women's Day 2024
         '"There is no limit to what we, as women, can accomplish." - Michelle Obama',
@@ -43,10 +44,10 @@ function CycleTrackerText.getInspirationalQuote()
     return quotes[ZombRand(#quotes) + 1]
 end
 
-function CycleTrackerText.getFrontPage(player)
+function RD_CycleTrackerText.getFrontPage(player)
     local playerName = player:getDescriptor():getForename() .. " " .. player:getDescriptor():getSurname()
     local nameLine = "Name: " .. playerName
-    local inspirationalQuote = CycleTrackerText.getInspirationalQuote()
+    local inspirationalQuote = RD_CycleTrackerText.getInspirationalQuote()
     local text_body = "                 *** KEY *** \
 H: Heavy        D: Discharge\
 M: Medium   Dc: Clear/White\
@@ -60,7 +61,7 @@ X: No Data     B: BC Pill Taken"
     return text
 end
 
-function CycleTrackerText.generateUID()
+function RD_CycleTrackerText.generateUID()
     local chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
     local uid = ''
     for i = 1, 12 do
@@ -71,7 +72,7 @@ function CycleTrackerText.generateUID()
     return uid
 end
 
-function CycleTrackerText.getBackPage(UID)
+function RD_CycleTrackerText.getBackPage(UID)
     print("Generating back page with UID - " .. tostring(UID))
     local ID_Line = "ID - " .. UID
     local text_body = "Do not modify the ID or this tracker will stop updating.\
@@ -92,7 +93,7 @@ local function getMonthName(index)
     return monthNames[index] or "Unknown"
 end
 
-function CycleTrackerText.newCalendar()
+function RD_CycleTrackerText.newCalendar()
     local lines = {
         [1] = { days = { [1] = "______", [15] = "______", [29] = "______" } },
         [2] = { days = { [2] = "______", [16] = "______", [30] = "______" } },
@@ -112,9 +113,9 @@ function CycleTrackerText.newCalendar()
     return lines
 end
 
-require "RedDays/game_api"
-function CycleTrackerText.getCalendarText(calendar, month)
-    local year = zapi.getGameTime("getYear")
+require "RD_game_api"
+function RD_CycleTrackerText.getCalendarText(calendar, month)
+    local year = RD_zapi.getGameTime("getYear")
     local monthName = getMonthName(month)
 
     local text = monthName .. " " .. year .. "\n"
@@ -171,7 +172,7 @@ local function addPMSdatacodes(datacodes, cycle)
     end
 end
 
-function CycleTrackerText.redPhaseDataCodes(cycle, stat)
+function RD_CycleTrackerText.redPhaseDataCodes(cycle, stat)
     local datacodes = {}
     local statusMap = {
                         {threshold = 15, code = "S"},
@@ -194,7 +195,7 @@ function CycleTrackerText.redPhaseDataCodes(cycle, stat)
     return datacodes
 end
 
-function CycleTrackerText.follicularPhaseDataCodes(cycle, stat)
+function RD_CycleTrackerText.follicularPhaseDataCodes(cycle, stat)
     -- quotes[ZombRand(#quotes) + 1]
     local datacodes = {}
     local validDischargeCodes = {"Dc", "Dcw", "D"}
@@ -213,7 +214,7 @@ function CycleTrackerText.follicularPhaseDataCodes(cycle, stat)
     return datacodes
 end
 
-function CycleTrackerText.OvulationPhaseDataCodes(cycle, stat)
+function RD_CycleTrackerText.OvulationPhaseDataCodes(cycle, stat)
     local datacodes = {"Dew"} -- Egg White Discharge
 
     local extraSymptomCodes = {"A"} -- Agitated (I guess it can mean different things...)
@@ -225,7 +226,7 @@ function CycleTrackerText.OvulationPhaseDataCodes(cycle, stat)
     return datacodes
 end
 
-function CycleTrackerText.lutealPhaseDataCodes(cycle, stat)
+function RD_CycleTrackerText.lutealPhaseDataCodes(cycle, stat)
     local datacodes = {}
     local validDischargeCodes = {"Dc", "Dcw"}
     local randomDischargeCode = validDischargeCodes[ZombRand(#validDischargeCodes) + 1]
@@ -254,7 +255,7 @@ local function tableToString(tbl) -- Converts a table to a string
     return result
 end
 
-function CycleTrackerText.dataCodeFormatter(dataCodes)
+function RD_CycleTrackerText.dataCodeFormatter(dataCodes)
     local datacodeString = tableToString(dataCodes)
 
     -- Limit to 4 characters, and pad if not all characters are used
@@ -272,4 +273,4 @@ function CycleTrackerText.dataCodeFormatter(dataCodes)
     return datacodeString
 end
 
-return CycleTrackerText
+return RD_CycleTrackerText
