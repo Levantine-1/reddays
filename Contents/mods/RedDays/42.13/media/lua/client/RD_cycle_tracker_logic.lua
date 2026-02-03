@@ -1,6 +1,6 @@
 CycleTrackerLogic = {}
-require "cycle_tracker_text"
-require "game_api"
+require "RD_cycle_tracker_text"
+require "RD_game_api"
 
 function CycleTrackerLogic.LoadPlayerData()
     modData = zapi.getModData()

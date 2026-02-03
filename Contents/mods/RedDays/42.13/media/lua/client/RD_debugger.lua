@@ -1,8 +1,8 @@
 CycleDebugger = {}
-require "cycle_tracker_logic"
-require "cycle_manager"
-require "hygiene_manager"
-require "game_api"
+require "RD_cycle_tracker_logic"
+require "RD_cycle_manager"
+require "RD_hygiene_manager"
+require "RD_game_api"
 
 local MINUTES_PER_DAY = 1440
 

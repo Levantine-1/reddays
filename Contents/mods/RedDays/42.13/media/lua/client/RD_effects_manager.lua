@@ -1,6 +1,6 @@
-require "hygiene_manager"
-require "moodles"
-require "game_api"
+require "RD_hygiene_manager"
+require "RD_moodles"
+require "RD_game_api"
 
 EffectsManager = {}
 

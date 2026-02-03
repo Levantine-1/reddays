@@ -1,5 +1,5 @@
 EffectsPMS = {}
-require "game_api"
+require "RD_game_api"
 
 function EffectsPMS.setAngerMoodle(stats, target_value, rate_multiplier)
         -- Anger or irritability tends to rise during the late luteal phase (about 1 week before period).

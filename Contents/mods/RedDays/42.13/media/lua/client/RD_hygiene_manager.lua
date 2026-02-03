@@ -1,5 +1,5 @@
 HygieneManager = {}
-require "game_api"
+require "RD_game_api"
 
 function HygieneManager.LoadPlayerData()
     modData = zapi.getModData()

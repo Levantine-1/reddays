@@ -1,10 +1,10 @@
-require "game_api"
-require "cycle_manager"
-require "cycle_tracker_logic"
-require "effects_manager"
-require "hygiene_manager"
-require "effects_pms"
-require "moodles"
+require "RD_game_api"
+require "RD_cycle_manager"
+require "RD_cycle_tracker_logic"
+require "RD_effects_manager"
+require "RD_hygiene_manager"
+require "RD_effects_pms"
+require "RD_moodles"
 
 -- Gender check
 local function isValidGenderCheck()

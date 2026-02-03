@@ -1,8 +1,8 @@
 require "MF_ISMoodle"
 
-require "hygiene_manager"
-require "cycle_manager"
-require "game_api"
+require "RD_hygiene_manager"
+require "RD_cycle_manager"
+require "RD_game_api"
 
 moodles = {}
 
