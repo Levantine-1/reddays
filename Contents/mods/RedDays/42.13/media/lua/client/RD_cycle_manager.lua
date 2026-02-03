@@ -494,4 +494,4 @@ function RD_CycleManager.isCycleValid(cycle) -- If mod is updated and the cycle 
     return true
 end
 
-return RDCycleManager
+return RD_CycleManager

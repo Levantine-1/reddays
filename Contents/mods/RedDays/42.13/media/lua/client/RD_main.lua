@@ -42,7 +42,7 @@ Events.OnCreatePlayer.Add(OnCreatePlayer)
 -- ================= TIMED EVENT HOOKS =================
 local function EveryHours()
     if not isValidGenderCheck() then return end
-    -- RD_CycleDebugger.printWrapper()
+    RD_CycleDebugger.printWrapper()
 end
 Events.EveryHours.Add(EveryHours)
 
