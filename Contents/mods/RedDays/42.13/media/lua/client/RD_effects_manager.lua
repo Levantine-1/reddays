@@ -1,18 +1,19 @@
-require "hygiene_manager"
-require "moodles"
-require "game_api"
+require "RD_hygiene_manager"
+require "RD_moodles"
+require "RD_game_api"
 
-EffectsManager = {}
+RD_EffectsManager = RD_EffectsManager or {}
+RDEffectsManager = RD_EffectsManager -- Alias for backward compatibility
 
 local stat_Adjustment_isEnabled = false
 local function stat_Adjustment()
     stat_Adjustment_isEnabled = true
-    local cycle = modData.ICdata.currentCycle -- The event system calls the function with no arguments, so cycle is nil, so that's why it's set here
+    local cycle = RD_modData.ICdata.currentCycle -- The event system calls the function with no arguments, so cycle is nil, so that's why it's set here
 
-    if HygieneManager:consumeHygieneProduct() then
-        modData.ICdata.LeakSwitchState = false
-    elseif not HygieneManager:consumeHygieneProduct() then
-        modData.ICdata.LeakSwitchState = true
+    if RD_HygieneManager:consumeHygieneProduct() then
+        RD_modData.ICdata.LeakSwitchState = false
+    elseif not RD_HygieneManager:consumeHygieneProduct() then
+        RD_modData.ICdata.LeakSwitchState = true
     end
 
     -- local current_discomfort = bodyDamage:getDiscomfortLevel()
@@ -27,20 +28,20 @@ end
 local consumingDischargeItem = false
 local function consumeDischargeProduct()
     consumingDischargeItem = true
-    return HygieneManager:consumeDischargeProduct()
+    return RD_HygieneManager:consumeDischargeProduct()
 end
 
 local function stopGroinBleeding()
-    local groin = zapi.getBodyPart(BodyPartType.Groin)
+    local groin = RD_zapi.getBodyPart(BodyPartType.Groin)
     local bleedingTime = groin:getBleedingTime()
     if bleedingTime == 0 then -- Clear bleeding if no wounds. Cycle generates bleeding time of 0, so assumed no wounds.
         -- groin:setBleeding(false)
-        modData.ICdata.LeakSwitchState = false
+        RD_modData.ICdata.LeakSwitchState = false
     end
 end
 
-function EffectsManager.determineEffects(cycle)
-    local current_phase = CycleManager.getCurrentCyclePhase(cycle)
+function RD_EffectsManager.determineEffects(cycle)
+    local current_phase = RD_CycleManager.getCurrentCyclePhase(cycle)
 
     if current_phase == "redPhase" then
         if not stat_Adjustment_isEnabled then
@@ -64,4 +65,4 @@ function EffectsManager.determineEffects(cycle)
     end
 end
 
-return EffectsManager
+return RD_EffectsManager
