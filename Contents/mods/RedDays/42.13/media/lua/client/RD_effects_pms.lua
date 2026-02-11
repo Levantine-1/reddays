@@ -218,6 +218,7 @@ local function takePillsStiffness()
 end
 
 function RD_EffectsPMS.ISTakePillAction_perform(self)
+    if not self.item then return end
     if self.item:getFullType() == "Base.Pills" then
         print("Painkillers Taken, Reducing PMS Symptoms")
         RD_modData.ICdata.pill_recently_taken = true
