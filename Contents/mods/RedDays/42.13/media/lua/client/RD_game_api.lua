@@ -77,6 +77,9 @@ end
 -- https://projectzomboid.com/modding/zombie/inventory/ItemContainer.html#getItem(zombie.inventory.ItemBodyLocation)
 function RD_zapi.getWornItemAtLocation(locationString)
     local wornItems = RD_zapi.getWornItems()
+    if not wornItems then
+        return nil
+    end
     local bodyLocation = RD_zapi.getBodyLocation(locationString)
     if not bodyLocation then
         return nil
@@ -86,6 +89,9 @@ end
 
 -- https://projectzomboid.com/modding/zombie/inventory/InventoryItem.html#isBodyLocation(zombie.inventory.ItemBodyLocation)
 function RD_zapi.isItemAtBodyLocation(item, locationString)
+    if not item then
+        return false
+    end
     local bodyLocation = RD_zapi.getBodyLocation(locationString)
     if not bodyLocation then
         return false
