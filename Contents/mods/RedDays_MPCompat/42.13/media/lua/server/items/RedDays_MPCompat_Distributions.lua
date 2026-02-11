@@ -129,6 +129,9 @@ print("[RedDays MP Compat] Period trackers added to journal spawn locations")
 
 -- Use OnFillContainer to add hygiene items in proper quantities (12/24 per "box equivalent")
 local function onFillContainer(roomName, containerType, container)
+    if not container then
+        return
+    end
     -- Normalize room name to lowercase for matching
     local roomLower = string.lower(roomName or "")
     local containerLower = string.lower(containerType or "")
