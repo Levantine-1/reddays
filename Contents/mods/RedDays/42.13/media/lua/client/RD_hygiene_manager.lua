@@ -8,8 +8,6 @@ require "RD_game_api"
 local function syncItemToServer(item, newCondition, newName)
     if not item then return end
     
-    print("[RedDays] Client: syncItemToServer called - isClient()=" .. tostring(isClient()))
-    
     -- In multiplayer client, send command to server to sync the item
     if isClient() then
         local player = RD_zapi.getPlayer()
@@ -19,7 +17,6 @@ local function syncItemToServer(item, newCondition, newName)
                 newCondition = newCondition,
                 newName = newName
             }
-            print("[RedDays] Client: Sending updateSanitaryItem command - itemId=" .. tostring(args.itemId))
             sendClientCommand(player, 'RedDays', 'updateSanitaryItem', args)
         end
     end
@@ -95,31 +92,30 @@ local function consumeSanitaryItemHelperRenameItemAndLeakChance(item)
     local newName = nil
     if current_condition >= 9 then
         newName = baseName .. " (Spotty)"
-        item:setName(newName)
-        syncItemToServer(item, nil, newName) -- Sync name change to server in MP
     elseif current_condition >= 8 then
         newName = baseName .. " (Bloody)"
-        item:setName(newName)
-        syncItemToServer(item, nil, newName) -- Sync name change to server in MP
     elseif current_condition >= 4 then
         newName = baseName .. " (Very Bloody)"
-        item:setName(newName)
-        syncItemToServer(item, nil, newName) -- Sync name change to server in MP
     elseif current_condition == 3 then
         if d20Roll >= 15 then
             return false -- 25% chance to leak
         end
     elseif current_condition == 2 then
         newName = baseName .. " (Nearly Saturated)"
-        item:setName(newName)
-        syncItemToServer(item, nil, newName) -- Sync name change to server in MP
         if d20Roll >= 10 then
             return false -- 50% chance to leak
         end
     elseif current_condition < 2 then
         newName = baseName .. " (Saturated)"
+    end
+
+    -- Only set name and sync if the name actually changed
+    if newName and newName ~= itemName then
         item:setName(newName)
-        syncItemToServer(item, nil, newName) -- Sync name change to server in MP
+        syncItemToServer(item, nil, newName)
+    end
+
+    if current_condition < 2 then
         return false
     end
     return true -- No leak

@@ -9,7 +9,6 @@ local Commands = {}
 
 -- Command to update sanitary item condition and name
 function Commands.updateSanitaryItem(player, args)
-    print("[RedDays] Server: updateSanitaryItem called")
     if not player or not args then return end
     
     local itemId = args.itemId
@@ -56,7 +55,7 @@ function Commands.updateSanitaryItem(player, args)
         return
     end
     
-    print("[RedDays] Server: Found item, applying changes - condition=" .. tostring(newCondition) .. " name=" .. tostring(newName))
+
     
     -- Apply changes
     if newCondition ~= nil then
@@ -69,13 +68,10 @@ function Commands.updateSanitaryItem(player, args)
     
     -- Sync the item back to all clients (requires player and item)
     syncItemFields(player, item)
-    
-    print("[RedDays] Server: syncItemFields called successfully")
 end
 
 -- Command handler for OnClientCommand event
 RD_ServerCommands.OnClientCommand = function(module, command, player, args)
-    print("[RedDays] Server: OnClientCommand received - module=" .. tostring(module) .. " command=" .. tostring(command))
     if module == 'RedDays' and Commands[command] then
         Commands[command](player, args)
     end
