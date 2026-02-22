@@ -53,13 +53,13 @@ Events.OnCreatePlayer.Add(OnCreatePlayer)
 -- ================= TIMED EVENT HOOKS =================
 local function EveryHours()
     if not isValidGenderCheck() then return end
-    -- RD_CycleDebugger.printWrapper()
+    RD_CycleDebugger.printWrapper()
 end
 Events.EveryHours.Add(EveryHours)
 
 local function EveryTenMinutes()
     if not isValidGenderCheck() then return end
-    RD_CycleDebugger.printWrapper()
+    -- RD_CycleDebugger.printWrapper()
     transmitModDataToServer() -- Periodically sync modData to server for persistence
 end
 Events.EveryTenMinutes.Add(EveryTenMinutes)
