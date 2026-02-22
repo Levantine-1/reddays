@@ -1,7 +1,6 @@
 print("[RedDays] CLIENT: RD_hygiene_manager.lua loading - VERSION 2")
 
 RD_HygieneManager = RD_HygieneManager or {}
-RDHygieneManager = RD_HygieneManager -- Alias for backward compatibility
 require "RD_game_api"
 
 -- Helper function to sync item changes to server in multiplayer
