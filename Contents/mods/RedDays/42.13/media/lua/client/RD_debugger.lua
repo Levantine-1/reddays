@@ -60,6 +60,7 @@ local function PrintStatus(cycle)
     print("PMS Symptom - Tender Breasts ------------ " .. tostring(cycle.pms_tenderBreasts))
     print("PMS Symptom - Crave Food ---------------- " .. tostring(cycle.pms_craveFood))
     print("PMS Symptom - Sadness ------------------- " .. tostring(cycle.pms_Sadness))
+    print("Painkiller taken ------------------------- " .. tostring(RD_modData.ICdata.pill_effect_active))
     print("This log output was formatted to be read in a separate terminal window with a monospace font, not the in-game console.")
     print("==========================================================================================")
 end
@@ -67,6 +68,7 @@ end
 
 
 function RD_CycleDebugger.printWrapper() -- Wrapper to control printing frequency when running from main function
+    if not RD_modData or not RD_modData.ICdata then return end
     local cycle = RD_modData.ICdata.currentCycle
     if not cycle then return end
     PrintStatus(cycle)
