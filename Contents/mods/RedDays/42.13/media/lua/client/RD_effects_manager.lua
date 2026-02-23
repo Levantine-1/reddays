@@ -10,9 +10,10 @@ local function stat_Adjustment()
     stat_Adjustment_isEnabled = true
     local cycle = RD_modData.ICdata.currentCycle -- The event system calls the function with no arguments, so cycle is nil, so that's why it's set here
 
-    if RD_HygieneManager:consumeHygieneProduct() then
+    local didConsume = RD_HygieneManager:consumeHygieneProduct()
+    if didConsume then
         RD_modData.ICdata.LeakSwitchState = false
-    elseif not RD_HygieneManager:consumeHygieneProduct() then
+    else
         RD_modData.ICdata.LeakSwitchState = true
     end
 end
