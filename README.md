@@ -59,6 +59,9 @@
     - Tender Breasts (T): Causes upper torso muscle strain scaling with severity. Reduced by 50% if Cramps are also active. May interfere with sleep at high severity without painkillers when combined with cramps.
     - Cramps (C): Causes lower torso and groin muscle strain scaling with severity. Stacks with Tender Breasts. May require painkillers for sleep at high severity.
     - Food Cravings (Y): Player always wants to eat.
+
+- Not wearing hyginene items increases "dirtiness/bloodiness" for certain clothing locations
+    - Potential for interaction with other mods that have dirt/blood attracts zombies
     
 ## Planned features
 
@@ -66,8 +69,6 @@ Feminine Hygiene products:
 - Craftable re-usable cloth pads
 - Menstrual cups
 
-Not wearing hyginene items increases "dirtiness/bloodiness" for certain clothing locations
-- Potential for interaction with other mods that have dirt/blood attracts zombies
 
 Integrate with other lifestyle mods for features like bathing to remove leak moodles.
 
