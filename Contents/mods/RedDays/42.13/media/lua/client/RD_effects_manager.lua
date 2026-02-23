@@ -10,19 +10,12 @@ local function stat_Adjustment()
     stat_Adjustment_isEnabled = true
     local cycle = RD_modData.ICdata.currentCycle -- The event system calls the function with no arguments, so cycle is nil, so that's why it's set here
 
-    if RD_HygieneManager:consumeHygieneProduct() then
+    local didConsume = RD_HygieneManager:consumeHygieneProduct()
+    if didConsume then
         RD_modData.ICdata.LeakSwitchState = false
-    elseif not RD_HygieneManager:consumeHygieneProduct() then
+    else
         RD_modData.ICdata.LeakSwitchState = true
     end
-
-    -- local current_discomfort = bodyDamage:getDiscomfortLevel()
-    -- local discomfort_target = cycle.discomfort_target
-    -- if current_discomfort < discomfort_target then
-    --     bodyDamage:setDiscomfortLevel(math.max(0, current_discomfort + 35))
-    -- end
-    -- I couldn't find the discomfort stat gets and sets in the API docuementation, but I found it in this mod:
-    -- Nepenthe's Slower Discomfort, Credit to Nepenthe for that
 end
 
 local consumingDischargeItem = false

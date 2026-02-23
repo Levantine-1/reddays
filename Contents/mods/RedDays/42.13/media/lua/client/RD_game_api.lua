@@ -99,4 +99,75 @@ function RD_zapi.isItemAtBodyLocation(item, locationString)
     return item:isBodyLocation(bodyLocation)
 end
 
+-- ================= VISUALS / BLOOD & DIRT =================
+
+-- https://projectzomboid.com/modding/zombie/core/skinnedmodel/visual/HumanVisual.html
+function RD_zapi.getHumanVisual()
+    local player = getPlayer()
+    if not player then return nil end
+    return player:getHumanVisual()
+end
+
+-- Refreshes the player model and fires OnClothingUpdated so stain changes render
+function RD_zapi.resetPlayerModel()
+    local player = getPlayer()
+    if not player then return end
+    player:resetModelNextFrame()
+    triggerEvent("OnClothingUpdated", player)
+end
+
+-- https://projectzomboid.com/modding/zombie/inventory/InventoryItem.html
+-- Returns true if the item is a Clothing instance
+function RD_zapi.isClothingItem(item)
+    if not item then return false end
+    return instanceof(item, "Clothing")
+end
+
+-- https://projectzomboid.com/modding/zombie/characterTextures/BloodClothingType.html#getCoveredParts(zombie.characterTextures.BloodClothingType)
+-- Returns the list of BloodBodyPartType values this clothing item covers, or nil
+function RD_zapi.getClothingCoveredParts(item)
+    if not item then return nil end
+    local bct = item:getBloodClothingType()
+    if not bct then return nil end
+    return BloodClothingType.getCoveredParts(bct)
+end
+
+-- Returns the player's current grid square (IsoGridSquare)
+function RD_zapi.getPlayerSquare()
+    local player = getPlayer()
+    if not player then return nil end
+    return player:getSquare()
+end
+
+-- Adds a small blood splat to the ground at the given square
+-- count = number of splats, offsetX/offsetZ = random position offset
+function RD_zapi.addBloodSplatToGround(count, offsetX, offsetZ)
+    local sq = RD_zapi.getPlayerSquare()
+    if not sq then return end
+    addBloodSplat(sq, count or 1, offsetX or 0, offsetZ or 0)
+end
+
+-- Returns true if any worn clothing covers the given BloodBodyPartType
+function RD_zapi.isBodyPartCoveredByClothing(bloodBodyPartType)
+    local wornItems = RD_zapi.getWornItems()
+    if not wornItems then return false end
+    for i = 0, wornItems:size() - 1 do
+        local wornItem = wornItems:get(i)
+        if wornItem and wornItem:getItem() then
+            local item = wornItem:getItem()
+            if RD_zapi.isClothingItem(item) then
+                local coveredParts = RD_zapi.getClothingCoveredParts(item)
+                if coveredParts then
+                    for j = 0, coveredParts:size() - 1 do
+                        if coveredParts:get(j) == bloodBodyPartType then
+                            return true
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return false
+end
+
 return RD_zapi
