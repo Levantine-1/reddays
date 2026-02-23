@@ -15,14 +15,6 @@ local function stat_Adjustment()
     elseif not RD_HygieneManager:consumeHygieneProduct() then
         RD_modData.ICdata.LeakSwitchState = true
     end
-
-    -- local current_discomfort = bodyDamage:getDiscomfortLevel()
-    -- local discomfort_target = cycle.discomfort_target
-    -- if current_discomfort < discomfort_target then
-    --     bodyDamage:setDiscomfortLevel(math.max(0, current_discomfort + 35))
-    -- end
-    -- I couldn't find the discomfort stat gets and sets in the API docuementation, but I found it in this mod:
-    -- Nepenthe's Slower Discomfort, Credit to Nepenthe for that
 end
 
 local consumingDischargeItem = false
