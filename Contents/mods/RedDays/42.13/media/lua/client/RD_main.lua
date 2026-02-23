@@ -18,12 +18,23 @@ local function isValidGenderCheck()
 end
 
 -- ================= GLOBAL EVENT HOOKS =================
+-- Sync modData to server in multiplayer so it persists across sessions
+local function transmitModDataToServer()
+    if isClient() then
+        local player = getPlayer()
+        if player then
+            player:transmitModData()
+        end
+    end
+end
+
 local function initializePlayerData()
     RD_CycleManager.LoadPlayerData()
     RD_CycleTrackerLogic.LoadPlayerData()
     RD_EffectsPMS.LoadPlayerData()
     RD_HygieneManager.LoadPlayerData()
     RD_moodles.LoadPlayerData()
+    transmitModDataToServer() -- Sync initial/generated data to server
 end
 
 local function OnGameStart()
@@ -49,6 +60,7 @@ Events.EveryHours.Add(EveryHours)
 local function EveryTenMinutes()
     if not isValidGenderCheck() then return end
     -- RD_CycleDebugger.printWrapper()
+    transmitModDataToServer() -- Periodically sync modData to server for persistence
 end
 Events.EveryTenMinutes.Add(EveryTenMinutes)
 

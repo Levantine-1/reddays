@@ -1,6 +1,40 @@
+print("[RedDays] CLIENT: RD_hygiene_manager.lua loading - VERSION 2")
+
 RD_HygieneManager = RD_HygieneManager or {}
-RDHygieneManager = RD_HygieneManager -- Alias for backward compatibility
 require "RD_game_api"
+
+-- Helper function to sync item changes to server in multiplayer
+-- This ensures condition and name changes persist when items are dropped/picked up
+local function syncItemToServer(item, newCondition, newName)
+    if not item then return end
+    
+    -- In multiplayer client, send command to server to sync the item
+    if isClient() then
+        local player = RD_zapi.getPlayer()
+        if player then
+            local args = {
+                itemId = item:getID(),
+                newCondition = newCondition,
+                newName = newName
+            }
+            sendClientCommand(player, 'RedDays', 'updateSanitaryItem', args)
+        end
+    end
+end
+
+-- DEBUG: Test function to change worn sanitary item condition with sync
+-- Call from Lua console: RD_HygieneManager.debugSetCondition(5)
+function RD_HygieneManager.debugSetCondition(newCondition)
+    local item = RD_HygieneManager.getCurrentlyWornSanitaryItem()
+    if not item then
+        print("[RedDays] DEBUG: No sanitary item worn")
+        return
+    end
+    print("[RedDays] DEBUG: Setting condition to " .. tostring(newCondition))
+    item:setCondition(newCondition)
+    syncItemToServer(item, newCondition, nil)
+    print("[RedDays] DEBUG: Condition set and synced")
+end
 
 function RD_HygieneManager.LoadPlayerData()
     RD_modData = RD_zapi.getModData()
@@ -37,7 +71,9 @@ local function consumeSanitaryItemHelperDecrementCondition(item, current_conditi
     cSIHDC_counter = cSIHDC_counter + cSIHDC_counter_increment
     -- RD_modData.ICdata.cSIHDC_counter = cSIHDC_counter -- debugging counter saving -- But don't save here because it'll save every second which may have performance issues
     if current_condition == 10 or (current_condition > 1 and cSIHDC_counter > cSIHDC_counter_tgt) then
-        item:setCondition(current_condition - 1)
+        local newCondition = current_condition - 1
+        item:setCondition(newCondition)
+        syncItemToServer(item, newCondition, nil) -- Sync condition change to server in MP
         cSIHDC_counter = 0
     end
 end
@@ -53,23 +89,33 @@ local function consumeSanitaryItemHelperRenameItemAndLeakChance(item)
     consumeSanitaryItemHelperDecrementCondition(item, current_condition)
 
     local d20Roll = ZombRand(1, 21) -- Chance to leak
+    local newName = nil
     if current_condition >= 9 then
-        item:setName(baseName .. " (Spotty)")
+        newName = baseName .. " (Spotty)"
     elseif current_condition >= 8 then
-        item:setName(baseName .. " (Bloody)")
+        newName = baseName .. " (Bloody)"
     elseif current_condition >= 4 then
-        item:setName(baseName .. " (Very Bloody)")
+        newName = baseName .. " (Very Bloody)"
     elseif current_condition == 3 then
         if d20Roll >= 15 then
             return false -- 25% chance to leak
         end
     elseif current_condition == 2 then
-        item:setName(baseName .. " (Nearly Saturated)")
+        newName = baseName .. " (Nearly Saturated)"
         if d20Roll >= 10 then
             return false -- 50% chance to leak
         end
     elseif current_condition < 2 then
-        item:setName(baseName .. " (Saturated)")
+        newName = baseName .. " (Saturated)"
+    end
+
+    -- Only set name and sync if the name actually changed
+    if newName and newName ~= itemName then
+        item:setName(newName)
+        syncItemToServer(item, nil, newName)
+    end
+
+    if current_condition < 2 then
         return false
     end
     return true -- No leak
@@ -104,8 +150,11 @@ function RD_HygieneManager.consumeDischargeProduct()
         wasItemConsumed = true
     end
 
-    item:setCondition(1)
-    item:setName(baseName .. " (Dirty)")
+    local newCondition = 1
+    local newName = baseName .. " (Dirty)"
+    item:setCondition(newCondition)
+    item:setName(newName)
+    syncItemToServer(item, newCondition, newName) -- Sync condition and name change to server in MP
 
     -- NOTE: 2025-08-30 I've given up on trying to add blood to player clothes and body at this time. Uncomment the addBloodToClothes function to continue later
     -- if not wasItemConsumed then

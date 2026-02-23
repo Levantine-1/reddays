@@ -12,7 +12,12 @@ function RD_CycleManager.LoadPlayerData()
     RD_modData = RD_zapi.getModData()
     RD_modData.ICdata = RD_modData.ICdata or {}
     cycleDelayed = RD_modData.ICdata.cycleDelayed or false
-    PMS_Symptoms = RD_modData.ICdata.pmsSymptoms or RD_CycleManager.generateRandomPMSsymptoms()
+
+    -- Generate PMS symptoms if not already saved, and persist them
+    if not RD_modData.ICdata.pmsSymptoms then
+        RD_modData.ICdata.pmsSymptoms = RD_CycleManager.generateRandomPMSsymptoms()
+    end
+    PMS_Symptoms = RD_modData.ICdata.pmsSymptoms
 
     -- Initialize or validate the current cycle
     RD_modData.ICdata.currentCycle = RD_modData.ICdata.currentCycle or RD_CycleManager.newCycle("LoadPlayerData")
