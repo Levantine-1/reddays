@@ -132,4 +132,42 @@ function RD_zapi.getClothingCoveredParts(item)
     return BloodClothingType.getCoveredParts(bct)
 end
 
+-- Returns the player's current grid square (IsoGridSquare)
+function RD_zapi.getPlayerSquare()
+    local player = getPlayer()
+    if not player then return nil end
+    return player:getSquare()
+end
+
+-- Adds a small blood splat to the ground at the given square
+-- count = number of splats, offsetX/offsetZ = random position offset
+function RD_zapi.addBloodSplatToGround(count, offsetX, offsetZ)
+    local sq = RD_zapi.getPlayerSquare()
+    if not sq then return end
+    addBloodSplat(sq, count or 1, offsetX or 0, offsetZ or 0)
+end
+
+-- Returns true if any worn clothing covers the given BloodBodyPartType
+function RD_zapi.isBodyPartCoveredByClothing(bloodBodyPartType)
+    local wornItems = RD_zapi.getWornItems()
+    if not wornItems then return false end
+    for i = 0, wornItems:size() - 1 do
+        local wornItem = wornItems:get(i)
+        if wornItem and wornItem:getItem() then
+            local item = wornItem:getItem()
+            if RD_zapi.isClothingItem(item) then
+                local coveredParts = RD_zapi.getClothingCoveredParts(item)
+                if coveredParts then
+                    for j = 0, coveredParts:size() - 1 do
+                        if coveredParts:get(j) == bloodBodyPartType then
+                            return true
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return false
+end
+
 return RD_zapi

@@ -181,19 +181,22 @@ local STAIN_TIERS = {
     { BloodBodyPartType.Foot_L, BloodBodyPartType.Foot_R },
 }
 
-local STAIN_INCREMENT = 0.03 -- How much dirt to add per call (dirt still increments since it's groin-only)
+local STAIN_INCREMENT = 0.01 -- How much dirt to add per call (dirt still increments since it's groin-only)
 local STAIN_MAX = 1.0
 
 -- Maps leak moodle level to target blood intensity and max tier
 -- LeakLevel: 0.42 = clear, ~0.4 = lvl1, ~0.3 = lvl2, ~0.2 = lvl3, ~0.0 = lvl4
 -- Each entry: { maxBloodLevel, maxTier }
 local LEAK_TO_STAIN = {
-    { threshold = 0.4, maxBlood = 0.0,  maxTier = 0 }, -- No moodle visible, no stains
-    { threshold = 0.3, maxBlood = 0.25, maxTier = 1 }, -- Lvl 1: light groin stain
-    { threshold = 0.2, maxBlood = 0.50, maxTier = 2 }, -- Lvl 2: groin + thighs
-    { threshold = 0.1, maxBlood = 0.75, maxTier = 3 }, -- Lvl 3: groin + thighs + shins
-    { threshold = 0.0, maxBlood = 1.0,  maxTier = 4 }, -- Lvl 4: full saturation, all tiers
+    { threshold = 0.4, maxBlood = 0.0,  maxTier = 0, dropChance = 0,  level = "None"     }, -- No moodle visible, no stains
+    { threshold = 0.3, maxBlood = 0.25, maxTier = 1, dropChance = 0,  level = "Lvl1"     }, -- Lvl 1: light groin stain, no dripping
+    { threshold = 0.2, maxBlood = 0.50, maxTier = 2, dropChance = 3,  level = "Lvl2"     }, -- Lvl 2: occasional drip (3% per call)
+    { threshold = 0.1, maxBlood = 0.75, maxTier = 3, dropChance = 8,  level = "Lvl3"     }, -- Lvl 3: moderate dripping (8%)
+    { threshold = 0.0, maxBlood = 1.0,  maxTier = 4, dropChance = 15, level = "Lvl4"     }, -- Lvl 4: frequent dripping (15%)
 }
+
+-- Multiplier for ground blood drop chance when groin is not covered by clothing (no pants, skirt, etc.)
+local UNCOVERED_DROP_MULTIPLIER = 3
 
 local function getStainParamsFromLeakLevel()
     local leakLevel = 0.42 -- default: no leak
@@ -203,11 +206,160 @@ local function getStainParamsFromLeakLevel()
 
     for _, entry in ipairs(LEAK_TO_STAIN) do
         if leakLevel >= entry.threshold then
-            return entry.maxBlood, entry.maxTier
+            return entry.maxBlood, entry.maxTier, entry.dropChance, entry.level
         end
     end
     -- Fully leaked
-    return 1.0, #STAIN_TIERS
+    return 1.0, #STAIN_TIERS, 15, "Lvl4"
+end
+
+-- Drops a small blood spot on the ground based on leak severity and clothing coverage.
+-- Blood only drips when it has somewhere to exit:
+--   A) Fully clothed (or shorts) but blood has saturated through to shins
+--   B) Wearing a skirt/dress - drips at 50% clothing + 50% groin saturation
+--   C) No bottoms at all - blood drips freely
+local SKIRT_DRIP_THRESHOLD = 0.5 -- 50% saturation before skirt/dress starts dripping
+
+local function isWearingSkirtOrDress()
+    local wornItems = RD_zapi.getWornItems()
+    if not wornItems then return false, nil end
+    for i = 0, wornItems:size() - 1 do
+        local wornItem = wornItems:get(i)
+        if wornItem and wornItem:getItem() then
+            local item = wornItem:getItem()
+            -- Must be a clothing item that actually covers the groin
+            if RD_zapi.isClothingItem(item) and item:getBloodClothingType() then
+                local coveredParts = RD_zapi.getClothingCoveredParts(item)
+                local coversGroin = false
+                if coveredParts then
+                    for j = 0, coveredParts:size() - 1 do
+                        if coveredParts:get(j) == BloodBodyPartType.Groin then
+                            coversGroin = true
+                            break
+                        end
+                    end
+                end
+                if coversGroin then
+                    local name = item:getName()
+                    if name then
+                        local lowerName = string.lower(name)
+                        if string.find(lowerName, "skirt") or string.find(lowerName, "dress") then
+                            return true, item
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return false, nil
+end
+
+local function isWearingUnderwear()
+    -- Check if player has something at the base:underwearbottom body location
+    local underwear = RD_zapi.getWornItemAtLocation("base:underwearbottom")
+    return underwear ~= nil and underwear ~= false
+end
+
+local function maybeDropBloodOnGround(dropChance, moodleLevel, maxBlood)
+    if dropChance <= 0 or maxBlood <= 0 then return end
+
+    local visual = RD_zapi.getHumanVisual()
+    if not visual then return end
+
+    local hasUnderwear = isWearingUnderwear()
+    local groinBodyBlood = visual:getBlood(BloodBodyPartType.Groin)
+
+    -- Walk tiers top-down to find where blood would exit clothing
+    -- exitTier = first tier with no clothing coverage (ignoring underwear itself)
+    local exitTier = nil
+    for tierIndex = 1, #STAIN_TIERS do
+        local tier = STAIN_TIERS[tierIndex]
+        local tierCovered = false
+        for _, bodyPart in ipairs(tier) do
+            if RD_zapi.isBodyPartCoveredByClothing(bodyPart) then
+                tierCovered = true
+                break
+            end
+        end
+        if not tierCovered then
+            exitTier = tierIndex
+            break
+        end
+    end
+
+    local shouldDrip = false
+    local effectiveChance = dropChance
+
+    if exitTier == 1 then
+        -- Case C: No outer clothing covers groin at all
+        -- If wearing underwear only, need groin saturated at maxBlood first (underwear "saturated")
+        if hasUnderwear then
+            if groinBodyBlood >= maxBlood - 0.01 then
+                shouldDrip = true
+                effectiveChance = dropChance * UNCOVERED_DROP_MULTIPLIER
+            end
+        else
+            -- Truly naked below - blood drips freely
+            shouldDrip = true
+            effectiveChance = dropChance * UNCOVERED_DROP_MULTIPLIER
+        end
+
+    elseif exitTier then
+        -- Partial coverage - check if it's a skirt/dress vs shorts
+        local wearingSkirt, skirtItem = isWearingSkirtOrDress()
+        if wearingSkirt and skirtItem then
+            -- Case B: Skirt/dress
+            -- With underwear: need groin at maxBlood (underwear saturated) AND skirt at 50%
+            -- Without underwear: need groin at 50% AND skirt at 50%
+            local skirtBlood = skirtItem:getBlood(BloodBodyPartType.Groin)
+            local groinThreshold = hasUnderwear and (maxBlood - 0.01) or SKIRT_DRIP_THRESHOLD
+            if groinBodyBlood >= groinThreshold and skirtBlood >= SKIRT_DRIP_THRESHOLD then
+                shouldDrip = true
+            end
+        else
+            -- Shorts or other partial coverage - treat like full pants (Case A)
+            -- Need shin saturation before dripping
+            local shinTier = STAIN_TIERS[3]
+            if shinTier then
+                local saturated = true
+                for _, bodyPart in ipairs(shinTier) do
+                    if visual:getBlood(bodyPart) < maxBlood - 0.01 then
+                        saturated = false
+                        break
+                    end
+                end
+                if saturated then
+                    shouldDrip = true
+                end
+            end
+        end
+
+    else
+        -- Case A: Fully covered - blood drips when shin tier (tier 3) is saturated
+        local shinTier = STAIN_TIERS[3]
+        if shinTier then
+            local saturated = true
+            for _, bodyPart in ipairs(shinTier) do
+                if visual:getBlood(bodyPart) < maxBlood - 0.01 then
+                    saturated = false
+                    break
+                end
+            end
+            if saturated then
+                shouldDrip = true
+            end
+        end
+    end
+
+    if not shouldDrip then return end
+
+    -- Roll for blood drop
+    local roll = ZombRand(1, 101) -- 1-100
+    if roll <= effectiveChance then
+        local offsetX = ZombRandFloat(-0.4, 0.4)
+        local offsetZ = ZombRandFloat(-0.4, 0.4)
+        RD_zapi.addBloodSplatToGround(1, offsetX, offsetZ)
+    end
 end
 
 local function addStainToClothingPart(item, bodyPart, blood, dirt, maxLevel)
@@ -255,11 +407,9 @@ local function addStainsToBodyAndClothes(blood, dirt, maxTier, maxLevel)
             local bodyDirt = dirt and visual:getDirt(bodyPart) or 0
 
             if blood and bodyBlood < maxLevel then
-                print("Adding blood stain to body part " .. tostring(bodyPart) .. " (target: " .. maxLevel .. ")")
                 visual:setBlood(bodyPart, math.min(maxLevel, bodyBlood + STAIN_INCREMENT))
             end
             if dirt and bodyDirt < maxLevel then
-                print("Adding dirt stain to body part " .. tostring(bodyPart))
                 visual:setDirt(bodyPart, math.min(maxLevel, bodyDirt + STAIN_INCREMENT))
             end
 
@@ -269,10 +419,7 @@ local function addStainsToBodyAndClothes(blood, dirt, maxTier, maxLevel)
                 if wornItem and wornItem:getItem() then
                     local clothingItem = wornItem:getItem()
                     if RD_zapi.isClothingItem(clothingItem) and clothingItem:getBloodClothingType() then
-                        local wasStained = addStainToClothingPart(clothingItem, bodyPart, blood, dirt, maxLevel)
-                        if wasStained then
-                            print("Adding stains to clothing item " .. clothingItem:getName() .. " covering body part " .. tostring(bodyPart) .. " Stain Type: " .. (blood and "Blood " or "") .. (dirt and "Dirt" or ""))
-                        end
+                        addStainToClothingPart(clothingItem, bodyPart, blood, dirt, maxLevel)
                     end
                 end
             end
@@ -285,10 +432,12 @@ end
 
 function RD_HygieneManager.addBloodStains()
     -- Blood intensity and spread are driven by the leak moodle level
-    local maxBlood, maxTier = getStainParamsFromLeakLevel()
+    local maxBlood, maxTier, dropChance, moodleLevel = getStainParamsFromLeakLevel()
     if maxTier > 0 and maxBlood > 0 then
         addStainsToBodyAndClothes(true, false, maxTier, maxBlood)
     end
+    -- Chance to drop blood on the ground
+    maybeDropBloodOnGround(dropChance, moodleLevel, maxBlood)
 end
 
 function RD_HygieneManager.addDirtStains()
