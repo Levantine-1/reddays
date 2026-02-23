@@ -441,7 +441,7 @@ function RD_HygieneManager.addBloodStains()
 end
 
 function RD_HygieneManager.addDirtStains()
-    addStainsToBodyAndClothes(false, true, 1, STAIN_MAX) -- Dirt only stains groin, no cap
+    addStainsToBodyAndClothes(false, true, 1, STAIN_MAX) -- Dirt only stains groin, capped at STAIN_MAX
 end
 
 function RD_HygieneManager.consumeHygieneProduct()
