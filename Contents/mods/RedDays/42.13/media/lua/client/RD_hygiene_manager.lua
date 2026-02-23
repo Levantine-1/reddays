@@ -181,28 +181,54 @@ local STAIN_TIERS = {
     { BloodBodyPartType.Foot_L, BloodBodyPartType.Foot_R },
 }
 
-local STAIN_INCREMENT = 0.03 -- How much blood/dirt to add per call (0.0 - 1.0 scale)
+local STAIN_INCREMENT = 0.03 -- How much dirt to add per call (dirt still increments since it's groin-only)
 local STAIN_MAX = 1.0
-local STAIN_SPREAD_THRESHOLD = 0.5 -- Start spreading to next tier when current tier reaches this level
 
-local function addStainToClothingPart(item, bodyPart, blood, dirt)
+-- Maps leak moodle level to target blood intensity and max tier
+-- LeakLevel: 0.42 = clear, ~0.4 = lvl1, ~0.3 = lvl2, ~0.2 = lvl3, ~0.0 = lvl4
+-- Each entry: { maxBloodLevel, maxTier }
+local LEAK_TO_STAIN = {
+    { threshold = 0.4, maxBlood = 0.0,  maxTier = 0 }, -- No moodle visible, no stains
+    { threshold = 0.3, maxBlood = 0.25, maxTier = 1 }, -- Lvl 1: light groin stain
+    { threshold = 0.2, maxBlood = 0.50, maxTier = 2 }, -- Lvl 2: groin + thighs
+    { threshold = 0.1, maxBlood = 0.75, maxTier = 3 }, -- Lvl 3: groin + thighs + shins
+    { threshold = 0.0, maxBlood = 1.0,  maxTier = 4 }, -- Lvl 4: full saturation, all tiers
+}
+
+local function getStainParamsFromLeakLevel()
+    local leakLevel = 0.42 -- default: no leak
+    if RD_modData and RD_modData.ICdata and type(RD_modData.ICdata.LeakLevel) == "number" then
+        leakLevel = RD_modData.ICdata.LeakLevel
+    end
+
+    for _, entry in ipairs(LEAK_TO_STAIN) do
+        if leakLevel >= entry.threshold then
+            return entry.maxBlood, entry.maxTier
+        end
+    end
+    -- Fully leaked
+    return 1.0, #STAIN_TIERS
+end
+
+local function addStainToClothingPart(item, bodyPart, blood, dirt, maxLevel)
     -- Check if the clothing covers this body part
     local coveredParts = RD_zapi.getClothingCoveredParts(item)
     if not coveredParts then return false end
+    maxLevel = maxLevel or STAIN_MAX
 
     for i = 0, coveredParts:size() - 1 do
         local coveredPart = coveredParts:get(i)
         if coveredPart == bodyPart then
             if blood then
                 local current = item:getBlood(coveredPart)
-                if current < STAIN_MAX then
-                    item:setBlood(coveredPart, math.min(STAIN_MAX, current + STAIN_INCREMENT))
+                if current < maxLevel then
+                    item:setBlood(coveredPart, math.min(maxLevel, current + STAIN_INCREMENT))
                 end
             end
             if dirt then
                 local current = item:getDirt(coveredPart)
-                if current < STAIN_MAX then
-                    item:setDirt(coveredPart, math.min(STAIN_MAX, current + STAIN_INCREMENT))
+                if current < maxLevel then
+                    item:setDirt(coveredPart, math.min(maxLevel, current + STAIN_INCREMENT))
                 end
             end
             return true
@@ -211,45 +237,30 @@ local function addStainToClothingPart(item, bodyPart, blood, dirt)
     return false
 end
 
-local function addStainsToBodyAndClothes(blood, dirt, groinOnly)
+local function addStainsToBodyAndClothes(blood, dirt, maxTier, maxLevel)
     local visual = RD_zapi.getHumanVisual()
     local wornItems = RD_zapi.getWornItems()
     if not visual or not wornItems then return end
 
-    local tiers = groinOnly and { STAIN_TIERS[1] } or STAIN_TIERS
+    maxTier = maxTier or #STAIN_TIERS
+    maxLevel = maxLevel or STAIN_MAX
+    if maxTier <= 0 then return end
 
-    -- Process body part tiers in spread order (groin first, then outward)
-    -- Each tier stains once previous tier reaches STAIN_SPREAD_THRESHOLD (first tier always stains)
-    for tierIndex, tier in ipairs(tiers) do
-        -- Check if previous tier has reached spread threshold
-        if tierIndex > 1 then
-            local prevTier = tiers[tierIndex - 1]
-            local prevReady = true
-            for _, bodyPart in ipairs(prevTier) do
-                local level = blood and visual:getBlood(bodyPart) or 0
-                if dirt then level = math.max(level, visual:getDirt(bodyPart) or 0) end
-                if level < STAIN_SPREAD_THRESHOLD then
-                    prevReady = false
-                    break
-                end
-            end
-            if not prevReady then
-                break -- Previous tier hasn't reached spread threshold yet
-            end
-        end
+    -- Apply stains to each allowed tier
+    for tierIndex = 1, math.min(maxTier, #STAIN_TIERS) do
+        local tier = STAIN_TIERS[tierIndex]
 
-        -- Apply stains to all parts in this tier
         for _, bodyPart in ipairs(tier) do
             local bodyBlood = blood and visual:getBlood(bodyPart) or 0
             local bodyDirt = dirt and visual:getDirt(bodyPart) or 0
 
-            if blood and bodyBlood < STAIN_MAX then
-                print("Adding blood stain to body part " .. tostring(bodyPart))
-                visual:setBlood(bodyPart, math.min(STAIN_MAX, bodyBlood + STAIN_INCREMENT))
+            if blood and bodyBlood < maxLevel then
+                print("Adding blood stain to body part " .. tostring(bodyPart) .. " (target: " .. maxLevel .. ")")
+                visual:setBlood(bodyPart, math.min(maxLevel, bodyBlood + STAIN_INCREMENT))
             end
-            if dirt and bodyDirt < STAIN_MAX then
+            if dirt and bodyDirt < maxLevel then
                 print("Adding dirt stain to body part " .. tostring(bodyPart))
-                visual:setDirt(bodyPart, math.min(STAIN_MAX, bodyDirt + STAIN_INCREMENT))
+                visual:setDirt(bodyPart, math.min(maxLevel, bodyDirt + STAIN_INCREMENT))
             end
 
             -- Add stain to any worn clothing covering this body part
@@ -258,7 +269,7 @@ local function addStainsToBodyAndClothes(blood, dirt, groinOnly)
                 if wornItem and wornItem:getItem() then
                     local clothingItem = wornItem:getItem()
                     if RD_zapi.isClothingItem(clothingItem) and clothingItem:getBloodClothingType() then
-                        local wasStained = addStainToClothingPart(clothingItem, bodyPart, blood, dirt)
+                        local wasStained = addStainToClothingPart(clothingItem, bodyPart, blood, dirt, maxLevel)
                         if wasStained then
                             print("Adding stains to clothing item " .. clothingItem:getName() .. " covering body part " .. tostring(bodyPart) .. " Stain Type: " .. (blood and "Blood " or "") .. (dirt and "Dirt" or ""))
                         end
@@ -273,11 +284,15 @@ local function addStainsToBodyAndClothes(blood, dirt, groinOnly)
 end
 
 function RD_HygieneManager.addBloodStains()
-    addStainsToBodyAndClothes(true, false)
+    -- Blood intensity and spread are driven by the leak moodle level
+    local maxBlood, maxTier = getStainParamsFromLeakLevel()
+    if maxTier > 0 and maxBlood > 0 then
+        addStainsToBodyAndClothes(true, false, maxTier, maxBlood)
+    end
 end
 
 function RD_HygieneManager.addDirtStains()
-    addStainsToBodyAndClothes(false, true, true)
+    addStainsToBodyAndClothes(false, true, 1, STAIN_MAX) -- Dirt only stains groin, no cap
 end
 
 function RD_HygieneManager.consumeHygieneProduct()
