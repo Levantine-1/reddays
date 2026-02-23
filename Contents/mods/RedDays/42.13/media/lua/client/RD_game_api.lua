@@ -99,4 +99,37 @@ function RD_zapi.isItemAtBodyLocation(item, locationString)
     return item:isBodyLocation(bodyLocation)
 end
 
+-- ================= VISUALS / BLOOD & DIRT =================
+
+-- https://projectzomboid.com/modding/zombie/core/skinnedmodel/visual/HumanVisual.html
+function RD_zapi.getHumanVisual()
+    local player = getPlayer()
+    if not player then return nil end
+    return player:getHumanVisual()
+end
+
+-- Refreshes the player model and fires OnClothingUpdated so stain changes render
+function RD_zapi.resetPlayerModel()
+    local player = getPlayer()
+    if not player then return end
+    player:resetModelNextFrame()
+    triggerEvent("OnClothingUpdated", player)
+end
+
+-- https://projectzomboid.com/modding/zombie/inventory/InventoryItem.html
+-- Returns true if the item is a Clothing instance
+function RD_zapi.isClothingItem(item)
+    if not item then return false end
+    return instanceof(item, "Clothing")
+end
+
+-- https://projectzomboid.com/modding/zombie/characterTextures/BloodClothingType.html#getCoveredParts(zombie.characterTextures.BloodClothingType)
+-- Returns the list of BloodBodyPartType values this clothing item covers, or nil
+function RD_zapi.getClothingCoveredParts(item)
+    if not item then return nil end
+    local bct = item:getBloodClothingType()
+    if not bct then return nil end
+    return BloodClothingType.getCoveredParts(bct)
+end
+
 return RD_zapi

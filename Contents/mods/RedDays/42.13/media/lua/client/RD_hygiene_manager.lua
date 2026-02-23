@@ -45,17 +45,6 @@ function RD_HygieneManager.LoadPlayerData()
         cSIHDC_counter = 0
     end
 end
--- Events.OnLoad.Add(RD_HygieneManager.LoadPlayerData)
--- 2026-01-22 Moved to events_intercepts.lua
-
--- NOTE: 2025-07-24 Disabled because this gets run on every load which means you always start on the first day of the cycle.
--- function RD_HygieneManager.resetHygieneData()
---     local player = getPlayer()
---     RD_modData = player:getModData()
---     RD_modData.ICdata = RD_modData.ICdata or {}
---     RD_modData.ICdata.cSIHDC_counter = 0
---     cSIHDC_counter = 0
--- end
 
 local function SavePlayerData()
     RD_modData = RD_zapi.getModData()
@@ -156,11 +145,9 @@ function RD_HygieneManager.consumeDischargeProduct()
     item:setName(newName)
     syncItemToServer(item, newCondition, newName) -- Sync condition and name change to server in MP
 
-    -- NOTE: 2025-08-30 I've given up on trying to add blood to player clothes and body at this time. Uncomment the addBloodToClothes function to continue later
-    -- if not wasItemConsumed then
-    --     print("Sanitary item was not consumed, adding blood to player clothes and body")
-    --     addBloodToClothes(player, false, true)
-    -- end
+    if not wasItemConsumed then
+        RD_HygieneManager.addDirtStains()
+    end
     return wasItemConsumed
 end
 
@@ -183,48 +170,115 @@ local function consumeSanitaryItem()
     return isSanitaryItemEquipped, didConsumeSanitaryItem
 end
 
--- local function addBloodToClothes(player, blood, dirt)
---     print("Adding Blood To Clothes")
---     local bodyDamage = player:getBodyDamage()
---     local groin = bodyDamage:getBodyPart(BodyPartType.Groin)
+-- Blood/dirt stain spreading for body and clothing
+-- Stains spread from groin outward: groin → both thighs → both shins
+-- blood = true adds blood, dirt = true adds dirt
+-- Each tier is a group of body parts that stain together
+local STAIN_TIERS = {
+    { BloodBodyPartType.Groin },
+    { BloodBodyPartType.UpperLeg_L, BloodBodyPartType.UpperLeg_R },
+    { BloodBodyPartType.LowerLeg_L, BloodBodyPartType.LowerLeg_R },
+    { BloodBodyPartType.Foot_L, BloodBodyPartType.Foot_R },
+}
 
---     local msg = "Set Blood: " .. tostring(blood) .. "Set Blood: " .. tostring(blood) .. ", Set Dirt: " .. tostring(dirt)
---     print(msg)
---     local wornItems = player:getWornItems()
+local STAIN_INCREMENT = 0.03 -- How much blood/dirt to add per call (0.0 - 1.0 scale)
+local STAIN_MAX = 1.0
+local STAIN_SPREAD_THRESHOLD = 0.5 -- Start spreading to next tier when current tier reaches this level
 
---     -- These body locations not valid locations to add/blood dirt even though it would make sense
---     -- "UnderwearBottom", "Underwear", "UnderwearExtra1", "UnderwearExtra2", "Legs1", "Legs5", "PantsExtra"
+local function addStainToClothingPart(item, bodyPart, blood, dirt)
+    -- Check if the clothing covers this body part
+    local coveredParts = RD_zapi.getClothingCoveredParts(item)
+    if not coveredParts then return false end
 
---     -- Valid body locations for adding blood/dirt in sorted order that I thought would make sense, the idea was that if one item was full of blood, it'd leak to the next worn item.
---     local validBodyLocations = {"Pants", "Pants_Skinny", "ShortPants", "ShortsShort", "Skirt", "LongDress", "LongSkirt"}
---     local clothingItemToAddBlood = nil
---     for i, location in ipairs(validBodyLocations) do
---         local clothingItem = wornItems:getItem(location)
---         if clothingItem and clothingItem:getBloodClothingType() then -- Check to make sure clothing item can be bloodied
---             print(clothingItem:getName() .. " can be bloodied")
---             clothingItemToAddBlood = clothingItem
---             break
---         end
---     end
+    for i = 0, coveredParts:size() - 1 do
+        local coveredPart = coveredParts:get(i)
+        if coveredPart == bodyPart then
+            if blood then
+                local current = item:getBlood(coveredPart)
+                if current < STAIN_MAX then
+                    item:setBlood(coveredPart, math.min(STAIN_MAX, current + STAIN_INCREMENT))
+                end
+            end
+            if dirt then
+                local current = item:getDirt(coveredPart)
+                if current < STAIN_MAX then
+                    item:setDirt(coveredPart, math.min(STAIN_MAX, current + STAIN_INCREMENT))
+                end
+            end
+            return true
+        end
+    end
+    return false
+end
 
---     -- Clothes can be on multiple parts of the body, so we need to figure out how to apply blood to clothes at that part
---     -- But this is so hard to implement due to lack of clear documentation an
---     if clothingItemToAddBlood then
---         print(tostring(clothingItemToAddBlood) .. " selected to add blood")
---         local bloodCoveredParts = clothingItemToAddBlood:getBloodClothingType()
---         print("bloodCoveredParts: " .. tostring(bloodCoveredParts))
---         if bloodCoveredParts then
---             print("bloodCoveredParts size: " .. tostring(bloodCoveredParts:size()))
---             for i = 0, bloodCoveredParts:size() - 1 do
---                 local part = bloodCoveredParts:get(i)
---                 local bloodValue = clothingItemToAddBlood:getBlood(part)
---                 print("Covered part: " .. tostring(part) .. ", blood value: " .. tostring(bloodValue))
---             end
---         else
---             print("No covered parts found for this clothing item.")
---         end
---     end
--- end
+local function addStainsToBodyAndClothes(blood, dirt, groinOnly)
+    local visual = RD_zapi.getHumanVisual()
+    local wornItems = RD_zapi.getWornItems()
+    if not visual or not wornItems then return end
+
+    local tiers = groinOnly and { STAIN_TIERS[1] } or STAIN_TIERS
+
+    -- Process body part tiers in spread order (groin first, then outward)
+    -- Each tier stains once previous tier reaches STAIN_SPREAD_THRESHOLD (first tier always stains)
+    for tierIndex, tier in ipairs(tiers) do
+        -- Check if previous tier has reached spread threshold
+        if tierIndex > 1 then
+            local prevTier = tiers[tierIndex - 1]
+            local prevReady = true
+            for _, bodyPart in ipairs(prevTier) do
+                local level = blood and visual:getBlood(bodyPart) or 0
+                if dirt then level = math.max(level, visual:getDirt(bodyPart) or 0) end
+                if level < STAIN_SPREAD_THRESHOLD then
+                    prevReady = false
+                    break
+                end
+            end
+            if not prevReady then
+                break -- Previous tier hasn't reached spread threshold yet
+            end
+        end
+
+        -- Apply stains to all parts in this tier
+        for _, bodyPart in ipairs(tier) do
+            local bodyBlood = blood and visual:getBlood(bodyPart) or 0
+            local bodyDirt = dirt and visual:getDirt(bodyPart) or 0
+
+            if blood and bodyBlood < STAIN_MAX then
+                print("Adding blood stain to body part " .. tostring(bodyPart))
+                visual:setBlood(bodyPart, math.min(STAIN_MAX, bodyBlood + STAIN_INCREMENT))
+            end
+            if dirt and bodyDirt < STAIN_MAX then
+                print("Adding dirt stain to body part " .. tostring(bodyPart))
+                visual:setDirt(bodyPart, math.min(STAIN_MAX, bodyDirt + STAIN_INCREMENT))
+            end
+
+            -- Add stain to any worn clothing covering this body part
+            for i = 0, wornItems:size() - 1 do
+                local wornItem = wornItems:get(i)
+                if wornItem and wornItem:getItem() then
+                    local clothingItem = wornItem:getItem()
+                    if RD_zapi.isClothingItem(clothingItem) and clothingItem:getBloodClothingType() then
+                        local wasStained = addStainToClothingPart(clothingItem, bodyPart, blood, dirt)
+                        if wasStained then
+                            print("Adding stains to clothing item " .. clothingItem:getName() .. " covering body part " .. tostring(bodyPart) .. " Stain Type: " .. (blood and "Blood " or "") .. (dirt and "Dirt" or ""))
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- Update visuals so stains render
+    RD_zapi.resetPlayerModel()
+end
+
+function RD_HygieneManager.addBloodStains()
+    addStainsToBodyAndClothes(true, false)
+end
+
+function RD_HygieneManager.addDirtStains()
+    addStainsToBodyAndClothes(false, true, true)
+end
 
 function RD_HygieneManager.consumeHygieneProduct()
     local groin = RD_zapi.getBodyPart(BodyPartType.Groin)
@@ -235,6 +289,10 @@ function RD_HygieneManager.consumeHygieneProduct()
         if bleedingTime == 0 and didConsumeSanitaryItem then
             groin:setBleeding(false) -- Clear bleeding if no wounds. Cycle generates bleeding time of 0, so assumed no wounds.
         end
+        if not didConsumeSanitaryItem then
+            -- Sanitary item leaked - add blood stains to body and clothes
+            RD_HygieneManager.addBloodStains()
+        end
         return didConsumeSanitaryItem -- Returns true if sanitary item was consumed and no leak occurred
     elseif groin:bandaged() then
         current_bandageLife = groin:getBandageLife()
@@ -242,13 +300,9 @@ function RD_HygieneManager.consumeHygieneProduct()
         return true -- Always returns true because player could bleed to death if they have other injuries. Setting to false could remove the bandage.
     end
 
-    -- print("Value didConsumeSanitaryItem: " .. tostring(didConsumeSanitaryItem))
-    -- if not didConsumeSanitaryItem then
-    --     -- If sanitary item was not consumed, assuming it leaked and made clothes and player dirty/bloody
-    --     print("Sanitary item was not consumed, adding blood to player clothes and body")
-    --     addBloodToClothes(player, true, true)
-    -- end
-    return false -- No sanitary item equipped and no bandage
+    -- No sanitary item equipped and no bandage - blood stains on body/clothes
+    RD_HygieneManager.addBloodStains()
+    return false
 end
 
 return RD_HygieneManager
