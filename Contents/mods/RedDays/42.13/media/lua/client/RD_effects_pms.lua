@@ -34,14 +34,21 @@ function RD_EffectsPMS.setCrampsEffect(stats, target_value, rate_multiplier)
         local lowerTorso = RD_zapi.getBodyPart(BodyPartType.Torso_Lower)
         local groin = RD_zapi.getBodyPart(BodyPartType.Groin)
 
-        local current_lower_torso_stiffness = lowerTorso:getStiffness()
-        if current_lower_torso_stiffness < target_value then
-            lowerTorso:setStiffness(math.max(0, current_lower_torso_stiffness + change_rate))
+        local new_lower = lowerTorso:getStiffness()
+        if new_lower < target_value then
+            new_lower = math.max(0, new_lower + change_rate)
         end
-        
-        local current_groin_stiffness = groin:getStiffness()
-        if current_groin_stiffness < target_value then
-            groin:setStiffness(math.max(0, current_groin_stiffness + change_rate))
+
+        local new_groin = groin:getStiffness()
+        if new_groin < target_value then
+            new_groin = math.max(0, new_groin + change_rate)
+        end
+
+        if isClient() then
+            sendClientCommand(getPlayer(), 'RedDays', 'applyBodyStiffness', { Torso_Lower = new_lower, Groin = new_groin })
+        else
+            lowerTorso:setStiffness(new_lower)
+            groin:setStiffness(new_groin)
         end
 end
 
@@ -78,9 +85,15 @@ function RD_EffectsPMS.setTenderBreastsEffect(stats, target_value, rate_multipli
 
         local upperTorso = RD_zapi.getBodyPart(BodyPartType.Torso_Upper)
 
-        local current_upper_torso_stiffness = upperTorso:getStiffness()
-        if current_upper_torso_stiffness < target_value then
-            upperTorso:setStiffness(math.max(0, current_upper_torso_stiffness + change_rate))
+        local new_upper = upperTorso:getStiffness()
+        if new_upper < target_value then
+            new_upper = math.max(0, new_upper + change_rate)
+        end
+
+        if isClient() then
+            sendClientCommand(getPlayer(), 'RedDays', 'applyBodyStiffness', { Torso_Upper = new_upper })
+        else
+            upperTorso:setStiffness(new_upper)
         end
 end
 
@@ -143,25 +156,38 @@ end
 
 local function clearStiffness(currentCycle)
         local resetValue = 22.5
+        local updates = {}
 
         if currentCycle.pms_cramps then
             local groin = RD_zapi.getBodyPart(BodyPartType.Groin)
             local lowerTorso = RD_zapi.getBodyPart(BodyPartType.Torso_Lower)
 
-            if groin:getStiffness() > resetValue then
-                groin:setStiffness(resetValue)
-            end
-            if lowerTorso:getStiffness() > resetValue then
-                lowerTorso:setStiffness(resetValue)
+            local new_groin = groin:getStiffness() > resetValue and resetValue or groin:getStiffness()
+            local new_lower = lowerTorso:getStiffness() > resetValue and resetValue or lowerTorso:getStiffness()
+
+            if isClient() then
+                updates.Groin = new_groin
+                updates.Torso_Lower = new_lower
+            else
+                groin:setStiffness(new_groin)
+                lowerTorso:setStiffness(new_lower)
             end
         end
 
         if currentCycle.pms_tenderBreasts then
             local upperTorso = RD_zapi.getBodyPart(BodyPartType.Torso_Upper)
 
-            if upperTorso:getStiffness() > resetValue then
-                upperTorso:setStiffness(resetValue)
+            local new_upper = upperTorso:getStiffness() > resetValue and resetValue or upperTorso:getStiffness()
+
+            if isClient() then
+                updates.Torso_Upper = new_upper
+            else
+                upperTorso:setStiffness(new_upper)
             end
+        end
+
+        if isClient() and next(updates) then
+            sendClientCommand(getPlayer(), 'RedDays', 'applyBodyStiffness', updates)
         end
 
         RD_modData.ICdata.pill_recently_taken = false

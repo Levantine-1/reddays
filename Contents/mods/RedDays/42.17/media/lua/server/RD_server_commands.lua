@@ -70,6 +70,24 @@ function Commands.updateSanitaryItem(player, args)
     syncItemFields(player, item)
 end
 
+-- Command to apply body part stiffness server-side (used for PMS cramps/tender breasts in multiplayer)
+-- BodyDamage is server-authoritative, so client-side setStiffness() gets overwritten; the server must apply it.
+function Commands.applyBodyStiffness(player, args)
+    if not player or not args then return end
+    local bodyDamage = player:getBodyDamage()
+    if not bodyDamage then return end
+
+    if args.Torso_Lower ~= nil then
+        bodyDamage:getBodyPart(BodyPartType.Torso_Lower):setStiffness(args.Torso_Lower)
+    end
+    if args.Groin ~= nil then
+        bodyDamage:getBodyPart(BodyPartType.Groin):setStiffness(args.Groin)
+    end
+    if args.Torso_Upper ~= nil then
+        bodyDamage:getBodyPart(BodyPartType.Torso_Upper):setStiffness(args.Torso_Upper)
+    end
+end
+
 -- Command handler for OnClientCommand event
 RD_ServerCommands.OnClientCommand = function(module, command, player, args)
     if module == 'RedDays' and Commands[command] then
