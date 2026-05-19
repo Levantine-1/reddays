@@ -3,4 +3,9 @@
 
 local group = BodyLocations.getGroup("Human")
 
-group:getOrCreateLocation("RedDays:HygieneItem")
+local hygieneLocation = ItemBodyLocation.get(ResourceLocation.of("RedDays:HygieneItem"))
+if hygieneLocation then
+    group:getOrCreateLocation(hygieneLocation)
+else
+    print("WARNING: RedDays - Could not get HygieneItem body location - ItemBodyLocation.get() returned nil")
+end

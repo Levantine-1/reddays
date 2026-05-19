@@ -24,7 +24,7 @@ module Base
         category = Packing,
         inputs
         {
-            item 12 [RedDays.Tampon] flags[AllowFavorite;InheritFavorite],
+            item 12 [RedDays.Tampon] flags[AllowFavorite;InheritFavorite;IsNotWorn],
         }
         outputs
         {
@@ -56,7 +56,7 @@ module Base
         category = Packing,
         inputs
         {
-            item 12 [RedDays.Sanitary_Pad] flags[AllowFavorite;InheritFavorite],
+            item 12 [RedDays.Sanitary_Pad] flags[AllowFavorite;InheritFavorite;IsNotWorn],
         }
         outputs
         {
@@ -88,7 +88,7 @@ module Base
         category = Packing,
         inputs
         {
-            item 24 [RedDays.Panty_Liner] flags[AllowFavorite;InheritFavorite],
+            item 24 [RedDays.Panty_Liner] flags[AllowFavorite;InheritFavorite;IsNotWorn],
         }
         outputs
         {
