@@ -10,9 +10,16 @@ local MINUTES_PER_DAY = 1440
 -- Don't use colons in strings here because the game won't print the whole string before a colon
 local function PrintStatus(cycle)
     print("=========================== Generated menstrual cycle details ==============================")
-    print("Mod version ----------------------------- 42.13")
+    print("Mod version ----------------------------- 42.18")
+    local mpMode = "singleplayer"
+    if isClient() then mpMode = "client (multiplayer)"
+    elseif isServer() then mpMode = "server (multiplayer)" end
+    print("Session mode ---------------------------- " .. mpMode)
+    print("MoodleFramework loaded ------------------ " .. tostring(getActivatedMods():contains("MoodleFramework")))
     local currentDay = RD_zapi.getGameTime("getWorldAgeHours") / 24
     print("Current time in days -------------------- " .. currentDay)
+    local gt = getGameTime()
+    print("In-game date ---------------------------- Day " .. tostring(gt:getDay()) .. ", Month " .. tostring(gt:getMonth()) .. ", Year " .. tostring(gt:getYear()))
 
     print("The reason for last cycle generation ---- " .. cycle.reason_for_cycle)
     print("Cycle delayed (first spawn delay used) -- " .. tostring(RD_modData.ICdata.cycleDelayed or false))
@@ -37,6 +44,16 @@ local function PrintStatus(cycle)
     else
         print("Currently worn sanitary item ------------ None")
     end
+    print("Hygiene saturation counter (cSIHDC) ----- " .. tostring(RD_modData.ICdata.cSIHDC_counter or 0))
+    print("Leak level ------------------------------ " .. tostring(RD_modData.ICdata.LeakLevel or 0))
+    print("Leak switch state ----------------------- " .. tostring(RD_modData.ICdata.LeakSwitchState or false))
+
+    local groin = RD_zapi.getBodyPart(BodyPartType.Groin)
+    local lowerTorso = RD_zapi.getBodyPart(BodyPartType.Torso_Lower)
+    local upperTorso = RD_zapi.getBodyPart(BodyPartType.Torso_Upper)
+    print("Body stiffness - Groin ------------------ " .. (groin and tostring(groin:getStiffness()) or "unavailable"))
+    print("Body stiffness - Torso Lower ------------ " .. (lowerTorso and tostring(lowerTorso:getStiffness()) or "unavailable"))
+    print("Body stiffness - Torso Upper ------------ " .. (upperTorso and tostring(upperTorso:getStiffness()) or "unavailable"))
 
     local phaseStatus = RD_CycleManager.getPhaseStatus(cycle)
     if phaseStatus then
@@ -61,7 +78,8 @@ local function PrintStatus(cycle)
     print("PMS Symptom - Tender Breasts ------------ " .. tostring(cycle.pms_tenderBreasts))
     print("PMS Symptom - Crave Food ---------------- " .. tostring(cycle.pms_craveFood))
     print("PMS Symptom - Sadness ------------------- " .. tostring(cycle.pms_Sadness))
-    print("Painkiller taken ------------------------- " .. tostring(RD_modData.ICdata.pill_effect_active))
+    print("Painkiller active ----------------------- " .. tostring(RD_modData.ICdata.pill_effect_active))
+    print("Painkiller counter/max ------------------ " .. tostring(RD_modData.ICdata.pill_effect_counter or 0) .. " / " .. tostring(SandboxVars.RedDays.painkillerEffectDuration or 36))
     print("This log output was formatted to be read in a separate terminal window with a monospace font, not the in-game console.")
     print("==========================================================================================")
 end
