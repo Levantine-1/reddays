@@ -1,0 +1,173 @@
+-- This API abstraction layer was created in response to how confusing it was
+-- to update this mod from B42.12 to B42.13
+
+RD_zapi = RD_zapi or {}
+
+-- ================= GAME TIME =================
+
+-- https://projectzomboid.com/modding/zombie/GameTime.html
+function RD_zapi.getGameTime(parameter)
+    local gameTime = getGameTime()
+    if gameTime[parameter] and type(gameTime[parameter]) == "function" then
+        return gameTime[parameter](gameTime)
+    end
+    return nil
+end
+
+-- ================= PLAYER =================
+
+-- https://projectzomboid.com/modding/zombie/characters/IsoPlayer.html#getPlayer()
+function RD_zapi.getPlayer()
+    return getPlayer()
+end
+
+-- https://projectzomboid.com/modding/zombie/characters/IsoPlayer.html#getPlayerNum()
+function RD_zapi.getPlayerNum()
+    local player = getPlayer()
+    if not player then return nil end
+    return player:getPlayerNum()
+end
+
+-- https://projectzomboid.com/modding/zombie/characters/IsoGameCharacter.html#isFemale()
+function RD_zapi.isFemale()
+    local player = getPlayer()
+    if not player then return nil end
+    return player:isFemale()
+end
+
+-- https://projectzomboid.com/modding/zombie/characters/IsoGameCharacter.html#getModData()
+function RD_zapi.getModData()
+    local player = getPlayer()
+    if not player then return nil end
+    return player:getModData()
+end
+
+-- https://projectzomboid.com/modding/zombie/characters/IsoGameCharacter.html#getWornItems()
+function RD_zapi.getWornItems()
+    local player = getPlayer()
+    if not player then return nil end
+    return player:getWornItems()
+end
+
+-- ================= BODY DAMAGE =================
+
+-- https://projectzomboid.com/modding/zombie/characters/IsoGameCharacter.html#getBodyDamage()
+function RD_zapi.getBodyDamage()
+    local player = getPlayer()
+    if not player then return nil end
+    return player:getBodyDamage()
+end
+
+-- https://projectzomboid.com/modding/zombie/characters/BodyDamage/BodyDamage.html#getBodyPart(zombie.characters.BodyDamage.BodyPartType)
+function RD_zapi.getBodyPart(bodyPartType)
+    local player = getPlayer()
+    if not player then return nil end
+    return player:getBodyDamage():getBodyPart(bodyPartType)
+end
+
+-- ================= BODY LOCATIONS =================
+
+-- https://projectzomboid.com/modding/zombie/inventory/ItemBodyLocation.html#get(zombie.asset.ResourceLocation)
+function RD_zapi.getBodyLocation(locationString)
+    -- locationString format: "ModName:LocationName" e.g. "RedDays:HygieneItem"
+    return ItemBodyLocation.get(ResourceLocation.of(locationString))
+end
+
+-- https://projectzomboid.com/modding/zombie/inventory/ItemBodyLocation.html
+-- https://projectzomboid.com/modding/zombie/inventory/ItemContainer.html#getItem(zombie.inventory.ItemBodyLocation)
+function RD_zapi.getWornItemAtLocation(locationString)
+    local wornItems = RD_zapi.getWornItems()
+    if not wornItems then
+        return nil
+    end
+    local bodyLocation = RD_zapi.getBodyLocation(locationString)
+    if not bodyLocation then
+        return nil
+    end
+    return wornItems:getItem(bodyLocation)
+end
+
+-- https://projectzomboid.com/modding/zombie/inventory/InventoryItem.html#isBodyLocation(zombie.inventory.ItemBodyLocation)
+function RD_zapi.isItemAtBodyLocation(item, locationString)
+    if not item then
+        return false
+    end
+    local bodyLocation = RD_zapi.getBodyLocation(locationString)
+    if not bodyLocation then
+        return false
+    end
+    return item:isBodyLocation(bodyLocation)
+end
+
+-- ================= VISUALS / BLOOD & DIRT =================
+
+-- https://projectzomboid.com/modding/zombie/core/skinnedmodel/visual/HumanVisual.html
+function RD_zapi.getHumanVisual()
+    local player = getPlayer()
+    if not player then return nil end
+    return player:getHumanVisual()
+end
+
+-- Refreshes the player model and fires OnClothingUpdated so stain changes render
+function RD_zapi.resetPlayerModel()
+    local player = getPlayer()
+    if not player then return end
+    player:resetModelNextFrame()
+    triggerEvent("OnClothingUpdated", player)
+end
+
+-- https://projectzomboid.com/modding/zombie/inventory/InventoryItem.html
+-- Returns true if the item is a Clothing instance
+function RD_zapi.isClothingItem(item)
+    if not item then return false end
+    return instanceof(item, "Clothing")
+end
+
+-- https://projectzomboid.com/modding/zombie/characterTextures/BloodClothingType.html#getCoveredParts(zombie.characterTextures.BloodClothingType)
+-- Returns the list of BloodBodyPartType values this clothing item covers, or nil
+function RD_zapi.getClothingCoveredParts(item)
+    if not item then return nil end
+    local bct = item:getBloodClothingType()
+    if not bct then return nil end
+    return BloodClothingType.getCoveredParts(bct)
+end
+
+-- Returns the player's current grid square (IsoGridSquare)
+function RD_zapi.getPlayerSquare()
+    local player = getPlayer()
+    if not player then return nil end
+    return player:getSquare()
+end
+
+-- Adds a small blood splat to the ground at the given square
+-- count = number of splats, offsetX/offsetZ = random position offset
+function RD_zapi.addBloodSplatToGround(count, offsetX, offsetZ)
+    local sq = RD_zapi.getPlayerSquare()
+    if not sq then return end
+    addBloodSplat(sq, count or 1, offsetX or 0, offsetZ or 0)
+end
+
+-- Returns true if any worn clothing covers the given BloodBodyPartType
+function RD_zapi.isBodyPartCoveredByClothing(bloodBodyPartType)
+    local wornItems = RD_zapi.getWornItems()
+    if not wornItems then return false end
+    for i = 0, wornItems:size() - 1 do
+        local wornItem = wornItems:get(i)
+        if wornItem and wornItem:getItem() then
+            local item = wornItem:getItem()
+            if RD_zapi.isClothingItem(item) then
+                local coveredParts = RD_zapi.getClothingCoveredParts(item)
+                if coveredParts then
+                    for j = 0, coveredParts:size() - 1 do
+                        if coveredParts:get(j) == bloodBodyPartType then
+                            return true
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return false
+end
+
+return RD_zapi
