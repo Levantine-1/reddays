@@ -10,6 +10,7 @@ local MINUTES_PER_DAY = 1440
 -- Don't use colons in strings here because the game won't print the whole string before a colon
 local function PrintStatus(cycle)
     print("=========================== Generated menstrual cycle details ==============================")
+    print("Mod version ----------------------------- 42.13")
     local currentDay = RD_zapi.getGameTime("getWorldAgeHours") / 24
     print("Current time in days -------------------- " .. currentDay)
 
