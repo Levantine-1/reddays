@@ -157,6 +157,7 @@ end
 local function clearStiffness(currentCycle)
         local resetValue = 22.5
         local updates = {}
+    local hasUpdates = false
 
         if currentCycle.pms_cramps then
             local groin = RD_zapi.getBodyPart(BodyPartType.Groin)
@@ -168,6 +169,7 @@ local function clearStiffness(currentCycle)
             if isClient() then
                 updates.Groin = new_groin
                 updates.Torso_Lower = new_lower
+                hasUpdates = true
             else
                 groin:setStiffness(new_groin)
                 lowerTorso:setStiffness(new_lower)
@@ -181,12 +183,13 @@ local function clearStiffness(currentCycle)
 
             if isClient() then
                 updates.Torso_Upper = new_upper
+                hasUpdates = true
             else
                 upperTorso:setStiffness(new_upper)
             end
         end
 
-        if isClient() and next(updates) then
+        if isClient() and hasUpdates then
             sendClientCommand(getPlayer(), 'RedDays', 'applyBodyStiffness', updates)
         end
 
