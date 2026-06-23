@@ -6,6 +6,54 @@ require "RD_hygiene_manager"
 require "RD_game_api"
 
 local MINUTES_PER_DAY = 1440
+local MINUTES_PER_HOUR = 60
+
+local function printTSSStatus()
+    local sb = SandboxVars.RedDays or {}
+    local tss = RD_modData and RD_modData.ICdata and RD_modData.ICdata.tss or nil
+
+    print("--- TSS Diagnostics ---------------------")
+    print("TSS enabled ----------------------------- " .. tostring(sb.tss_enabled ~= false))
+    print("TSS lethal enabled ---------------------- " .. tostring(sb.tss_lethal_enabled ~= false))
+
+    if not tss then
+        print("TSS state ------------------------------- unavailable")
+        return
+    end
+
+    local stage = tss.stage or 0
+    local stageLabel = "none"
+    if stage == 1 then stageLabel = "warning"
+    elseif stage == 2 then stageLabel = "worsening"
+    elseif stage >= 3 then stageLabel = "critical" end
+
+    print("TSS stage ------------------------------- " .. tostring(stage) .. " (" .. stageLabel .. ")")
+    print("TSS recovery mode ----------------------- " .. tostring(tss.recovery_mode or "none"))
+    print("TSS cured flag -------------------------- " .. tostring(tss.cured or false))
+    print("TSS source active ----------------------- " .. tostring(tss.source_active or false))
+    print("TSS source removed ---------------------- " .. tostring(tss.source_removed or false))
+    print("TSS source type ------------------------- " .. tostring(tss.source_type or ""))
+    print("TSS source item id ---------------------- " .. tostring(tss.source_item_id or -1))
+    print("TSS wear minutes ------------------------ " .. tostring(tss.wear_minutes or 0) .. " mins (" .. tostring((tss.wear_minutes or 0) / MINUTES_PER_HOUR) .. " hours)")
+    print("TSS exposure minutes -------------------- " .. tostring(tss.exposure_minutes or 0) .. " mins (" .. tostring((tss.exposure_minutes or 0) / MINUTES_PER_HOUR) .. " hours)")
+    print("TSS untreated minutes ------------------- " .. tostring(tss.untreated_minutes or 0) .. " mins (" .. tostring((tss.untreated_minutes or 0) / MINUTES_PER_HOUR) .. " hours)")
+    print("TSS first symptom minutes --------------- " .. tostring(tss.first_symptom_minutes or 0))
+    print("TSS warning cooldown -------------------- " .. tostring(tss.warning_cooldown or 0))
+    print("TSS stabilized until -------------------- " .. tostring(tss.stabilized_until or 0))
+    print("TSS treatment flags --------------------- ABX=" .. tostring(tss.antibiotics_taken_recently or false) .. ", DIS=" .. tostring(tss.disinfectant_recently or false) .. ", ALC=" .. tostring(tss.alcohol_recently or false))
+    print("TSS roll counters ----------------------- rolls=" .. tostring(tss.tss_rolls or 0) .. ", treatmentAttempts=" .. tostring(tss.treatment_attempts or 0))
+
+    local player = RD_zapi.getPlayer()
+    if player then
+        print("TSS current corpse sickness rate -------- " .. tostring(player:getCorpseSicknessRate()))
+        print("TSS current blur effect ----------------- " .. tostring(player:getSleepingTabletEffect()))
+        print("TSS baseline blur effect ---------------- " .. tostring(tss.baseline_blur_effect or 0))
+    else
+        print("TSS current corpse sickness rate -------- unavailable")
+        print("TSS current blur effect ----------------- unavailable")
+        print("TSS baseline blur effect ---------------- " .. tostring(tss.baseline_blur_effect or 0))
+    end
+end
 
 -- Don't use colons in strings here because the game won't print the whole string before a colon
 local function PrintStatus(cycle)
@@ -47,6 +95,7 @@ local function PrintStatus(cycle)
     print("Hygiene saturation counter (cSIHDC) ----- " .. tostring(RD_modData.ICdata.cSIHDC_counter or 0))
     print("Leak level ------------------------------ " .. tostring(RD_modData.ICdata.LeakLevel or 0))
     print("Leak switch state ----------------------- " .. tostring(RD_modData.ICdata.LeakSwitchState or false))
+    printTSSStatus()
 
     local groin = RD_zapi.getBodyPart(BodyPartType.Groin)
     local lowerTorso = RD_zapi.getBodyPart(BodyPartType.Torso_Lower)
