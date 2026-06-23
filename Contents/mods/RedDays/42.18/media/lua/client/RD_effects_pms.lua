@@ -248,13 +248,16 @@ end
 
 function RD_EffectsPMS.ISTakePillAction_perform(self)
     if not self.item then return end
-    if self.item:getFullType() == "Base.Pills" then
+    local fullType = self.item:getFullType()
+
+    if fullType == "Base.Pills" then
         print("Painkillers Taken, Reducing PMS Symptoms")
         RD_modData.ICdata.pill_recently_taken = true
         RD_modData.ICdata.pill_effect_active = true
         RD_modData.ICdata.pill_effect_counter = 0
         Events.EveryTenMinutes.Add(takePillsStiffness)
     end
+
 end
 
 function RD_EffectsPMS.LoadPlayerData()
