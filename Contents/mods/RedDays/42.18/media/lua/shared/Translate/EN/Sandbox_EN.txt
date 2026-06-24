@@ -66,4 +66,25 @@ Sandbox_EN = {
 
     Sandbox_RedDays_healthEffectUpperBound = "Maximum Health Impact",
     Sandbox_RedDays_healthEffectUpperBound_tooltip = "Scales the pain, discomfort, fatigue and endurance effects during your period.",
+
+    Sandbox_RedDays_tss_enabled = "Enable TSS System",
+    Sandbox_RedDays_tss_enabled_tooltip = "Enable or disable Red Days TSS progression and treatment mechanics.",
+
+    Sandbox_RedDays_tss_lethal_enabled = "Enable Lethal TSS",
+    Sandbox_RedDays_tss_lethal_enabled_tooltip = "If enabled, untreated Stage 3 can transition into Stage 4 toxic shock.",
+
+    Sandbox_RedDays_tss_risk_multiplier_pct = "TSS Risk Multiplier",
+    Sandbox_RedDays_tss_risk_multiplier_pct_tooltip = "Scales Stage 3 to Stage 4 risk gain. Lower is safer, higher is riskier.",
+
+    Sandbox_RedDays_tss_tampon_grace_hours = "Tampon Grace Period (Hours)",
+    Sandbox_RedDays_tss_tampon_grace_hours_tooltip = "How long a tampon can be worn before it starts contributing to TSS exposure.",
+
+    Sandbox_RedDays_tss_progression_speed_pct = "TSS Progression Speed",
+    Sandbox_RedDays_tss_progression_speed_pct_tooltip = "Scales Stage 0 to 3 progression time windows. Lower is faster progression, higher is slower.",
+
+    Sandbox_RedDays_tss_warning_interval_mins = "TSS Warning Interval (Minutes)",
+    Sandbox_RedDays_tss_warning_interval_mins_tooltip = "How often TSS warning messages are shown while symptoms are active.",
+
+    Sandbox_RedDays_tss_disinfectant_success_pct = "Disinfectant Treatment Success Chance",
+    Sandbox_RedDays_tss_disinfectant_success_pct_tooltip = "Base success chance for disinfectant or alcohol fallback treatment.",
 }
