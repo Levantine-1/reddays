@@ -15,6 +15,8 @@ local function printTSSStatus()
     print("--- TSS Diagnostics ---------------------")
     print("TSS enabled ----------------------------- " .. tostring(sb.tss_enabled ~= false))
     print("TSS lethal enabled ---------------------- " .. tostring(sb.tss_lethal_enabled ~= false))
+    print("TSS progression speed pct --------------- " .. tostring(sb.tss_progression_speed_pct or 100))
+    print("TSS risk multiplier pct ----------------- " .. tostring(sb.tss_risk_multiplier_pct or 100))
 
     if not tss then
         print("TSS state ------------------------------- unavailable")
@@ -25,9 +27,15 @@ local function printTSSStatus()
     local stageLabel = "none"
     if stage == 1 then stageLabel = "warning"
     elseif stage == 2 then stageLabel = "worsening"
-    elseif stage >= 3 then stageLabel = "critical" end
+    elseif stage == 3 then stageLabel = "critical"
+    elseif stage >= 4 then stageLabel = "toxic_shock" end
+
+    local threshold = tss.stage_threshold or 0
+    local thresholdDays = threshold / MINUTES_PER_DAY
 
     print("TSS stage ------------------------------- " .. tostring(stage) .. " (" .. stageLabel .. ")")
+    print("TSS stage threshold --------------------- " .. tostring(threshold) .. " mins (" .. string.format("%.2f", thresholdDays) .. " days)")
+    print("TSS tss_risk ---------------------------- " .. tostring(tss.tss_risk or 0))
     print("TSS recovery mode ----------------------- " .. tostring(tss.recovery_mode or "none"))
     print("TSS cured flag -------------------------- " .. tostring(tss.cured or false))
     print("TSS source active ----------------------- " .. tostring(tss.source_active or false))
@@ -35,13 +43,15 @@ local function printTSSStatus()
     print("TSS source type ------------------------- " .. tostring(tss.source_type or ""))
     print("TSS source item id ---------------------- " .. tostring(tss.source_item_id or -1))
     print("TSS wear minutes ------------------------ " .. tostring(tss.wear_minutes or 0) .. " mins (" .. tostring((tss.wear_minutes or 0) / MINUTES_PER_HOUR) .. " hours)")
-    print("TSS exposure minutes -------------------- " .. tostring(tss.exposure_minutes or 0) .. " mins (" .. tostring((tss.exposure_minutes or 0) / MINUTES_PER_HOUR) .. " hours)")
-    print("TSS untreated minutes ------------------- " .. tostring(tss.untreated_minutes or 0) .. " mins (" .. tostring((tss.untreated_minutes or 0) / MINUTES_PER_HOUR) .. " hours)")
+    local expMin = tss.exposure_minutes or 0
+    print("TSS exposure minutes -------------------- " .. tostring(expMin) .. " mins (" .. string.format("%.2f", expMin / MINUTES_PER_HOUR) .. " hours / " .. string.format("%.2f", expMin / MINUTES_PER_DAY) .. " days)")
+    local untMin = tss.untreated_minutes or 0
+    print("TSS untreated minutes ------------------- " .. tostring(untMin) .. " mins (" .. string.format("%.2f", untMin / MINUTES_PER_HOUR) .. " hours / " .. string.format("%.2f", untMin / MINUTES_PER_DAY) .. " days)")
     print("TSS first symptom minutes --------------- " .. tostring(tss.first_symptom_minutes or 0))
     print("TSS warning cooldown -------------------- " .. tostring(tss.warning_cooldown or 0))
     print("TSS stabilized until -------------------- " .. tostring(tss.stabilized_until or 0))
     print("TSS treatment flags --------------------- ABX=" .. tostring(tss.antibiotics_taken_recently or false) .. ", DIS=" .. tostring(tss.disinfectant_recently or false) .. ", ALC=" .. tostring(tss.alcohol_recently or false))
-    print("TSS roll counters ----------------------- rolls=" .. tostring(tss.tss_rolls or 0) .. ", treatmentAttempts=" .. tostring(tss.treatment_attempts or 0))
+    print("TSS counters ---------------------------- rolls=" .. tostring(tss.tss_rolls or 0) .. ", treatmentAttempts=" .. tostring(tss.treatment_attempts or 0))
 
     local player = RD_zapi.getPlayer()
     if player then

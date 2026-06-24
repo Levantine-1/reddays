@@ -14,9 +14,9 @@ local SICKNESS_DECAY_BASE = 0.0002
 local SICKNESS_DECAY_FALLBACK = 0.0011
 local SICKNESS_DECAY_ANTIBIOTICS = 0.0018
 local SICKNESS_RECOVERY_COMPLETE = 0.02
-local DRUNKNESS_STAGE3_TARGET = 0.35
-local DRUNKNESS_RAMP_UP = 0.01
-local DRUNKNESS_RAMP_DOWN = 0.008
+local BLUR_STAGE3_TARGET = 0.35
+local BLUR_RAMP_UP = 0.01
+local BLUR_RAMP_DOWN = 0.008
 
 local function getSandbox()
     return SandboxVars.RedDays or {}
@@ -44,9 +44,9 @@ local function getTamponGraceMinutes()
     return (sb.tss_tampon_grace_hours or 8) * MINUTES_PER_HOUR
 end
 
-local function getLethalStartMinutes()
+local function getProgressionSpeedPct()
     local sb = getSandbox()
-    return (sb.tss_lethal_start_hours or 24) * MINUTES_PER_HOUR
+    return math.max(10, math.min(200, sb.tss_progression_speed_pct or 100))
 end
 
 local function getRiskMultiplier()
@@ -57,6 +57,20 @@ end
 local function getDisinfectBaseChance()
     local sb = getSandbox()
     return math.max(5, math.min(95, sb.tss_disinfectant_success_pct or 65))
+end
+
+local function rollNextStageThreshold(stage)
+    local base = 0
+    if stage == 0 then
+        base = 2880 + ZombRand(4321)
+    elseif stage == 1 then
+        base = 7200 + ZombRand(23041)
+    elseif stage == 2 then
+        base = 30240 + ZombRand(50401)
+    else
+        return 0
+    end
+    return math.floor(base * (getProgressionSpeedPct() / 100))
 end
 
 local function getModData()
@@ -80,9 +94,11 @@ local function getModData()
         disinfectant_recently = false,
         alcohol_recently = false,
         recovery_mode = "none",
-        baseline_drunkenness = 0,
+        baseline_blur_effect = 0,
         tss_rolls = 0,
         treatment_attempts = 0,
+        tss_risk = 0,
+        stage_threshold = 0,
     }
     return md
 end
@@ -149,7 +165,7 @@ end
 
 local function clampStage(stage)
     if stage < 0 then return 0 end
-    if stage > 3 then return 3 end
+    if stage > 4 then return 4 end
     return stage
 end
 
@@ -162,6 +178,7 @@ end
 local function cureTSS(tss)
     tss.stage = 1
     tss.untreated_minutes = 0
+    tss.stage_threshold = rollNextStageThreshold(1)
     tss.warning_cooldown = getWarningIntervalMinutes()
     tss.cured = true
     tss.stabilized_until = 0
@@ -206,21 +223,21 @@ local function applyDisinfectFallback(tss)
     end
 end
 
-local function applyBlurEffect(stats, tss)
-    if not stats then return end
+local function applyBlurEffect(player, tss)
+    if not player then return end
 
-    local baseline = tss.baseline_drunkenness or 0
-    local currentDrunk = stats:getDrunkenness()
+    local baseline = tss.baseline_blur_effect or 0
+    local currentBlur = player:getSleepingTabletEffect()
     local target = baseline
 
     if tss.stage >= 3 then
-        target = math.max(baseline, DRUNKNESS_STAGE3_TARGET)
+        target = math.max(baseline, BLUR_STAGE3_TARGET)
     end
 
-    if currentDrunk < target then
-        stats:setDrunkenness(math.min(target, currentDrunk + DRUNKNESS_RAMP_UP))
-    elseif currentDrunk > target then
-        stats:setDrunkenness(math.max(target, currentDrunk - DRUNKNESS_RAMP_DOWN))
+    if currentBlur < target then
+        player:setSleepingTabletEffect(math.min(target, currentBlur + BLUR_RAMP_UP))
+    elseif currentBlur > target then
+        player:setSleepingTabletEffect(math.max(target, currentBlur - BLUR_RAMP_DOWN))
     end
 end
 
@@ -229,7 +246,7 @@ local function applySicknessProgression(player, tss)
     local stats = player:getStats()
     if not stats then return end
 
-    local currentSickness = stats:getSickness()
+    local currentSickness = player:getCorpseSicknessRate()
     local newSickness = currentSickness
 
     if tss.recovery_mode ~= "none" then
@@ -248,6 +265,8 @@ local function applySicknessProgression(player, tss)
             tss.untreated_minutes = 0
             tss.first_symptom_minutes = 0
             tss.warning_cooldown = 0
+            tss.tss_risk = 0
+            tss.stage_threshold = 0
             tss.cured = false
             tss.recovery_mode = "none"
             notifyPlayer("TSS symptoms have resolved.")
@@ -273,100 +292,159 @@ local function applySicknessProgression(player, tss)
         newSickness = math.max(0, currentSickness - SICKNESS_DECAY_BASE)
     end
 
-    stats:setSickness(newSickness)
-    applyBlurEffect(stats, tss)
-
-    if tss.stage >= 3 then
-        stats:set(CharacterStat.ENDURANCE, math.max(0, stats:get(CharacterStat.ENDURANCE) - 0.0009))
-        stats:set(CharacterStat.FATIGUE, math.min(1, stats:get(CharacterStat.FATIGUE) + 0.0005))
-        stats:set(CharacterStat.UNHAPPINESS, math.min(100, stats:get(CharacterStat.UNHAPPINESS) + 0.2))
-    end
+    player:setCorpseSicknessRate(newSickness)
+    applyBlurEffect(player, tss)
 end
 
-local function applyLateHealthDrain(player, tss)
-    if not player then return end
-    if tss.stage < 3 then return end
-
-    local lethalStart = getLethalStartMinutes()
-    if tss.untreated_minutes < lethalStart then return end
-
+local function getProgressionMultiplier(player)
+    if not player then return 1.0 end
     local stats = player:getStats()
-    local sickness = stats and stats:getSickness() or 0
-    if sickness < 0.65 then return end
+    local bd = player:getBodyDamage()
+    if not stats or not bd then return 1.0 end
 
-    local bodyDamage = player:getBodyDamage()
-    if bodyDamage then
-        bodyDamage:ReduceGeneralHealth(0.004)
-    end
-end
+    local mult = 0.0
 
-local function maybeTriggerFatal(player, tss)
-    if not isLethalEnabled() then return end
-    if tss.stage < 3 then return end
-
-    local lethalStart = getLethalStartMinutes()
-    if tss.untreated_minutes < lethalStart then return end
-
-    local minutesPast = tss.untreated_minutes - lethalStart
-    local ramp = math.min(1, minutesPast / MINUTES_PER_DAY)
-    local chancePoints = 1 + math.floor(ramp * 14) -- 0.01% to 0.15% per minute
-    if tss.stabilized_until and tss.stabilized_until > 0 then
-        chancePoints = math.max(0, chancePoints - 1)
+    local fatigue = stats:get(CharacterStat.FATIGUE) or 0
+    if fatigue > 0.90 then mult = mult + 0.5
+    elseif fatigue > 0.80 then mult = mult + 0.3
+    elseif fatigue > 0.70 then mult = mult + 0.1
     end
 
-    if ZombRand(1, 10001) <= chancePoints then
-        notifyPlayer("TSS became fatal. This could have been prevented with earlier treatment.")
-        if player.Kill then
-            player:Kill(nil)
-        elseif player.setHealth then
-            player:setHealth(0)
+    local thirst = stats:get(CharacterStat.THIRST) or 0
+    if thirst > 0.85 then mult = mult + 0.5
+    elseif thirst > 0.70 then mult = mult + 0.3
+    elseif thirst > 0.25 then mult = mult + 0.1
+    end
+
+    local hunger = stats:get(CharacterStat.HUNGER) or 0
+    if hunger > 0.70 then mult = mult + 0.3
+    elseif hunger > 0.45 then mult = mult + 0.15
+    elseif hunger > 0.25 then mult = mult + 0.05
+    end
+
+    local thermoregulator = bd:getThermoregulator()
+    if thermoregulator then
+        local temp = thermoregulator:getCoreCelcius()
+        if temp then
+            if temp > 40.0 then mult = mult + 0.5
+            elseif temp > 39.0 then mult = mult + 0.3
+            elseif temp > 37.5 then mult = mult + 0.1
+            elseif temp < 30.0 then mult = mult + 0.2
+            elseif temp < 35.0 then mult = mult + 0.1
+            elseif temp < 36.5 then mult = mult + 0.05
+            end
         end
     end
+
+    if bd:isHasACold() then mult = mult + 0.3 end
+    local sickness = stats:get(CharacterStat.SICKNESS) or 0
+    if sickness > 0.5 then mult = mult + 0.2 end
+
+    return math.min(3.0, 1.0 + mult)
 end
 
-local function rollSymptomStart(tss)
-    local risk = getRiskMultiplier()
-    local exposure = tss.exposure_minutes
-    local points = 0
+local function getTSSRiskGain(player)
+    if not player then return 0 end
+    local stats = player:getStats()
+    local bd = player:getBodyDamage()
+    if not stats or not bd then return 0 end
 
-    if exposure >= 12 * MINUTES_PER_HOUR then
-        points = 1 -- 0.01%
-    end
-    if exposure >= MINUTES_PER_DAY then
-        points = 3 -- 0.03%
-    end
-    if exposure >= 2 * MINUTES_PER_DAY then
-        points = 8 -- 0.08%
+    local gain = 0
+
+    local fatigue = stats:get(CharacterStat.FATIGUE) or 0
+    if fatigue > 0.90 then gain = gain + 3
+    elseif fatigue > 0.80 then gain = gain + 1
     end
 
-    points = math.floor(points * (risk / 100))
-    points = math.max(0, math.min(75, points))
+    local thirst = stats:get(CharacterStat.THIRST) or 0
+    if thirst > 0.85 then gain = gain + 3
+    elseif thirst > 0.70 then gain = gain + 1
+    end
 
-    tss.tss_rolls = (tss.tss_rolls or 0) + 1
-    if points > 0 and ZombRand(1, 10001) <= points then
-        tss.stage = 1
-        tss.first_symptom_minutes = 0
-        tss.warning_cooldown = 0
-        notifyPlayer("You feel sudden fever, weakness, and nausea. This may be TSS.")
+    local thermoregulator = bd:getThermoregulator()
+    if thermoregulator then
+        local temp = thermoregulator:getCoreCelcius()
+        if temp then
+            if temp > 40.0 then gain = gain + 3
+            elseif temp > 39.0 then gain = gain + 2
+            elseif temp > 37.5 then gain = gain + 1
+            end
+        end
+    end
+
+    local sickness = stats:get(CharacterStat.SICKNESS) or 0
+    if bd:isHasACold() or sickness > 0.4 then gain = gain + 2 end
+
+    if gain <= 0 then return 0 end
+    return math.floor(gain * (getRiskMultiplier() / 100))
+end
+
+local function rollTSSTransition(player, tss)
+    if not isLethalEnabled() then return end
+    if tss.stage ~= 3 then return end
+
+    local gain = getTSSRiskGain(player)
+    if tss.stabilized_until and tss.stabilized_until > 0 then
+        gain = math.floor(gain * 0.5)
+    end
+    tss.tss_risk = (tss.tss_risk or 0) + gain
+    if tss.tss_risk <= 0 then return end
+
+    local riskPoints = math.min(50, math.floor(tss.tss_risk / 120))
+    if riskPoints > 0 and ZombRand(10000) < riskPoints then
+        tss.stage = 4
+        tss.tss_risk = 0
+        tss.stage_threshold = 0
+        notifyPlayer("Your body is in toxic shock. Immediate treatment is required.")
         transmitNow()
     end
 end
 
+local function applyStageStatEffects(player, tss)
+    if not player then return end
+    local stats = player:getStats()
+    if not stats then return end
+
+    if tss.stage == 1 then
+        stats:set(CharacterStat.ENDURANCE, math.max(0, stats:get(CharacterStat.ENDURANCE) - 0.00005))
+        stats:set(CharacterStat.FATIGUE, math.min(1, stats:get(CharacterStat.FATIGUE) + 0.0002))
+        stats:set(CharacterStat.UNHAPPINESS, math.min(100, stats:get(CharacterStat.UNHAPPINESS) + 0.05))
+    elseif tss.stage == 2 then
+        stats:set(CharacterStat.ENDURANCE, math.max(0, stats:get(CharacterStat.ENDURANCE) - 0.0002))
+        stats:set(CharacterStat.FATIGUE, math.min(1, stats:get(CharacterStat.FATIGUE) + 0.0004))
+        stats:set(CharacterStat.THIRST, math.min(1, stats:get(CharacterStat.THIRST) + 0.001))
+        stats:set(CharacterStat.UNHAPPINESS, math.min(100, stats:get(CharacterStat.UNHAPPINESS) + 0.1))
+    elseif tss.stage >= 3 then
+        stats:set(CharacterStat.ENDURANCE, math.max(0, stats:get(CharacterStat.ENDURANCE) - 0.0007))
+        stats:set(CharacterStat.FATIGUE, math.min(1, stats:get(CharacterStat.FATIGUE) + 0.001))
+        stats:set(CharacterStat.THIRST, math.min(1, stats:get(CharacterStat.THIRST) + 0.002))
+        stats:set(CharacterStat.UNHAPPINESS, math.min(100, stats:get(CharacterStat.UNHAPPINESS) + 0.2))
+        if tss.stage == 4 then
+            local bd = player:getBodyDamage()
+            if bd then bd:ReduceGeneralHealth(0.004) end
+        end
+    end
+end
+
 local function updateStageByUntreated(tss)
+    if tss.stage == 0 or tss.stage >= 4 then return end
+
     local prev = tss.stage
-    if tss.stage >= 1 then
-        if tss.untreated_minutes >= 24 * MINUTES_PER_HOUR then
+    if tss.stage_threshold > 0 and tss.untreated_minutes >= tss.stage_threshold then
+        if tss.stage == 1 then
+            tss.stage = 2
+        elseif tss.stage == 2 then
             tss.stage = 3
-        elseif tss.untreated_minutes >= 12 * MINUTES_PER_HOUR then
-            tss.stage = math.max(tss.stage, 2)
         end
     end
 
     if tss.stage ~= prev then
+        tss.untreated_minutes = 0
+        tss.stage_threshold = rollNextStageThreshold(tss.stage)
         if tss.stage == 2 then
             notifyPlayer("TSS symptoms are worsening. Replace hygiene item and treat immediately.")
         elseif tss.stage == 3 then
-            notifyPlayer("Critical TSS symptoms. Immediate treatment is required to survive.")
+            notifyPlayer("Critical TSS symptoms. Risk of toxic shock if left untreated.")
         end
         transmitNow()
     end
@@ -381,8 +459,10 @@ local function maybeWarn(tss)
         notifyPlayer("Possible TSS warning: replace hygiene item and take antibiotics if available.")
     elseif tss.stage == 2 then
         notifyPlayer("TSS warning: condition worsening. Treat now.")
+    elseif tss.stage == 3 then
+        notifyPlayer("Critical TSS: risk of toxic shock. Remove hygiene item and take antibiotics.")
     else
-        notifyPlayer("Critical TSS warning: risk of death if untreated.")
+        notifyPlayer("Toxic shock warning: your body is failing. Antibiotics required immediately.")
     end
     tss.warning_cooldown = getWarningIntervalMinutes()
 end
@@ -443,13 +523,16 @@ function RD_TSSManager.LoadPlayerData()
     tss.disinfectant_recently = tss.disinfectant_recently or false
     tss.alcohol_recently = tss.alcohol_recently or false
     tss.recovery_mode = tss.recovery_mode or "none"
-    tss.baseline_drunkenness = tss.baseline_drunkenness or 0
+    tss.baseline_blur_effect = tss.baseline_blur_effect or tss.baseline_drunkenness or 0
+    tss.baseline_drunkenness = nil
     tss.tss_rolls = tss.tss_rolls or 0
     tss.treatment_attempts = tss.treatment_attempts or 0
+    tss.tss_risk = tss.tss_risk or 0
+    tss.stage_threshold = tss.stage_threshold or rollNextStageThreshold(tss.stage)
 
     local player = getPlayer()
-    if player and player:getStats() then
-        tss.baseline_drunkenness = player:getStats():getDrunkenness()
+    if player then
+        tss.baseline_blur_effect = player:getSleepingTabletEffect()
     end
 end
 
@@ -500,36 +583,57 @@ function RD_TSSManager.EveryOneMinute(cycle)
     if not player or player:isDead() then return end
 
     local tss = md.ICdata.tss
-    if player:getStats() then
-        tss.baseline_drunkenness = math.min(tss.baseline_drunkenness or 0, player:getStats():getDrunkenness())
+    if tss.stage == 0 and tss.recovery_mode == "none" then
+        tss.baseline_blur_effect = player:getSleepingTabletEffect()
     end
     updateSourceState(tss)
+
+    local stressMult = getProgressionMultiplier(player)
 
     if tss.stabilized_until and tss.stabilized_until > 0 then
         tss.stabilized_until = tss.stabilized_until - 1
     end
 
     if tss.source_active then
-        tss.exposure_minutes = tss.exposure_minutes + 1
+        if tss.stage == 0 and tss.stage_threshold == 0 then
+            tss.stage_threshold = rollNextStageThreshold(0)
+        end
+        tss.exposure_minutes = tss.exposure_minutes + stressMult
     elseif tss.stage == 0 then
         tss.exposure_minutes = math.max(0, tss.exposure_minutes - 2)
     end
 
-    if tss.stage == 0 and tss.source_active then
-        rollSymptomStart(tss)
+    if tss.stage == 0 and tss.source_active and tss.stage_threshold > 0 and tss.exposure_minutes >= tss.stage_threshold then
+        tss.stage = 1
+        tss.untreated_minutes = 0
+        tss.stage_threshold = rollNextStageThreshold(1)
+        tss.first_symptom_minutes = 0
+        tss.warning_cooldown = 0
+        notifyPlayer("You feel sudden fever, weakness, and nausea. This may be TSS.")
+        transmitNow()
     end
 
     if tss.stage >= 1 then
         tss.first_symptom_minutes = tss.first_symptom_minutes + 1
 
         if tss.source_active then
-            tss.untreated_minutes = tss.untreated_minutes + 1
+            tss.untreated_minutes = tss.untreated_minutes + stressMult
         else
-            tss.untreated_minutes = tss.untreated_minutes + 0.25
+            tss.untreated_minutes = tss.untreated_minutes + (0.25 * stressMult)
         end
 
         if tss.antibiotics_taken_recently then
-            if tss.source_removed then
+            if tss.stage == 4 and tss.source_removed then
+                tss.stage = 3
+                tss.untreated_minutes = 0
+                tss.stage_threshold = 0
+                tss.tss_risk = 0
+                tss.recovery_mode = "antibiotics"
+                tss.antibiotics_taken_recently = false
+                notifyPlayer("Antibiotics are slowing TSS. You are no longer in Stage 4, but continue treatment.")
+                transmitNow()
+                return
+            elseif tss.source_removed then
                 cureTSS(tss)
                 return
             else
@@ -551,10 +655,10 @@ function RD_TSSManager.EveryOneMinute(cycle)
         end
 
         updateStageByUntreated(tss)
+        rollTSSTransition(player, tss)
         maybeWarn(tss)
         applySicknessProgression(player, tss)
-        applyLateHealthDrain(player, tss)
-        maybeTriggerFatal(player, tss)
+        applyStageStatEffects(player, tss)
     else
         applySicknessProgression(player, tss)
     end

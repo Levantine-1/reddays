@@ -246,14 +246,14 @@ option RedDays.tss_tampon_grace_hours
 	translation = RedDays_tss_tampon_grace_hours,
 }
 
-option RedDays.tss_lethal_start_hours
+option RedDays.tss_progression_speed_pct
 {
 	type = integer,
-	min = 12,
-	max = 96,
-	default = 24,
+	min = 10,
+	max = 200,
+	default = 100,
 	page = RedDays,
-	translation = RedDays_tss_lethal_start_hours,
+	translation = RedDays_tss_progression_speed_pct,
 }
 
 option RedDays.tss_warning_interval_mins
