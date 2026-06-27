@@ -1,5 +1,6 @@
 RD_TSSManager = RD_TSSManager or {}
 RDTSSManager = RD_TSSManager -- Alias for backward compatibility
+RD_TSSManager._debugSpeedMult = nil  -- set via rd.debug.speedMult.set(N) from debugger
 
 require "RD_game_api"
 require "RD_hygiene_manager"
@@ -44,14 +45,27 @@ local function getTamponGraceMinutes()
     return (sb.tss_tampon_grace_hours or 8) * MINUTES_PER_HOUR
 end
 
-local function getProgressionSpeedPct()
+local function getSandboxStageBounds(stage)
     local sb = getSandbox()
-    return math.max(10, math.min(200, sb.tss_progression_speed_pct or 100))
+    if stage == 0 then
+        return (sb.tss_stage0_duration_lowerBound or 12) * MINUTES_PER_HOUR,
+               (sb.tss_stage0_duration_upperBound or 48) * MINUTES_PER_HOUR
+    elseif stage == 1 then
+        return (sb.tss_stage1_duration_lowerBound or 48) * MINUTES_PER_HOUR,
+               (sb.tss_stage1_duration_upperBound or 120) * MINUTES_PER_HOUR
+    elseif stage == 2 then
+        return (sb.tss_stage2_duration_lowerBound or 120) * MINUTES_PER_HOUR,
+               (sb.tss_stage2_duration_upperBound or 240) * MINUTES_PER_HOUR
+    end
+    return 0, 0
 end
 
 local function getRiskMultiplier()
     local sb = getSandbox()
-    return math.max(1, sb.tss_risk_multiplier_pct or 100)
+    local mult = math.max(1, sb.tss_risk_multiplier_pct or 100)
+    local debugMult = RD_TSSManager._debugSpeedMult or 1
+    if debugMult > 1 then return mult * debugMult end
+    return mult
 end
 
 local function getDisinfectBaseChance()
@@ -60,17 +74,12 @@ local function getDisinfectBaseChance()
 end
 
 local function rollNextStageThreshold(stage)
-    local base = 0
-    if stage == 0 then
-        base = 2880 + ZombRand(4321)
-    elseif stage == 1 then
-        base = 7200 + ZombRand(23041)
-    elseif stage == 2 then
-        base = 30240 + ZombRand(50401)
-    else
-        return 0
-    end
-    return math.floor(base * (getProgressionSpeedPct() / 100))
+    local lowerMins, upperMins = getSandboxStageBounds(stage)
+    if upperMins <= 0 then return 0 end
+    local range = math.max(0, upperMins - lowerMins)
+    local base = lowerMins + (range > 0 and ZombRand(range + 1) or 0)
+    local debugMult = RD_TSSManager._debugSpeedMult or 1
+    return math.floor(base / debugMult)
 end
 
 local function getModData()
@@ -80,7 +89,7 @@ local function getModData()
     md.ICdata.tss = md.ICdata.tss or {
         stage = 0,
         exposure_minutes = 0,
-        untreated_minutes = 0,
+        severity = 0,
         first_symptom_minutes = 0,
         wear_minutes = 0,
         source_active = false,
@@ -99,6 +108,8 @@ local function getModData()
         treatment_attempts = 0,
         tss_risk = 0,
         stage_threshold = 0,
+        stage3_minutes = 0,
+        complication_cooldown = 60,
     }
     return md
 end
@@ -109,10 +120,6 @@ end
 
 local function notifyPlayer(msg)
     if not msg then return end
-    local player = getPlayer()
-    if player then
-        player:Say(msg)
-    end
     print("[RedDays][TSS] " .. msg)
 end
 
@@ -177,7 +184,8 @@ end
 
 local function cureTSS(tss)
     tss.stage = 1
-    tss.untreated_minutes = 0
+    tss.severity = 0
+    tss.stage3_minutes = 0
     tss.stage_threshold = rollNextStageThreshold(1)
     tss.warning_cooldown = getWarningIntervalMinutes()
     tss.cured = true
@@ -213,7 +221,8 @@ local function applyDisinfectFallback(tss)
 
         -- Disinfectant/alcohol can stabilize and step severity down, but is less reliable than antibiotics.
         tss.stage = clampStage(tss.stage - 1)
-        tss.untreated_minutes = math.max(0, tss.untreated_minutes - (8 * MINUTES_PER_HOUR))
+        tss.severity = math.max(0, (tss.severity or 0) - (8 * MINUTES_PER_HOUR))
+        tss.stage3_minutes = 0
         tss.stabilized_until = 12 * MINUTES_PER_HOUR
         tss.recovery_mode = "fallback"
         notifyPlayer("You temporarily stabilized TSS symptoms. Keep monitoring and seek antibiotics.")
@@ -262,7 +271,8 @@ local function applySicknessProgression(player, tss)
         if newSickness <= SICKNESS_RECOVERY_COMPLETE then
             tss.stage = 0
             tss.exposure_minutes = 0
-            tss.untreated_minutes = 0
+            tss.severity = 0
+            tss.stage3_minutes = 0
             tss.first_symptom_minutes = 0
             tss.warning_cooldown = 0
             tss.tss_risk = 0
@@ -382,6 +392,9 @@ end
 local function rollTSSTransition(player, tss)
     if not isLethalEnabled() then return end
     if tss.stage ~= 3 then return end
+    local sb = getSandbox()
+    local minStage3Hours = sb.tss_min_stage3_hours or 48
+    if (tss.stage3_minutes or 0) < minStage3Hours * MINUTES_PER_HOUR then return end
 
     local gain = getTSSRiskGain(player)
     if tss.stabilized_until and tss.stabilized_until > 0 then
@@ -430,7 +443,7 @@ local function updateStageByUntreated(tss)
     if tss.stage == 0 or tss.stage >= 4 then return end
 
     local prev = tss.stage
-    if tss.stage_threshold > 0 and tss.untreated_minutes >= tss.stage_threshold then
+    if tss.stage_threshold > 0 and (tss.severity or 0) >= tss.stage_threshold then
         if tss.stage == 1 then
             tss.stage = 2
         elseif tss.stage == 2 then
@@ -439,7 +452,8 @@ local function updateStageByUntreated(tss)
     end
 
     if tss.stage ~= prev then
-        tss.untreated_minutes = 0
+        tss.severity = 0
+        tss.stage3_minutes = 0
         tss.stage_threshold = rollNextStageThreshold(tss.stage)
         if tss.stage == 2 then
             notifyPlayer("TSS symptoms are worsening. Replace hygiene item and treat immediately.")
@@ -502,6 +516,61 @@ local function updateSourceState(tss)
     tss.source_active = sourceActive
 end
 
+local function rollComplication(player, tss)
+    tss.complication_cooldown = (tss.complication_cooldown or 60) - 1
+    if tss.complication_cooldown > 0 then return end
+    tss.complication_cooldown = 60
+
+    local sb = getSandbox()
+    local baseChance = sb.tss_complication_chance_pct or 5
+    local bonus = 0
+    local stats = player and player:getStats()
+    local bd = player and player:getBodyDamage()
+    if stats then
+        local fatigue = stats:get(CharacterStat.FATIGUE) or 0
+        if fatigue > 0.80 then bonus = bonus + 10 end
+        local thirst = stats:get(CharacterStat.THIRST) or 0
+        if thirst > 0.70 then bonus = bonus + 10 end
+    end
+    if bd then
+        local thermoregulator = bd:getThermoregulator()
+        if thermoregulator then
+            local temp = thermoregulator:getCoreCelcius()
+            if temp and temp > 39.0 then bonus = bonus + 15 end
+        end
+        if bd:isHasACold() then bonus = bonus + 10 end
+    end
+
+    local totalChance = math.min(60, baseChance + bonus)
+    if ZombRand(100) >= totalChance then return end
+
+    local roll = ZombRand(100)
+    if roll < 60 then
+        if stats then
+            stats:set(CharacterStat.FATIGUE, math.min(1, stats:get(CharacterStat.FATIGUE) + 0.1))
+            stats:set(CharacterStat.ENDURANCE, math.max(0, stats:get(CharacterStat.ENDURANCE) - 0.05))
+            stats:set(CharacterStat.UNHAPPINESS, math.min(100, stats:get(CharacterStat.UNHAPPINESS) + 5))
+        end
+        print("[RedDays][TSS] Complication: mild symptom flare.")
+    elseif roll < 85 then
+        local spike = 30 + ZombRand(91)
+        tss.severity = (tss.severity or 0) + spike
+        print("[RedDays][TSS] Complication: infection flare, +" .. spike .. " severity mins.")
+    elseif roll < 97 then
+        if tss.stage >= 2 then
+            local spike = 120 + ZombRand(361)
+            tss.severity = (tss.severity or 0) + spike
+            print("[RedDays][TSS] Complication: severe infection spike, +" .. spike .. " severity mins.")
+        end
+    else
+        if tss.stage >= 3 then
+            local riskGain = 20 + ZombRand(31)
+            tss.tss_risk = (tss.tss_risk or 0) + riskGain
+            print("[RedDays][TSS] Complication: systemic stress spike, +" .. riskGain .. " TSS risk.")
+        end
+    end
+end
+
 function RD_TSSManager.LoadPlayerData()
     local md = getModData()
     if not md then return end
@@ -509,7 +578,14 @@ function RD_TSSManager.LoadPlayerData()
 
     tss.stage = clampStage(tss.stage or 0)
     tss.exposure_minutes = tss.exposure_minutes or 0
-    tss.untreated_minutes = tss.untreated_minutes or 0
+    -- Migrate untreated_minutes -> severity (v2 architecture rename)
+    if tss.untreated_minutes ~= nil and tss.severity == nil then
+        tss.severity = tss.untreated_minutes
+    end
+    tss.untreated_minutes = nil
+    tss.severity = tss.severity or 0
+    tss.stage3_minutes = tss.stage3_minutes or 0
+    tss.complication_cooldown = tss.complication_cooldown or 60
     tss.first_symptom_minutes = tss.first_symptom_minutes or 0
     tss.wear_minutes = tss.wear_minutes or 0
     tss.source_active = tss.source_active or false
@@ -605,7 +681,8 @@ function RD_TSSManager.EveryOneMinute(cycle)
 
     if tss.stage == 0 and tss.source_active and tss.stage_threshold > 0 and tss.exposure_minutes >= tss.stage_threshold then
         tss.stage = 1
-        tss.untreated_minutes = 0
+        tss.severity = 0
+        tss.stage3_minutes = 0
         tss.stage_threshold = rollNextStageThreshold(1)
         tss.first_symptom_minutes = 0
         tss.warning_cooldown = 0
@@ -616,16 +693,21 @@ function RD_TSSManager.EveryOneMinute(cycle)
     if tss.stage >= 1 then
         tss.first_symptom_minutes = tss.first_symptom_minutes + 1
 
+        if tss.stage == 3 then
+            tss.stage3_minutes = (tss.stage3_minutes or 0) + 1
+        end
+
         if tss.source_active then
-            tss.untreated_minutes = tss.untreated_minutes + stressMult
+            tss.severity = (tss.severity or 0) + stressMult
         else
-            tss.untreated_minutes = tss.untreated_minutes + (0.25 * stressMult)
+            tss.severity = (tss.severity or 0) + (0.25 * stressMult)
         end
 
         if tss.antibiotics_taken_recently then
             if tss.stage == 4 and tss.source_removed then
                 tss.stage = 3
-                tss.untreated_minutes = 0
+                tss.severity = 0
+                tss.stage3_minutes = 0
                 tss.stage_threshold = 0
                 tss.tss_risk = 0
                 tss.recovery_mode = "antibiotics"
@@ -654,6 +736,7 @@ function RD_TSSManager.EveryOneMinute(cycle)
             tss.alcohol_recently = false
         end
 
+        rollComplication(player, tss)
         updateStageByUntreated(tss)
         rollTSSTransition(player, tss)
         maybeWarn(tss)

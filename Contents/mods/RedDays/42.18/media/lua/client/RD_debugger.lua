@@ -8,6 +8,576 @@ require "RD_game_api"
 local MINUTES_PER_DAY = 1440
 local MINUTES_PER_HOUR = 60
 
+rd = rd or {}
+rd.tss = rd.tss or {}
+rd.cycle = rd.cycle or {}
+rd.hygiene = rd.hygiene or {}
+rd.pms = rd.pms or {}
+rd.status = rd.status or {}
+rd.debug = rd.debug or {}
+
+local TSS_DEFAULTS = {
+    stage = 0,
+    exposure_minutes = 0,
+    severity = 0,
+    first_symptom_minutes = 0,
+    wear_minutes = 0,
+    source_active = false,
+    source_removed = false,
+    source_type = "",
+    source_item_id = -1,
+    warning_cooldown = 0,
+    cured = false,
+    stabilized_until = 0,
+    antibiotics_taken_recently = false,
+    disinfectant_recently = false,
+    alcohol_recently = false,
+    recovery_mode = "none",
+    baseline_blur_effect = 0,
+    tss_rolls = 0,
+    treatment_attempts = 0,
+    tss_risk = 0,
+    stage_threshold = 0,
+    stage3_minutes = 0,
+    complication_cooldown = 60,
+}
+
+local CYCLE_DEFAULTS = {
+    current_phase = "redPhase",
+    phase_minutes_remaining = 0,
+    healthEffectSeverity = 50,
+    reason_for_cycle = "debug_override",
+}
+
+local function transmitDebugData()
+    if not isClient() then return end
+    local player = RD_zapi.getPlayer()
+    if player then
+        player:transmitModData()
+    end
+end
+
+local function getICData(create)
+    local md = RD_zapi.getModData()
+    if not md then return nil end
+    if create then
+        md.ICdata = md.ICdata or {}
+    end
+    return md.ICdata
+end
+
+local function getTSS(create)
+    local ic = getICData(create)
+    if not ic then return nil end
+    if create then
+        ic.tss = ic.tss or {}
+    elseif not ic.tss then
+        return nil
+    end
+
+    local tss = ic.tss
+    for key, defaultValue in pairs(TSS_DEFAULTS) do
+        if tss[key] == nil then
+            tss[key] = defaultValue
+        end
+    end
+    return tss
+end
+
+local function getCycle(create)
+    local ic = getICData(create)
+    if not ic then return nil end
+    if create then
+        ic.currentCycle = ic.currentCycle or {}
+    elseif not ic.currentCycle then
+        return nil
+    end
+
+    local cycle = ic.currentCycle
+    for key, defaultValue in pairs(CYCLE_DEFAULTS) do
+        if cycle[key] == nil then
+            cycle[key] = defaultValue
+        end
+    end
+    return cycle
+end
+
+local function clampNumber(value, minValue, maxValue, defaultValue)
+    local n = tonumber(value)
+    if n == nil then n = defaultValue end
+    if minValue ~= nil and n < minValue then n = minValue end
+    if maxValue ~= nil and n > maxValue then n = maxValue end
+    return n
+end
+
+local function clampBoolean(value)
+    if type(value) == "boolean" then return value end
+    if type(value) == "number" then return value ~= 0 end
+    if type(value) == "string" then
+        local l = string.lower(value)
+        if l == "true" or l == "1" or l == "yes" or l == "on" then return true end
+        if l == "false" or l == "0" or l == "no" or l == "off" then return false end
+    end
+    return false
+end
+
+local function asString(value, defaultValue)
+    if value == nil then return defaultValue end
+    return tostring(value)
+end
+
+local function defineAccessor(namespace, name, rootGetter, fieldName, normalizer)
+    namespace[name] = namespace[name] or {}
+
+    namespace[name].get = function()
+        local root = rootGetter(false)
+        if not root then return nil end
+        return root[fieldName]
+    end
+
+    namespace[name].set = function(value)
+        local root = rootGetter(true)
+        if not root then return nil end
+        local finalValue = normalizer and normalizer(value, root) or value
+        root[fieldName] = finalValue
+        transmitDebugData()
+        return root[fieldName]
+    end
+end
+
+defineAccessor(rd.tss, "stage", getTSS, "stage", function(v)
+    return clampNumber(v, 0, 4, 0)
+end)
+defineAccessor(rd.tss, "exposure_minutes", getTSS, "exposure_minutes", function(v)
+    return clampNumber(v, 0, nil, 0)
+end)
+defineAccessor(rd.tss, "severity", getTSS, "severity", function(v)
+    return clampNumber(v, 0, nil, 0)
+end)
+defineAccessor(rd.tss, "stage3_minutes", getTSS, "stage3_minutes", function(v)
+    return clampNumber(v, 0, nil, 0)
+end)
+defineAccessor(rd.tss, "stage_threshold", getTSS, "stage_threshold", function(v)
+    return clampNumber(v, 0, nil, 0)
+end)
+defineAccessor(rd.tss, "tss_risk", getTSS, "tss_risk", function(v)
+    return clampNumber(v, 0, nil, 0)
+end)
+defineAccessor(rd.tss, "source_active", getTSS, "source_active", function(v)
+    return clampBoolean(v)
+end)
+defineAccessor(rd.tss, "source_removed", getTSS, "source_removed", function(v)
+    return clampBoolean(v)
+end)
+defineAccessor(rd.tss, "source_type", getTSS, "source_type", function(v)
+    return asString(v, "")
+end)
+defineAccessor(rd.tss, "warning_cooldown", getTSS, "warning_cooldown", function(v)
+    return clampNumber(v, 0, nil, 0)
+end)
+defineAccessor(rd.tss, "stabilized_until", getTSS, "stabilized_until", function(v)
+    return clampNumber(v, 0, nil, 0)
+end)
+defineAccessor(rd.tss, "recovery_mode", getTSS, "recovery_mode", function(v)
+    local m = asString(v, "none")
+    if m ~= "none" and m ~= "antibiotics" and m ~= "fallback" then
+        return "none"
+    end
+    return m
+end)
+defineAccessor(rd.tss, "antibiotics_taken_recently", getTSS, "antibiotics_taken_recently", function(v)
+    return clampBoolean(v)
+end)
+defineAccessor(rd.tss, "disinfectant_recently", getTSS, "disinfectant_recently", function(v)
+    return clampBoolean(v)
+end)
+defineAccessor(rd.tss, "alcohol_recently", getTSS, "alcohol_recently", function(v)
+    return clampBoolean(v)
+end)
+defineAccessor(rd.tss, "baseline_blur_effect", getTSS, "baseline_blur_effect", function(v)
+    return clampNumber(v, 0, nil, 0)
+end)
+
+rd.tss.reset_progression = rd.tss.reset_progression or {}
+rd.tss.reset_progression.get = function()
+    return "Call rd.tss.reset_progression.set(true)"
+end
+rd.tss.reset_progression.set = function(value)
+    if not clampBoolean(value) then return false end
+    local tss = getTSS(true)
+    if not tss then return false end
+    tss.stage = 0
+    tss.exposure_minutes = 0
+    tss.severity = 0
+    tss.stage3_minutes = 0
+    tss.stage_threshold = 0
+    tss.tss_risk = 0
+    tss.warning_cooldown = 0
+    transmitDebugData()
+    return true
+end
+
+rd.debug.speedMult = rd.debug.speedMult or {}
+
+-- rd.debug.speedMult.set(10)  -- compress all time values 10x for fast testing
+-- rd.debug.speedMult.set(1)   -- clear override (normal speed on next rolls)
+rd.debug.speedMult.get = function()
+    return (RD_TSSManager and RD_TSSManager._debugSpeedMult) or 1
+end
+
+rd.debug.speedMult.set = function(value)
+    local mult = clampNumber(value, 1, 1000, 1)
+    local isReset = mult <= 1
+
+    -- Apply or clear TSS speed override
+    if RD_TSSManager then
+        RD_TSSManager._debugSpeedMult = isReset and nil or mult
+    end
+
+    -- Compress current TSS stage_threshold so the active stage advances faster
+    local tss = getTSS(false)
+    if tss and not isReset and mult > 1 then
+        local threshold = tss.stage_threshold or 0
+        if threshold > 0 then
+            local current = (tss.stage == 0) and (tss.exposure_minutes or 0) or (tss.severity or 0)
+            tss.stage_threshold = math.max(math.floor(current) + 5, math.floor(threshold / mult))
+        end
+    end
+
+    -- Compress current cycle phase_minutes_remaining and all phase duration fields
+    local cycle = getCycle(false)
+    if cycle and not isReset and mult > 1 then
+        cycle.phase_minutes_remaining = math.max(1, math.floor((cycle.phase_minutes_remaining or 1440) / mult))
+        for _, phaseName in ipairs({"redPhase", "follicularPhase", "ovulationPhase", "lutealPhase"}) do
+            local key = phaseName .. "_duration_mins"
+            if cycle[key] then
+                cycle[key] = math.max(10, math.floor(cycle[key] / mult))
+            end
+        end
+    end
+
+    transmitDebugData()
+    if isReset then
+        print("[rd.debug.speedMult] cleared -- normal speed on next threshold/cycle roll")
+    else
+        print("[rd.debug.speedMult] " .. mult .. "x -- TSS thresholds and cycle durations compressed")
+    end
+    return mult
+end
+
+defineAccessor(rd.cycle, "current_phase", getCycle, "current_phase", function(v)
+    local p = asString(v, "redPhase")
+    if p ~= "redPhase" and p ~= "follicularPhase" and p ~= "ovulationPhase" and p ~= "lutealPhase" then
+        return "redPhase"
+    end
+    return p
+end)
+defineAccessor(rd.cycle, "phase_minutes_remaining", getCycle, "phase_minutes_remaining", function(v)
+    return clampNumber(v, 0, nil, 0)
+end)
+defineAccessor(rd.cycle, "healthEffectSeverity", getCycle, "healthEffectSeverity", function(v)
+    return clampNumber(v, 0, 100, 50)
+end)
+defineAccessor(rd.cycle, "reason_for_cycle", getCycle, "reason_for_cycle", function(v)
+    return asString(v, "debug_override")
+end)
+
+defineAccessor(rd.hygiene, "cSIHDC_counter", function(create)
+    local ic = getICData(create)
+    if not ic then return nil end
+    if ic.cSIHDC_counter == nil then ic.cSIHDC_counter = 0 end
+    return ic
+end, "cSIHDC_counter", function(v)
+    return clampNumber(v, 0, nil, 0)
+end)
+defineAccessor(rd.hygiene, "leak_level", function(create)
+    local ic = getICData(create)
+    if not ic then return nil end
+    if ic.LeakLevel == nil then ic.LeakLevel = 0.42 end
+    return ic
+end, "LeakLevel", function(v)
+    return clampNumber(v, 0, 0.42, 0.42)
+end)
+defineAccessor(rd.hygiene, "leak_switch", function(create)
+    local ic = getICData(create)
+    if not ic then return nil end
+    if ic.LeakSwitchState == nil then ic.LeakSwitchState = false end
+    return ic
+end, "LeakSwitchState", function(v)
+    return clampBoolean(v)
+end)
+
+defineAccessor(rd.pms, "pill_recently_taken", function(create)
+    local ic = getICData(create)
+    if not ic then return nil end
+    if ic.pill_recently_taken == nil then ic.pill_recently_taken = false end
+    return ic
+end, "pill_recently_taken", function(v)
+    return clampBoolean(v)
+end)
+defineAccessor(rd.pms, "pill_effect_active", function(create)
+    local ic = getICData(create)
+    if not ic then return nil end
+    if ic.pill_effect_active == nil then ic.pill_effect_active = false end
+    return ic
+end, "pill_effect_active", function(v)
+    return clampBoolean(v)
+end)
+defineAccessor(rd.pms, "pill_effect_counter", function(create)
+    local ic = getICData(create)
+    if not ic then return nil end
+    if ic.pill_effect_counter == nil then ic.pill_effect_counter = 0 end
+    return ic
+end, "pill_effect_counter", function(v)
+    return clampNumber(v, 0, nil, 0)
+end)
+
+rd.status.get = function()
+    local tss = getTSS(false)
+    local cycle = getCycle(false)
+    local ic = getICData(false)
+    return {
+        tss = tss and {
+            stage = tss.stage,
+            stage_threshold = tss.stage_threshold,
+            exposure_minutes = tss.exposure_minutes,
+            severity = tss.severity,
+            stage3_minutes = tss.stage3_minutes,
+            tss_risk = tss.tss_risk,
+            source_active = tss.source_active,
+            source_removed = tss.source_removed,
+            recovery_mode = tss.recovery_mode,
+        } or nil,
+        cycle = cycle and {
+            current_phase = cycle.current_phase,
+            phase_minutes_remaining = cycle.phase_minutes_remaining,
+            healthEffectSeverity = cycle.healthEffectSeverity,
+        } or nil,
+        hygiene = ic and {
+            cSIHDC_counter = ic.cSIHDC_counter,
+            LeakLevel = ic.LeakLevel,
+            LeakSwitchState = ic.LeakSwitchState,
+        } or nil,
+        pms = ic and {
+            pill_recently_taken = ic.pill_recently_taken,
+            pill_effect_active = ic.pill_effect_active,
+            pill_effect_counter = ic.pill_effect_counter,
+        } or nil,
+    }
+end
+
+rd.status.print = function()
+    local s = rd.status.get()
+    if not s then
+        print("[RedDays][rd.status] unavailable")
+        return nil
+    end
+
+    local t = s.tss or {}
+    local c = s.cycle or {}
+    print("[RedDays][rd.status] tss.stage=" .. tostring(t.stage)
+        .. " tss.risk=" .. tostring(t.tss_risk)
+        .. " tss.severity=" .. tostring(t.severity)
+        .. " cycle.phase=" .. tostring(c.current_phase)
+        .. " cycle.remaining=" .. tostring(c.phase_minutes_remaining))
+    return s
+end
+
+-- Phase name aliases accepted by rd.goToPhase
+local PHASE_ALIASES = {
+    red         = "redPhase",
+    period      = "redPhase",
+    menstrual   = "redPhase",
+    redphase    = "redPhase",
+    follicular  = "follicularPhase",
+    follicularphase = "follicularPhase",
+    ovulation   = "ovulationPhase",
+    ovulationphase = "ovulationPhase",
+    luteal      = "lutealPhase",
+    lutealphase = "lutealPhase",
+}
+
+-- rd.goToPhase("red")                     -- jump to red phase, use existing duration
+-- rd.goToPhase("luteal", 1440)            -- jump to luteal with 1 day remaining
+-- rd.goToPhase("follicular", 2880, 80)    -- jump to follicular, 2 days remaining, severity 80
+rd.goToPhase = function(phase, minutesRemaining, severity)
+    local cycle = getCycle(true)
+    if not cycle then
+        print("[rd.goToPhase] no cycle data available")
+        return false
+    end
+
+    local resolved = PHASE_ALIASES[string.lower(tostring(phase or ""))] or tostring(phase or "")
+    local valid = { redPhase=true, follicularPhase=true, ovulationPhase=true, lutealPhase=true }
+    if not valid[resolved] then
+        print("[rd.goToPhase] unknown phase '" .. tostring(phase) .. "'. use: red, follicular, ovulation, luteal")
+        return false
+    end
+
+    local durationKey = resolved .. "_duration_mins"
+    local defaultDuration = cycle[durationKey] or MINUTES_PER_DAY
+    local remaining = clampNumber(minutesRemaining, 1, nil, defaultDuration)
+
+    cycle.current_phase = resolved
+    cycle.phase_minutes_remaining = remaining
+    cycle.reason_for_cycle = "debug_goToPhase_" .. resolved
+    if severity ~= nil then
+        cycle.healthEffectSeverity = clampNumber(severity, 0, 100, 50)
+    end
+
+    transmitDebugData()
+    print("[rd.goToPhase] -> " .. resolved .. " | " .. tostring(remaining) .. " mins remaining | severity=" .. tostring(cycle.healthEffectSeverity))
+    return true
+end
+
+-- TSS state profiles used by rd.goToTSSStage and rd.tss.preset
+-- source_active=false/source_removed=true means tampon removed but stage active (recovery-ready)
+-- source_active=true/source_removed=false means tampon still worn (actively worsening)
+local TSS_STAGE_PROFILES = {
+    stage0_clean = {
+        stage = 0, exposure_minutes = 0, severity = 0,
+        stage_threshold = 0, tss_risk = 0,
+        source_active = false, source_removed = false, source_type = "",
+        recovery_mode = "none", warning_cooldown = 0, stabilized_until = 0,
+        first_symptom_minutes = 0, cured = false,
+        _note = "Clean slate. No TSS exposure.",
+    },
+    stage1_early = {
+        stage = 1, exposure_minutes = 3500, severity = 0,
+        stage_threshold = 10080,   -- mid range stage1to2 (7 days)
+        tss_risk = 0,
+        source_active = true, source_removed = false, source_type = "tampon",
+        recovery_mode = "none", warning_cooldown = 0, stabilized_until = 0,
+        first_symptom_minutes = 60, cured = false,
+        _note = "Stage 1 warning. Tampon still worn. Symptoms just started.",
+    },
+    stage2_progressing = {
+        stage = 2, exposure_minutes = 5760, severity = 0,
+        stage_threshold = 14400,   -- mid range stage2to3 (10 days)
+        tss_risk = 0,
+        source_active = true, source_removed = false, source_type = "tampon",
+        recovery_mode = "none", warning_cooldown = 0, stabilized_until = 0,
+        first_symptom_minutes = 1440, cured = false,
+        _note = "Stage 2 worsening. Tampon worn. Needs treatment soon.",
+    },
+    stage3_stable = {
+        stage = 3, exposure_minutes = 8640, severity = 0,
+        tss_risk = 0,
+        source_active = false, source_removed = true, source_type = "tampon",
+        recovery_mode = "none", warning_cooldown = 0, stabilized_until = 720,
+        first_symptom_minutes = 4320, cured = false,
+        _note = "Stage 3 critical but stabilized. Source removed. Risk not yet accumulating.",
+    },
+    stage3_risky = {
+        stage = 3, exposure_minutes = 8640, severity = 0,
+        stage_threshold = 0,
+        tss_risk = 360,            -- high enough to trigger stage4 quickly under stress
+        source_active = true, source_removed = false, source_type = "tampon",
+        recovery_mode = "none", warning_cooldown = 0, stabilized_until = 0,
+        first_symptom_minutes = 5760, cured = false,
+        _note = "Stage 3 with elevated risk. Stage 4 likely within minutes under stress.",
+    },
+    stage4_critical = {
+        stage = 4, exposure_minutes = 8640, severity = 0,
+        stage_threshold = 0,
+        tss_risk = 0,
+        source_active = true, source_removed = false, source_type = "tampon",
+        recovery_mode = "none", warning_cooldown = 0, stabilized_until = 0,
+        first_symptom_minutes = 7200, cured = false,
+        _note = "Stage 4 toxic shock. HP draining. Take antibiotics then remove tampon.",
+    },
+    treatment_abx_ready = {
+        stage = 3, exposure_minutes = 7200, severity = 0,
+        stage_threshold = 0,
+        tss_risk = 0,
+        source_active = false, source_removed = true, source_type = "tampon",
+        recovery_mode = "none", warning_cooldown = 0, stabilized_until = 0,
+        first_symptom_minutes = 2880, cured = false,
+        antibiotics_taken_recently = true,   -- pre-flag so next tick triggers cureTSS
+        _note = "Stage 3, source removed, antibiotics just taken. Next tick should step down.",
+    },
+    recovery_flow = {
+        stage = 1, exposure_minutes = 4320, severity = 0,
+        stage_threshold = 0,
+        tss_risk = 0,
+        source_active = false, source_removed = true, source_type = "tampon",
+        recovery_mode = "antibiotics", warning_cooldown = 60, stabilized_until = 0,
+        first_symptom_minutes = 2160, cured = true,
+        _note = "In recovery. Sickness should be decaying. Watch corpseSicknessRate.",
+    },
+}
+
+-- rd.goToTSSStage(3)               -- jump to stage 3 using stage3_stable profile
+-- rd.goToTSSStage(4)               -- jump to stage 4 using stage4_critical profile
+-- rd.goToTSSStage(3, "risky")      -- jump to stage 3 using stage3_risky profile
+rd.goToTSSStage = function(stage, variant)
+    local tss = getTSS(true)
+    if not tss then
+        print("[rd.goToTSSStage] no TSS data available")
+        return false
+    end
+
+    stage = clampNumber(stage, 0, 4, 0)
+
+    -- Auto-pick profile name from stage and variant
+    local profileKey
+    if variant then
+        profileKey = "stage" .. tostring(stage) .. "_" .. string.lower(tostring(variant))
+    else
+        local defaults = { [0]="stage0_clean", [1]="stage1_early", [2]="stage2_progressing",
+                           [3]="stage3_stable", [4]="stage4_critical" }
+        profileKey = defaults[stage] or "stage0_clean"
+    end
+
+    local profile = TSS_STAGE_PROFILES[profileKey]
+    if not profile then
+        print("[rd.goToTSSStage] no profile '" .. profileKey .. "'. see rd.tss.preset.list()")
+        return false
+    end
+
+    for k, v in pairs(profile) do
+        if k ~= "_note" then
+            tss[k] = v
+        end
+    end
+
+    transmitDebugData()
+    print("[rd.goToTSSStage] stage=" .. tostring(tss.stage) .. " profile=" .. profileKey)
+    print("[rd.goToTSSStage] note: " .. tostring(profile._note))
+    return true
+end
+
+-- rd.tss.preset.apply("stage3_risky")   -- apply a named preset directly
+-- rd.tss.preset.list()                   -- print all available preset names and notes
+rd.tss.preset = {
+    apply = function(name)
+        local tss = getTSS(true)
+        if not tss then
+            print("[rd.tss.preset] no TSS data available")
+            return false
+        end
+        local profile = TSS_STAGE_PROFILES[tostring(name or "")]
+        if not profile then
+            print("[rd.tss.preset] unknown preset '" .. tostring(name) .. "'. call rd.tss.preset.list()")
+            return false
+        end
+        for k, v in pairs(profile) do
+            if k ~= "_note" then
+                tss[k] = v
+            end
+        end
+        transmitDebugData()
+        print("[rd.tss.preset] applied '" .. name .. "': " .. tostring(profile._note))
+        return true
+    end,
+    list = function()
+        print("[rd.tss.preset] available presets:")
+        for name, profile in pairs(TSS_STAGE_PROFILES) do
+            print("  " .. name .. " -- " .. tostring(profile._note))
+        end
+    end,
+}
+
 local function printTSSStatus()
     local sb = SandboxVars.RedDays or {}
     local tss = RD_modData and RD_modData.ICdata and RD_modData.ICdata.tss or nil
@@ -15,7 +585,6 @@ local function printTSSStatus()
     print("--- TSS Diagnostics ---------------------")
     print("TSS enabled ----------------------------- " .. tostring(sb.tss_enabled ~= false))
     print("TSS lethal enabled ---------------------- " .. tostring(sb.tss_lethal_enabled ~= false))
-    print("TSS progression speed pct --------------- " .. tostring(sb.tss_progression_speed_pct or 100))
     print("TSS risk multiplier pct ----------------- " .. tostring(sb.tss_risk_multiplier_pct or 100))
 
     if not tss then
@@ -35,6 +604,21 @@ local function printTSSStatus()
 
     print("TSS stage ------------------------------- " .. tostring(stage) .. " (" .. stageLabel .. ")")
     print("TSS stage threshold --------------------- " .. tostring(threshold) .. " mins (" .. string.format("%.2f", thresholdDays) .. " days)")
+    local severity = tss.severity or 0
+    if stage >= 1 and stage < 3 and threshold > 0 then
+        local minsLeft = math.max(0, threshold - severity)
+        print("TSS progression remaining --------------- " .. tostring(math.floor(minsLeft)) .. " mins (~" .. string.format("%.2f", minsLeft / MINUTES_PER_DAY) .. " days at 1x stress)")
+    end
+    if stage == 3 then
+        local minStage3Hours = (SandboxVars.RedDays or {}).tss_min_stage3_hours or 48
+        local stage3Mins = tss.stage3_minutes or 0
+        local eligibleIn = math.max(0, (minStage3Hours * MINUTES_PER_HOUR) - stage3Mins)
+        if eligibleIn > 0 then
+            print("TSS (Stage 4) eligible in -------------- " .. math.ceil(eligibleIn / MINUTES_PER_HOUR) .. " hours (Stage 3 minimum not yet met)")
+        else
+            print("TSS (Stage 4) eligibility -------------- ELIGIBLE -- risk accumulating")
+        end
+    end
     print("TSS tss_risk ---------------------------- " .. tostring(tss.tss_risk or 0))
     print("TSS recovery mode ----------------------- " .. tostring(tss.recovery_mode or "none"))
     print("TSS cured flag -------------------------- " .. tostring(tss.cured or false))
@@ -45,8 +629,8 @@ local function printTSSStatus()
     print("TSS wear minutes ------------------------ " .. tostring(tss.wear_minutes or 0) .. " mins (" .. tostring((tss.wear_minutes or 0) / MINUTES_PER_HOUR) .. " hours)")
     local expMin = tss.exposure_minutes or 0
     print("TSS exposure minutes -------------------- " .. tostring(expMin) .. " mins (" .. string.format("%.2f", expMin / MINUTES_PER_HOUR) .. " hours / " .. string.format("%.2f", expMin / MINUTES_PER_DAY) .. " days)")
-    local untMin = tss.untreated_minutes or 0
-    print("TSS untreated minutes ------------------- " .. tostring(untMin) .. " mins (" .. string.format("%.2f", untMin / MINUTES_PER_HOUR) .. " hours / " .. string.format("%.2f", untMin / MINUTES_PER_DAY) .. " days)")
+    print("TSS severity ---------------------------- " .. tostring(severity) .. " mins (" .. string.format("%.2f", severity / MINUTES_PER_HOUR) .. " hours / " .. string.format("%.2f", severity / MINUTES_PER_DAY) .. " days)")
+    print("TSS stage3 minutes ---------------------- " .. tostring(tss.stage3_minutes or 0) .. " mins")
     print("TSS first symptom minutes --------------- " .. tostring(tss.first_symptom_minutes or 0))
     print("TSS warning cooldown -------------------- " .. tostring(tss.warning_cooldown or 0))
     print("TSS stabilized until -------------------- " .. tostring(tss.stabilized_until or 0))

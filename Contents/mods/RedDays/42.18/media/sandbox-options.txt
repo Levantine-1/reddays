@@ -246,15 +246,6 @@ option RedDays.tss_tampon_grace_hours
 	translation = RedDays_tss_tampon_grace_hours,
 }
 
-option RedDays.tss_progression_speed_pct
-{
-	type = integer,
-	min = 10,
-	max = 200,
-	default = 100,
-	page = RedDays,
-	translation = RedDays_tss_progression_speed_pct,
-}
 
 option RedDays.tss_warning_interval_mins
 {
@@ -274,4 +265,84 @@ option RedDays.tss_disinfectant_success_pct
 	default = 65,
 	page = RedDays,
 	translation = RedDays_tss_disinfectant_success_pct,
+}
+
+option RedDays.tss_stage0_duration_lowerBound
+{
+	type = integer,
+	min = 4,
+	max = 96,
+	default = 12,
+	page = RedDays,
+	translation = RedDays_tss_stage0_duration_lowerBound,
+}
+
+option RedDays.tss_stage0_duration_upperBound
+{
+	type = integer,
+	min = 4,
+	max = 96,
+	default = 48,
+	page = RedDays,
+	translation = RedDays_tss_stage0_duration_upperBound,
+}
+
+option RedDays.tss_stage1_duration_lowerBound
+{
+	type = integer,
+	min = 12,
+	max = 240,
+	default = 48,
+	page = RedDays,
+	translation = RedDays_tss_stage1_duration_lowerBound,
+}
+
+option RedDays.tss_stage1_duration_upperBound
+{
+	type = integer,
+	min = 12,
+	max = 240,
+	default = 120,
+	page = RedDays,
+	translation = RedDays_tss_stage1_duration_upperBound,
+}
+
+option RedDays.tss_stage2_duration_lowerBound
+{
+	type = integer,
+	min = 24,
+	max = 480,
+	default = 120,
+	page = RedDays,
+	translation = RedDays_tss_stage2_duration_lowerBound,
+}
+
+option RedDays.tss_stage2_duration_upperBound
+{
+	type = integer,
+	min = 24,
+	max = 480,
+	default = 240,
+	page = RedDays,
+	translation = RedDays_tss_stage2_duration_upperBound,
+}
+
+option RedDays.tss_min_stage3_hours
+{
+	type = integer,
+	min = 1,
+	max = 480,
+	default = 48,
+	page = RedDays,
+	translation = RedDays_tss_min_stage3_hours,
+}
+
+option RedDays.tss_complication_chance_pct
+{
+	type = integer,
+	min = 1,
+	max = 30,
+	default = 5,
+	page = RedDays,
+	translation = RedDays_tss_complication_chance_pct,
 }
