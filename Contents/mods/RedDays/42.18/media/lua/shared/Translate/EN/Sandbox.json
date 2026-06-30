@@ -85,27 +85,27 @@
     "Sandbox_RedDays_tss_disinfectant_success_pct": "Disinfectant Treatment Success Chance",
     "Sandbox_RedDays_tss_disinfectant_success_pct_tooltip": "Base success chance for disinfectant or alcohol fallback treatment.",
 
-    "Sandbox_RedDays_tss_stage0_duration_lowerBound": "Min Exposure Duration Stage 0->1 (Hours)",
-    "Sandbox_RedDays_tss_stage0_duration_lowerBound_tooltip": "Minimum in-game hours before tampon exposure can trigger Stage 1 infection.",
+    "Sandbox_RedDays_tss_stage0_duration_lowerBound": "TSS: Stage 0 to 1 Min Time (Hours)",
+    "Sandbox_RedDays_tss_stage0_duration_lowerBound_tooltip": "Minimum in-game hours before tampon exposure may begin progressing into Stage 1 infection. Lower values cause earlier infection onset.",
 
-    "Sandbox_RedDays_tss_stage0_duration_upperBound": "Max Exposure Duration Stage 0->1 (Hours)",
-    "Sandbox_RedDays_tss_stage0_duration_upperBound_tooltip": "Maximum in-game hours the Stage 0 exposure window can last before Stage 1 triggers.",
+    "Sandbox_RedDays_tss_stage0_duration_upperBound": "TSS: Stage 0 to 1 Max Time (Hours)",
+    "Sandbox_RedDays_tss_stage0_duration_upperBound_tooltip": "Maximum in-game hours before Stage 0 (no infection) will progress into Stage 1 infection. Higher values delay initial infection onset.",
 
-    "Sandbox_RedDays_tss_stage1_duration_lowerBound": "Min Infection Duration Stage 1->2 (Hours)",
-    "Sandbox_RedDays_tss_stage1_duration_lowerBound_tooltip": "Minimum in-game hours before Stage 1 worsens into Stage 2.",
+    "Sandbox_RedDays_tss_stage1_duration_lowerBound": "TSS: Stage 1 to 2 Min Time (Hours)",
+    "Sandbox_RedDays_tss_stage1_duration_lowerBound_tooltip": "Minimum in-game hours before Stage 1 (early infection) may progress into Stage 2 (established infection). Lower values accelerate infection progression.",
 
-    "Sandbox_RedDays_tss_stage1_duration_upperBound": "Max Infection Duration Stage 1->2 (Hours)",
-    "Sandbox_RedDays_tss_stage1_duration_upperBound_tooltip": "Maximum in-game hours Stage 1 can last before worsening to Stage 2.",
+    "Sandbox_RedDays_tss_stage1_duration_upperBound": "TSS: Stage 1 to 2 Max Time (Hours)",
+    "Sandbox_RedDays_tss_stage1_duration_upperBound_tooltip": "Maximum in-game hours before Stage 1 infection will progress into Stage 2. Higher values allow early infection to persist longer.",
 
-    "Sandbox_RedDays_tss_stage2_duration_lowerBound": "Min Infection Duration Stage 2->3 (Hours)",
-    "Sandbox_RedDays_tss_stage2_duration_lowerBound_tooltip": "Minimum in-game hours before Stage 2 escalates into Stage 3 critical illness.",
+    "Sandbox_RedDays_tss_stage2_duration_lowerBound": "TSS: Stage 2 to 3 Min Time (Hours)",
+    "Sandbox_RedDays_tss_stage2_duration_lowerBound_tooltip": "Minimum in-game hours before Stage 2 (established infection) may progress into Stage 3 (severe systemic illness). Lower values increase progression speed.",
 
-    "Sandbox_RedDays_tss_stage2_duration_upperBound": "Max Infection Duration Stage 2->3 (Hours)",
-    "Sandbox_RedDays_tss_stage2_duration_upperBound_tooltip": "Maximum in-game hours Stage 2 can last before escalating to Stage 3.",
+    "Sandbox_RedDays_tss_stage2_duration_upperBound": "TSS: Stage 2 to 3 Max Time (Hours)",
+    "Sandbox_RedDays_tss_stage2_duration_upperBound_tooltip": "Maximum in-game hours before Stage 2 infection will progress into Stage 3. Higher values delay severe illness onset.",
 
-    "Sandbox_RedDays_tss_min_stage3_hours": "Min Stage 3 Duration Before TSS (Hours)",
-    "Sandbox_RedDays_tss_min_stage3_hours_tooltip": "Minimum in-game hours that must be spent at Stage 3 before Toxic Shock Syndrome (Stage 4) can trigger.",
+    "Sandbox_RedDays_tss_min_stage3_hours": "TSS: Stage 3 Min Stability Time (Hours)",
+    "Sandbox_RedDays_tss_min_stage3_hours_tooltip": "Minimum in-game hours required in Stage 3 (severe infection) before Toxic Shock Syndrome (Stage 4) becomes eligible to occur. TSS cannot occur before this threshold is reached.",
 
-    "Sandbox_RedDays_tss_complication_chance_pct": "Complication Event Chance (%)",
-    "Sandbox_RedDays_tss_complication_chance_pct_tooltip": "Base percentage chance each hour that a complication event fires when infection is active. Poor conditions increase this chance."
+    "Sandbox_RedDays_tss_complication_chance_pct": "Base Sudden Complication Chance (%)",
+    "Sandbox_RedDays_tss_complication_chance_pct_tooltip": "Hourly chance for sudden complications while pre-TSS infection is active. Complications are influenced by stress, fatigue, dehydration, and body temperature."
 }
