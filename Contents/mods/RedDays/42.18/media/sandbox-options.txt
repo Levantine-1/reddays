@@ -257,16 +257,6 @@ option RedDays.tss_warning_interval_mins
 	translation = RedDays_tss_warning_interval_mins,
 }
 
-option RedDays.tss_disinfectant_success_pct
-{
-	type = integer,
-	min = 5,
-	max = 95,
-	default = 65,
-	page = RedDays,
-	translation = RedDays_tss_disinfectant_success_pct,
-}
-
 option RedDays.tss_stage0_duration_lowerBound
 {
 	type = integer,
@@ -345,4 +335,54 @@ option RedDays.tss_complication_chance_pct
 	default = 5,
 	page = RedDays,
 	translation = RedDays_tss_complication_chance_pct,
+}
+
+option RedDays.tss_abx_dose_cooldown_hours
+{
+	type = integer,
+	min = 1,
+	max = 12,
+	default = 6,
+	page = RedDays,
+	translation = RedDays_tss_abx_dose_cooldown_hours,
+}
+
+option RedDays.tss_abx_toxin_per_dose
+{
+	type = integer,
+	min = 1,
+	max = 25,
+	default = 7,
+	page = RedDays,
+	translation = RedDays_tss_abx_toxin_per_dose,
+}
+
+option RedDays.tss_abx_suppress_window_hours
+{
+	type = integer,
+	min = 1,
+	max = 24,
+	default = 8,
+	page = RedDays,
+	translation = RedDays_tss_abx_suppress_window_hours,
+}
+
+option RedDays.tss_fever_max_celsius
+{
+	type = integer,
+	min = 38,
+	max = 44,
+	default = 42,
+	page = RedDays,
+	translation = RedDays_tss_fever_max_celsius,
+}
+
+option RedDays.tss_fever_ramp_hours
+{
+	type = integer,
+	min = 4,
+	max = 48,
+	default = 12,
+	page = RedDays,
+	translation = RedDays_tss_fever_ramp_hours,
 }

@@ -25,6 +25,7 @@ MF.createMoodle("DirtyTampon");
 MF.createMoodle("BloodyTampon");
 
 MF.createMoodle("Leak");
+MF.createMoodle("TSSInfection");
 
 -- Determine if player bathed based on clothes/body dirtiness/bloody
 local function getMoodleLevel(hygieneItemCondition)
@@ -135,6 +136,17 @@ function RD_moodles.mainLoop()
     end
 
     updateLeakState(phaseData)
+
+    -- TSS infection moodle: maps stage 1-4 to moodle severity levels
+    local tssData = RD_modData and RD_modData.ICdata and RD_modData.ICdata.tss
+    local tssStage = tssData and tssData.stage or 0
+    local tssValue = 0.42  -- clear
+    if tssStage == 1 then tssValue = 0.4
+    elseif tssStage == 2 then tssValue = 0.3
+    elseif tssStage == 3 then tssValue = 0.2
+    elseif tssStage >= 4 then tssValue = 0.0
+    end
+    MF.getMoodle("TSSInfection", getCurrentPlayerNum()):setValue(tssValue)
 end
 -- Events.EveryOneMinute.Add(RD_moodles.mainLoop)
 -- 2026-01-22 Moved to events_intercepts.lua

@@ -40,6 +40,11 @@ local TSS_DEFAULTS = {
     stage_threshold = 0,
     stage3_minutes = 0,
     complication_cooldown = 60,
+    abx_toxin_level = 0,
+    abx_cooldown_mins = 0,
+    abx_suppress_mins = 0,
+    abx_dose_count = 0,
+    tss_fever_induced = 0,
 }
 
 local CYCLE_DEFAULTS = {
@@ -197,6 +202,21 @@ end)
 defineAccessor(rd.tss, "baseline_blur_effect", getTSS, "baseline_blur_effect", function(v)
     return clampNumber(v, 0, nil, 0)
 end)
+defineAccessor(rd.tss, "abx_toxin_level", getTSS, "abx_toxin_level", function(v)
+    return clampNumber(v, 0, 100, 0)
+end)
+defineAccessor(rd.tss, "abx_cooldown_mins", getTSS, "abx_cooldown_mins", function(v)
+    return clampNumber(v, 0, nil, 0)
+end)
+defineAccessor(rd.tss, "abx_suppress_mins", getTSS, "abx_suppress_mins", function(v)
+    return clampNumber(v, 0, nil, 0)
+end)
+defineAccessor(rd.tss, "abx_dose_count", getTSS, "abx_dose_count", function(v)
+    return clampNumber(v, 0, nil, 0)
+end)
+defineAccessor(rd.tss, "tss_fever_induced", getTSS, "tss_fever_induced", function(v)
+    return clampNumber(v, 0, 10, 0)
+end)
 
 rd.tss.reset_progression = rd.tss.reset_progression or {}
 rd.tss.reset_progression.get = function()
@@ -213,6 +233,11 @@ rd.tss.reset_progression.set = function(value)
     tss.stage_threshold = 0
     tss.tss_risk = 0
     tss.warning_cooldown = 0
+    tss.abx_toxin_level = 0
+    tss.abx_cooldown_mins = 0
+    tss.abx_suppress_mins = 0
+    tss.abx_dose_count = 0
+    tss.tss_fever_induced = 0
     transmitDebugData()
     return true
 end
@@ -347,6 +372,11 @@ rd.status.get = function()
             source_active = tss.source_active,
             source_removed = tss.source_removed,
             recovery_mode = tss.recovery_mode,
+            abx_toxin_level = tss.abx_toxin_level,
+            abx_cooldown_mins = tss.abx_cooldown_mins,
+            abx_suppress_mins = tss.abx_suppress_mins,
+            abx_dose_count = tss.abx_dose_count,
+            tss_fever_induced = tss.tss_fever_induced,
         } or nil,
         cycle = cycle and {
             current_phase = cycle.current_phase,
@@ -378,6 +408,10 @@ rd.status.print = function()
     print("[RedDays][rd.status] tss.stage=" .. tostring(t.stage)
         .. " tss.risk=" .. tostring(t.tss_risk)
         .. " tss.severity=" .. tostring(t.severity)
+        .. " abx.toxin=" .. tostring(t.abx_toxin_level)
+        .. " abx.cd=" .. tostring(t.abx_cooldown_mins)
+        .. " abx.sup=" .. tostring(t.abx_suppress_mins)
+        .. " fever=" .. string.format("%.2f", t.tss_fever_induced or 0)
         .. " cycle.phase=" .. tostring(c.current_phase)
         .. " cycle.remaining=" .. tostring(c.phase_minutes_remaining))
     return s
@@ -481,20 +515,56 @@ local TSS_STAGE_PROFILES = {
         stage = 4, exposure_minutes = 8640, severity = 0,
         stage_threshold = 0,
         tss_risk = 0,
+        abx_toxin_level = 100, abx_cooldown_mins = 0, abx_suppress_mins = 0, abx_dose_count = 0,
+        tss_fever_induced = 0,
         source_active = true, source_removed = false, source_type = "tampon",
         recovery_mode = "none", warning_cooldown = 0, stabilized_until = 0,
         first_symptom_minutes = 7200, cured = false,
-        _note = "Stage 4 toxic shock. HP draining. Take antibiotics then remove tampon.",
+        _note = "Stage 4 toxic shock. Fever just starting. HP draining. Take antibiotics repeatedly.",
     },
     treatment_abx_ready = {
-        stage = 3, exposure_minutes = 7200, severity = 0,
+        stage = 4, exposure_minutes = 8640, severity = 0,
         stage_threshold = 0,
         tss_risk = 0,
+        abx_toxin_level = 65, abx_cooldown_mins = 0, abx_suppress_mins = 480, abx_dose_count = 1,
+        tss_fever_induced = 1.5,
+        source_active = true, source_removed = false, source_type = "tampon",
+        recovery_mode = "antibiotics", warning_cooldown = 0, stabilized_until = 0,
+        first_symptom_minutes = 7200, cured = false,
+        _note = "Stage 4 after 1st dose. HP suppressed (8h window). Fever at 1.5C. Cooldown ready — take next dose now.",
+    },
+    abx_dose_ready = {
+        stage = 4, exposure_minutes = 8640, severity = 0,
+        stage_threshold = 0,
+        tss_risk = 0,
+        abx_toxin_level = 44, abx_cooldown_mins = 0, abx_suppress_mins = 0, abx_dose_count = 4,
+        tss_fever_induced = 3.0,
+        source_active = true, source_removed = false, source_type = "tampon",
+        recovery_mode = "antibiotics", warning_cooldown = 0, stabilized_until = 0,
+        first_symptom_minutes = 7200, cured = false,
+        _note = "Stage 4 mid-course. Suppression expired, HP draining. Fever at 40C. Next dose ready — take now or die.",
+    },
+    abx_near_recovery = {
+        stage = 4, exposure_minutes = 8640, severity = 0,
+        stage_threshold = 0,
+        tss_risk = 0,
+        abx_toxin_level = 0, abx_cooldown_mins = 0, abx_suppress_mins = 0, abx_dose_count = 15,
+        tss_fever_induced = 0,
         source_active = false, source_removed = true, source_type = "tampon",
+        recovery_mode = "antibiotics", warning_cooldown = 0, stabilized_until = 0,
+        first_symptom_minutes = 7200, cured = false,
+        _note = "Stage 4 toxin cleared. Fever broken. Should drop to stage 3 recovery on next tick.",
+    },
+    stage4_peak_fever = {
+        stage = 4, exposure_minutes = 8640, severity = 0,
+        stage_threshold = 0,
+        tss_risk = 0,
+        abx_toxin_level = 100, abx_cooldown_mins = 0, abx_suppress_mins = 0, abx_dose_count = 0,
+        tss_fever_induced = 5.0,
+        source_active = true, source_removed = false, source_type = "tampon",
         recovery_mode = "none", warning_cooldown = 0, stabilized_until = 0,
-        first_symptom_minutes = 2880, cured = false,
-        antibiotics_taken_recently = true,   -- pre-flag so next tick triggers cureTSS
-        _note = "Stage 3, source removed, antibiotics just taken. Next tick should step down.",
+        first_symptom_minutes = 7200, cured = false,
+        _note = "Stage 4 worst case. Fever maxed (5C offset, ~42C effective). HP melting. Antibiotics urgently needed.",
     },
     recovery_flow = {
         stage = 1, exposure_minutes = 4320, severity = 0,

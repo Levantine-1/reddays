@@ -68,11 +68,6 @@ local function getRiskMultiplier()
     return mult
 end
 
-local function getDisinfectBaseChance()
-    local sb = getSandbox()
-    return math.max(5, math.min(95, sb.tss_disinfectant_success_pct or 65))
-end
-
 local function rollNextStageThreshold(stage)
     local lowerMins, upperMins = getSandboxStageBounds(stage)
     if upperMins <= 0 then return 0 end
@@ -110,6 +105,11 @@ local function getModData()
         stage_threshold = 0,
         stage3_minutes = 0,
         complication_cooldown = 60,
+        abx_toxin_level = 0,
+        abx_cooldown_mins = 0,
+        abx_suppress_mins = 0,
+        abx_dose_count = 0,
+        tss_fever_induced = 0,
     }
     return md
 end
@@ -194,42 +194,6 @@ local function cureTSS(tss)
     resetTreatmentFlags(tss)
     notifyPlayer("Treatment started. TSS symptoms should gradually improve.")
     transmitNow()
-end
-
-local function treatmentStageChance(stage)
-    local base = getDisinfectBaseChance()
-    if stage <= 1 then return base end
-    if stage == 2 then return math.max(10, base - 20) end
-    return math.max(5, base - 40)
-end
-
-local function applyDisinfectFallback(tss)
-    if not tss.source_removed then
-        notifyPlayer("Remove or replace the offending hygiene item first.")
-        return
-    end
-
-    local chance = treatmentStageChance(tss.stage)
-    local roll = ZombRand(1, 101)
-    tss.treatment_attempts = (tss.treatment_attempts or 0) + 1
-
-    if roll <= chance then
-        if tss.stage <= 1 then
-            cureTSS(tss)
-            return
-        end
-
-        -- Disinfectant/alcohol can stabilize and step severity down, but is less reliable than antibiotics.
-        tss.stage = clampStage(tss.stage - 1)
-        tss.severity = math.max(0, (tss.severity or 0) - (8 * MINUTES_PER_HOUR))
-        tss.stage3_minutes = 0
-        tss.stabilized_until = 12 * MINUTES_PER_HOUR
-        tss.recovery_mode = "fallback"
-        notifyPlayer("You temporarily stabilized TSS symptoms. Keep monitoring and seek antibiotics.")
-        transmitNow()
-    else
-        notifyPlayer("Disinfectant/alcohol treatment did not fully control symptoms.")
-    end
 end
 
 local function applyBlurEffect(player, tss)
@@ -408,7 +372,9 @@ local function rollTSSTransition(player, tss)
         tss.stage = 4
         tss.tss_risk = 0
         tss.stage_threshold = 0
-        notifyPlayer("Your body is in toxic shock. Immediate treatment is required.")
+        tss.abx_toxin_level = 100
+        tss.abx_dose_count = 0
+        print("[RedDays][TSS] Toxic shock triggered. Toxin score set to 100. Take antibiotics repeatedly.")
         transmitNow()
     end
 end
@@ -433,8 +399,24 @@ local function applyStageStatEffects(player, tss)
         stats:set(CharacterStat.THIRST, math.min(1, stats:get(CharacterStat.THIRST) + 0.002))
         stats:set(CharacterStat.UNHAPPINESS, math.min(100, stats:get(CharacterStat.UNHAPPINESS) + 0.2))
         if tss.stage == 4 then
-            local bd = player:getBodyDamage()
-            if bd then bd:ReduceGeneralHealth(0.004) end
+            -- HP drain only when antibiotic suppression window has expired
+            if (tss.abx_suppress_mins or 0) <= 0 then
+                local bd = player:getBodyDamage()
+                if bd then
+                    local drain = 0.08
+                    local thermo = bd:getThermoregulator()
+                    if thermo then
+                        local bodyTemp = thermo:getCoreCelcius()
+                        if bodyTemp then
+                            -- Effective temp = actual body temp + TSS-induced fever component
+                            local effectiveTemp = bodyTemp + (tss.tss_fever_induced or 0)
+                            local fever = math.max(0, math.min(effectiveTemp - 37.0, 5.0))
+                            drain = drain + fever * 0.02
+                        end
+                    end
+                    bd:ReduceGeneralHealth(drain)
+                end
+            end
         end
     end
 end
@@ -604,6 +586,11 @@ function RD_TSSManager.LoadPlayerData()
     tss.tss_rolls = tss.tss_rolls or 0
     tss.treatment_attempts = tss.treatment_attempts or 0
     tss.tss_risk = tss.tss_risk or 0
+    tss.abx_toxin_level = tss.abx_toxin_level or 0
+    tss.abx_cooldown_mins = tss.abx_cooldown_mins or 0
+    tss.abx_suppress_mins = tss.abx_suppress_mins or 0
+    tss.abx_dose_count = tss.abx_dose_count or 0
+    tss.tss_fever_induced = tss.tss_fever_induced or 0
     tss.stage_threshold = tss.stage_threshold or rollNextStageThreshold(tss.stage)
 
     local player = getPlayer()
@@ -619,23 +606,39 @@ function RD_TSSManager.registerTreatmentFromItem(item, actionName)
     local tss = md.ICdata.tss
 
     local fullType = item:getFullType() or ""
-    if fullType == "Base.Antibiotics" then
-        tss.antibiotics_taken_recently = true
-        notifyPlayer("Antibiotics taken.")
+    if fullType ~= "Base.Antibiotics" then return end
+    if tss.stage < 1 then
+        print("[RedDays][TSS] Antibiotics taken but no active TSS infection.")
         return
     end
 
-    local lower = lowerText(fullType)
-    if string.find(lower, "disinfect", 1, true) or string.find(lower, "alcohol", 1, true) or string.find(lower, "whiskey", 1, true) then
-        if actionName == "ISApplyDisinfectant" or actionName == "ISTakePillAction" then
-            if string.find(lower, "alcohol", 1, true) or string.find(lower, "whiskey", 1, true) then
-                tss.alcohol_recently = true
-            else
-                tss.disinfectant_recently = true
-            end
-            notifyPlayer("Disinfectant treatment used.")
-        end
+    if (tss.abx_cooldown_mins or 0) > 0 then
+        local hoursLeft = math.ceil(tss.abx_cooldown_mins / MINUTES_PER_HOUR)
+        print("[RedDays][TSS] Antibiotic dose not ready. Next effective dose in ~" .. hoursLeft .. " hours.")
+        return
     end
+
+    local sb = getSandbox()
+    local cooldownMins = (sb.tss_abx_dose_cooldown_hours or 6) * MINUTES_PER_HOUR
+    local suppressMins = (sb.tss_abx_suppress_window_hours or 8) * MINUTES_PER_HOUR
+    local toxinReduction = sb.tss_abx_toxin_per_dose or 7
+
+    tss.abx_cooldown_mins = cooldownMins
+    tss.abx_suppress_mins = suppressMins
+    tss.abx_dose_count = (tss.abx_dose_count or 0) + 1
+
+    if tss.stage == 4 then
+        tss.abx_toxin_level = math.max(0, (tss.abx_toxin_level or 100) - toxinReduction)
+        print("[RedDays][TSS] Dose " .. tss.abx_dose_count .. ". Toxin: " .. tss.abx_toxin_level .. "/100. HP drain suppressed for " .. math.floor(suppressMins / MINUTES_PER_HOUR) .. "h.")
+    else
+        -- Stages 1-3: slow progression and suppress sickness ramp
+        local severityReduction = toxinReduction * MINUTES_PER_HOUR
+        tss.severity = math.max(0, (tss.severity or 0) - severityReduction)
+        tss.stabilized_until = math.max(tss.stabilized_until or 0, suppressMins)
+        tss.recovery_mode = "antibiotics"
+        print("[RedDays][TSS] Dose " .. tss.abx_dose_count .. ". Severity reduced by " .. severityReduction .. " mins. Symptoms eased for " .. math.floor(suppressMins / MINUTES_PER_HOUR) .. "h.")
+    end
+    transmitNow()
 end
 
 function RD_TSSManager.ISTakePillAction_perform(self)
@@ -703,37 +706,40 @@ function RD_TSSManager.EveryOneMinute(cycle)
             tss.severity = (tss.severity or 0) + (0.25 * stressMult)
         end
 
-        if tss.antibiotics_taken_recently then
-            if tss.stage == 4 and tss.source_removed then
-                tss.stage = 3
-                tss.severity = 0
-                tss.stage3_minutes = 0
-                tss.stage_threshold = 0
-                tss.tss_risk = 0
-                tss.recovery_mode = "antibiotics"
-                tss.antibiotics_taken_recently = false
-                notifyPlayer("Antibiotics are slowing TSS. You are no longer in Stage 4, but continue treatment.")
-                transmitNow()
-                return
-            elseif tss.source_removed then
-                cureTSS(tss)
-                return
-            else
-                tss.stabilized_until = math.max(tss.stabilized_until or 0, 8 * MINUTES_PER_HOUR)
-                tss.recovery_mode = "fallback"
-                notifyPlayer("Antibiotics help, but remove or replace the offending hygiene item to recover.")
-            end
-            tss.antibiotics_taken_recently = false
+        -- Tick antibiotic treatment timers
+        if (tss.abx_cooldown_mins or 0) > 0 then
+            tss.abx_cooldown_mins = tss.abx_cooldown_mins - 1
+        end
+        if (tss.abx_suppress_mins or 0) > 0 then
+            tss.abx_suppress_mins = tss.abx_suppress_mins - 1
         end
 
-        if tss.disinfectant_recently or tss.alcohol_recently then
-            if hasGroinWoundOrInfection() then
-                applyDisinfectFallback(tss)
-            else
-                notifyPlayer("Disinfectant/alcohol treatment requires a treatable groin wound or infection context.")
-            end
-            tss.disinfectant_recently = false
-            tss.alcohol_recently = false
+        -- TSS fever: ramps toward configured max while in Stage 4 and not antibiotic-suppressed.
+        -- Rate: reaches 40C (3C above 37C baseline) within tss_fever_ramp_hours in-game hours.
+        if tss.stage == 4 and (tss.abx_suppress_mins or 0) <= 0 then
+            local sb = getSandbox()
+            local maxFeverOffset = math.max(1.0, (sb.tss_fever_max_celsius or 42) - 37.0)
+            local rampHours = math.max(1, sb.tss_fever_ramp_hours or 12)
+            local rampRate = 3.0 / (rampHours * 60.0)
+            local debugMult = RD_TSSManager._debugSpeedMult or 1
+            tss.tss_fever_induced = math.min(maxFeverOffset, (tss.tss_fever_induced or 0) + rampRate * debugMult)
+        elseif (tss.tss_fever_induced or 0) > 0 then
+            -- Fever gradually breaks once out of Stage 4 or during antibiotic suppression
+            tss.tss_fever_induced = math.max(0, tss.tss_fever_induced - 0.02)
+        end
+
+        -- Check if Stage 4 toxin has been cleared by antibiotic course
+        if tss.stage == 4 and (tss.abx_toxin_level or 0) <= 0 and (tss.abx_dose_count or 0) > 0 then
+            tss.stage = 3
+            tss.severity = 0
+            tss.stage3_minutes = 0
+            tss.stage_threshold = 0
+            tss.tss_risk = 0
+            tss.tss_fever_induced = 0
+            tss.recovery_mode = "antibiotics"
+            print("[RedDays][TSS] Toxin cleared by antibiotics. Fever breaking. Transitioning to Stage 3 recovery.")
+            transmitNow()
+            return
         end
 
         rollComplication(player, tss)

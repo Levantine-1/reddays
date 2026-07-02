@@ -38,5 +38,14 @@
     "Moodles_Leak_Bad_lvl3": "Embarrassing Situation",
     "Moodles_Leak_Bad_desc_lvl3": "This is not how you wanted your day to go.",
     "Moodles_Leak_Bad_lvl4": "Disaster Zone",
-    "Moodles_Leak_Bad_desc_lvl4": "It\u2019s everywhere..."
+    "Moodles_Leak_Bad_desc_lvl4": "It\u2019s everywhere...",
+
+    "Moodles_TSSInfection_Bad_lvl1": "Possible Infection",
+    "Moodles_TSSInfection_Bad_desc_lvl1": "Something doesn't feel right. Replace your hygiene item and watch for worsening symptoms.",
+    "Moodles_TSSInfection_Bad_lvl2": "Tampon Infection",
+    "Moodles_TSSInfection_Bad_desc_lvl2": "Symptoms are getting worse. You need antibiotics and to remove the source immediately.",
+    "Moodles_TSSInfection_Bad_lvl3": "Severe Infection",
+    "Moodles_TSSInfection_Bad_desc_lvl3": "Critical systemic illness. Antibiotic treatment is urgent. Your body is struggling.",
+    "Moodles_TSSInfection_Bad_lvl4": "Toxic Shock Syndrome",
+    "Moodles_TSSInfection_Bad_desc_lvl4": "Your body is in toxic shock. Take antibiotics repeatedly to reduce the toxin load. Every dose counts."
 }

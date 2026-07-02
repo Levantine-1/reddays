@@ -82,9 +82,6 @@
     "Sandbox_RedDays_tss_warning_interval_mins": "TSS Warning Interval (Minutes)",
     "Sandbox_RedDays_tss_warning_interval_mins_tooltip": "How often TSS warning messages are shown while symptoms are active.",
 
-    "Sandbox_RedDays_tss_disinfectant_success_pct": "Disinfectant Treatment Success Chance",
-    "Sandbox_RedDays_tss_disinfectant_success_pct_tooltip": "Base success chance for disinfectant or alcohol fallback treatment.",
-
     "Sandbox_RedDays_tss_stage0_duration_lowerBound": "TSS: Stage 0 to 1 Min Time (Hours)",
     "Sandbox_RedDays_tss_stage0_duration_lowerBound_tooltip": "Minimum in-game hours before tampon exposure may begin progressing into Stage 1 infection. Lower values cause earlier infection onset.",
 
@@ -107,5 +104,20 @@
     "Sandbox_RedDays_tss_min_stage3_hours_tooltip": "Minimum in-game hours required in Stage 3 (severe infection) before Toxic Shock Syndrome (Stage 4) becomes eligible to occur. TSS cannot occur before this threshold is reached.",
 
     "Sandbox_RedDays_tss_complication_chance_pct": "Base Sudden Complication Chance (%)",
-    "Sandbox_RedDays_tss_complication_chance_pct_tooltip": "Hourly chance for sudden complications while pre-TSS infection is active. Complications are influenced by stress, fatigue, dehydration, and body temperature."
+    "Sandbox_RedDays_tss_complication_chance_pct_tooltip": "Hourly chance for sudden complications while pre-TSS infection is active. Complications are influenced by stress, fatigue, dehydration, and body temperature.",
+
+    "Sandbox_RedDays_tss_abx_dose_cooldown_hours": "Antibiotic Dose Interval (Hours)",
+    "Sandbox_RedDays_tss_abx_dose_cooldown_hours_tooltip": "Minimum hours between effective antibiotic doses during TSS treatment. Taking antibiotics sooner has no effect on the infection.",
+
+    "Sandbox_RedDays_tss_abx_toxin_per_dose": "Toxin Reduction Per Dose",
+    "Sandbox_RedDays_tss_abx_toxin_per_dose_tooltip": "How much each antibiotic dose reduces the TSS toxin score (out of 100). Higher values shorten the treatment course needed to recover from Stage 4 toxic shock.",
+
+    "Sandbox_RedDays_tss_abx_suppress_window_hours": "Antibiotic HP Shield Duration (Hours)",
+    "Sandbox_RedDays_tss_abx_suppress_window_hours_tooltip": "Hours after taking an antibiotic dose that fatal HP drain from Stage 4 TSS is suppressed. Gives a survival window between doses.",
+
+    "Sandbox_RedDays_tss_fever_max_celsius": "TSS Peak Fever Temperature (Celsius)",
+    "Sandbox_RedDays_tss_fever_max_celsius_tooltip": "Absolute peak body temperature that TSS will drive the patient toward. At 40C symptoms intensify. At the default 42C, HP drain is at maximum. Staying cool slows the effective fever and reduces HP loss.",
+
+    "Sandbox_RedDays_tss_fever_ramp_hours": "TSS Fever Ramp Speed (Hours to 40C)",
+    "Sandbox_RedDays_tss_fever_ramp_hours_tooltip": "How many in-game hours for TSS fever to climb from a normal 37C to 40C in average conditions. Lower values cause faster, more aggressive fever onset."
 }
