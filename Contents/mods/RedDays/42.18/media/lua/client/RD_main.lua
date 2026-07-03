@@ -76,6 +76,12 @@ local function EveryOneMinute()
 end
 Events.EveryOneMinute.Add(EveryOneMinute)
 
+local function OnPlayerUpdate(player) -- This is very expensive, make sure everything in here is optimized and only runs when necessary.
+    if not isValidGenderCheck() then return end
+    RD_TSSManager.ApplyFeverPressure(player)
+end
+Events.OnPlayerUpdate.Add(OnPlayerUpdate)
+
 -- ================= INTERCEPT FUNCTIONS =================
 local o_ISUnequipAction_perform = ISUnequipAction.perform
 function ISUnequipAction:perform()
@@ -107,16 +113,26 @@ local o_ISTakePillAction_perform = ISTakePillAction.perform
 function ISTakePillAction:perform()
     if isValidGenderCheck() then
         RD_EffectsPMS.ISTakePillAction_perform(self)
-        RD_TSSManager.ISTakePillAction_perform(self)
     end
     o_ISTakePillAction_perform(self)
+end
+
+-- Antibiotics are a food item (ItemType = base:food, CustomContextMenu = Take).
+-- They are consumed via ISEatFoodAction, not ISTakePillAction.
+local o_ISEatFoodAction_complete = ISEatFoodAction.complete
+function ISEatFoodAction:complete()
+    if isValidGenderCheck() then
+        RD_TSSManager.registerTreatmentFromItem(self.item, "ISEatFoodAction")
+    end
+    return o_ISEatFoodAction_complete(self)
 end
 
 if ISApplyDisinfectant and ISApplyDisinfectant.perform then
     local o_ISApplyDisinfectant_perform = ISApplyDisinfectant.perform
     function ISApplyDisinfectant:perform()
         if isValidGenderCheck() then
-            RD_TSSManager.ISApplyDisinfectant_perform(self)
+            local item = self.item or self.disinfectant or self.alcohol
+            RD_TSSManager.registerTreatmentFromItem(item, "ISApplyDisinfectant")
         end
         o_ISApplyDisinfectant_perform(self)
     end

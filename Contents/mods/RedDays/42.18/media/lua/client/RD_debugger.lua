@@ -238,6 +238,17 @@ rd.tss.reset_progression.set = function(value)
     tss.abx_suppress_mins = 0
     tss.abx_dose_count = 0
     tss.tss_fever_induced = 0
+    tss._feverDrive = 0
+    tss._feverAccum = 0
+    tss._tempDiagPrinted = nil
+
+    local player = RD_zapi.getPlayer()
+    if player then
+        local stats = player:getStats()
+        if stats then
+            stats:set(CharacterStat.SICKNESS, 0)
+        end
+    end
     transmitDebugData()
     return true
 end
@@ -573,9 +584,33 @@ local TSS_STAGE_PROFILES = {
         source_active = false, source_removed = true, source_type = "tampon",
         recovery_mode = "antibiotics", warning_cooldown = 60, stabilized_until = 0,
         first_symptom_minutes = 2160, cured = true,
-        _note = "In recovery. Sickness should be decaying. Watch corpseSicknessRate.",
+        _note = "In recovery. Sickness should be decaying. Watch CharacterStat.SICKNESS.",
     },
 }
+
+local function syncRuntimeTSSStatsForDebugPreset(tss, profile)
+    if not tss then return end
+
+    -- Reset fever controller runtime fields so test presets always start from known controller state.
+    tss._feverDrive = 0
+    tss._feverAccum = 0
+    tss._tempDiagPrinted = nil
+
+    local player = RD_zapi.getPlayer()
+    if not player then return end
+    local stats = player:getStats()
+    if not stats then return end
+
+    local stage = clampNumber(tss.stage, 0, 4, 0)
+    local override = profile and profile._sickness
+    if override ~= nil then
+        stats:set(CharacterStat.SICKNESS, clampNumber(override, 0, 1, 0))
+    elseif stage >= 4 then
+        stats:set(CharacterStat.SICKNESS, 0.26)
+    else
+        stats:set(CharacterStat.SICKNESS, 0)
+    end
+end
 
 -- rd.goToTSSStage(3)               -- jump to stage 3 using stage3_stable profile
 -- rd.goToTSSStage(4)               -- jump to stage 4 using stage4_critical profile
@@ -611,6 +646,8 @@ rd.goToTSSStage = function(stage, variant)
         end
     end
 
+    syncRuntimeTSSStatsForDebugPreset(tss, profile)
+
     transmitDebugData()
     print("[rd.goToTSSStage] stage=" .. tostring(tss.stage) .. " profile=" .. profileKey)
     print("[rd.goToTSSStage] note: " .. tostring(profile._note))
@@ -636,6 +673,7 @@ rd.tss.preset = {
                 tss[k] = v
             end
         end
+        syncRuntimeTSSStatsForDebugPreset(tss, profile)
         transmitDebugData()
         print("[rd.tss.preset] applied '" .. name .. "': " .. tostring(profile._note))
         return true
@@ -694,8 +732,6 @@ local function printTSSStatus()
     print("TSS cured flag -------------------------- " .. tostring(tss.cured or false))
     print("TSS source active ----------------------- " .. tostring(tss.source_active or false))
     print("TSS source removed ---------------------- " .. tostring(tss.source_removed or false))
-    print("TSS source type ------------------------- " .. tostring(tss.source_type or ""))
-    print("TSS source item id ---------------------- " .. tostring(tss.source_item_id or -1))
     print("TSS wear minutes ------------------------ " .. tostring(tss.wear_minutes or 0) .. " mins (" .. tostring((tss.wear_minutes or 0) / MINUTES_PER_HOUR) .. " hours)")
     local expMin = tss.exposure_minutes or 0
     print("TSS exposure minutes -------------------- " .. tostring(expMin) .. " mins (" .. string.format("%.2f", expMin / MINUTES_PER_HOUR) .. " hours / " .. string.format("%.2f", expMin / MINUTES_PER_DAY) .. " days)")
@@ -709,13 +745,98 @@ local function printTSSStatus()
 
     local player = RD_zapi.getPlayer()
     if player then
-        print("TSS current corpse sickness rate -------- " .. tostring(player:getCorpseSicknessRate()))
+        local stats = player:getStats()
+        local sickness = stats and stats:get(CharacterStat.SICKNESS) or "unavailable"
+        print("TSS current CharacterStat.SICKNESS ------ " .. tostring(sickness))
         print("TSS current blur effect ----------------- " .. tostring(player:getSleepingTabletEffect()))
         print("TSS baseline blur effect ---------------- " .. tostring(tss.baseline_blur_effect or 0))
+        -- Body temp + fever controller state
+        local bd = player:getBodyDamage()
+        local thermo = bd and bd:getThermoregulator()
+        local coreTemp = thermo and thermo:getCoreCelcius()
+        if coreTemp then
+            print("TSS core body temp (C) ------------------ " .. string.format("%.2f", coreTemp))
+        else
+            print("TSS core body temp (C) ------------------ unavailable")
+        end
+        -- Fever gate state (mirrors gate logic in ApplyFeverPressure: SICKNESS>=0.91 AND temp>=37.8)
+        local sickNum = type(sickness) == "number" and sickness or 0
+        local gateState
+        if stage ~= 4 then
+            gateState = "not Stage 4"
+        elseif sickNum < 0.91 then
+            gateState = "below sickness gate (" .. string.format("%.3f", sickNum) .. " < 0.91)"
+        elseif coreTemp and coreTemp < 37.8 then
+            gateState = "below temp gate (" .. string.format("%.2f", coreTemp) .. "C < 37.8C)"
+        else
+            gateState = "ACTIVE"
+        end
+        print("TSS fever gate state -------------------- " .. gateState)
+        print("TSS fever drive (_feverDrive) ----------- " .. string.format("%.6f", tss._feverDrive or 0))
+        print("TSS fever frame accum (_feverAccum) ----- " .. string.format("%.3f", tss._feverAccum or 0))
+        -- Drain multiplier at current core temp (mirrors two-segment curve in applyStageStatEffects)
+        if coreTemp then
+            local mult
+            local hotBreakC = 38.5
+            local hotBreakMult = 2.0
+            local hotCapC = 39.0
+            local hotCapMult = 3.0
+            if coreTemp >= hotCapC then
+                mult = 3.0
+            elseif coreTemp >= hotBreakC then
+                local t = (coreTemp - hotBreakC) / (hotCapC - hotBreakC)
+                mult = hotBreakMult + t * (hotCapMult - hotBreakMult)
+            elseif coreTemp >= 37.0 then
+                local t = (coreTemp - 37.0) / (hotBreakC - 37.0)
+                mult = 1.0 + t * (hotBreakMult - 1.0)
+            elseif coreTemp >= 36.1 then
+                local t = (37.0 - coreTemp) / (37.0 - 36.1)
+                mult = 1.0 + t * (1.10 - 1.0)
+            elseif coreTemp >= 34.9 then
+                local t = (36.1 - coreTemp) / (36.1 - 34.9)
+                mult = 1.10 + t * (1.25 - 1.10)
+            elseif coreTemp >= 29.9 then
+                local t = (34.9 - coreTemp) / (34.9 - 29.9)
+                mult = 1.25 + t * (1.70 - 1.25)
+            elseif coreTemp >= 24.9 then
+                local t = (29.9 - coreTemp) / (29.9 - 24.9)
+                mult = 1.70 + t * (2.20 - 1.70)
+            elseif coreTemp >= 20.0 then
+                local t = (24.9 - coreTemp) / (24.9 - 20.0)
+                mult = 2.20 + t * (2.40 - 2.20)
+            else
+                mult = 2.40
+            end
+            local sbDrainPct = (SandboxVars.RedDays or {}).tss_stage4_hp_drain_pct or 100
+            local baseDrain = 0.15 * (sbDrainPct / 100)
+            local hpDrainPerMin = baseDrain * mult
+            print("TSS drain mult at " .. string.format("%.2f", coreTemp) .. "C ------------ " .. string.format("%.3f", mult) .. "x")
+            if stage == 4 and (tss.abx_suppress_mins or 0) <= 0 then
+                print("TSS HP drain per minute ----------------- " .. string.format("%.4f", hpDrainPerMin) .. " (ACTIVE)")
+            else
+                print("TSS HP drain per minute ----------------- " .. string.format("%.4f", hpDrainPerMin) .. " (suppressed or not Stage 4)")
+            end
+        else
+            print("TSS drain mult / HP drain per min ------- unavailable (no core temp)")
+        end
+        -- Endurance/fatigue + Stage 4 sickness clamp status
+        if stats then
+            local endurance = stats:get(CharacterStat.ENDURANCE) or 0
+            local fatigue = stats:get(CharacterStat.FATIGUE) or 0
+            local clampActive = stage == 4 and sickNum >= 0.91
+            local clampStr = clampActive and " (clamped: END<=0.8, FAT>=0.4)" or ""
+            print("TSS endurance / fatigue ----------------- END=" .. string.format("%.3f", endurance) .. "  FAT=" .. string.format("%.3f", fatigue) .. clampStr)
+        end
+        -- ABX metrics
+        print("TSS ABX cooldown remaining -------------- " .. tostring(tss.abx_cooldown_mins or 0) .. " mins")
+        print("TSS ABX suppression remaining ----------- " .. tostring(tss.abx_suppress_mins or 0) .. " mins")
+        print("TSS ABX toxin score --------------------- " .. tostring(tss.abx_toxin_level or 0) .. "/100")
+        print("TSS ABX total dose count ---------------- " .. tostring(tss.abx_dose_count or 0))
     else
-        print("TSS current corpse sickness rate -------- unavailable")
+        print("TSS current CharacterStat.SICKNESS ------ unavailable")
         print("TSS current blur effect ----------------- unavailable")
         print("TSS baseline blur effect ---------------- " .. tostring(tss.baseline_blur_effect or 0))
+        print("TSS core body temp (C) ------------------ unavailable (no player)")
     end
 end
 
@@ -760,13 +881,6 @@ local function PrintStatus(cycle)
     print("Leak level ------------------------------ " .. tostring(RD_modData.ICdata.LeakLevel or 0))
     print("Leak switch state ----------------------- " .. tostring(RD_modData.ICdata.LeakSwitchState or false))
     printTSSStatus()
-
-    local groin = RD_zapi.getBodyPart(BodyPartType.Groin)
-    local lowerTorso = RD_zapi.getBodyPart(BodyPartType.Torso_Lower)
-    local upperTorso = RD_zapi.getBodyPart(BodyPartType.Torso_Upper)
-    print("Body stiffness - Groin ------------------ " .. (groin and tostring(groin:getStiffness()) or "unavailable"))
-    print("Body stiffness - Torso Lower ------------ " .. (lowerTorso and tostring(lowerTorso:getStiffness()) or "unavailable"))
-    print("Body stiffness - Torso Upper ------------ " .. (upperTorso and tostring(upperTorso:getStiffness()) or "unavailable"))
 
     local phaseStatus = RD_CycleManager.getPhaseStatus(cycle)
     if phaseStatus then

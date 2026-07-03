@@ -8,16 +8,51 @@ require "RD_hygiene_manager"
 local MINUTES_PER_HOUR = 60
 local MINUTES_PER_DAY = 1440
 
-local SICKNESS_RAMP_STAGE1 = 0.00035
-local SICKNESS_RAMP_STAGE2 = 0.0008
-local SICKNESS_RAMP_STAGE3 = 0.0014
-local SICKNESS_DECAY_BASE = 0.0002
-local SICKNESS_DECAY_FALLBACK = 0.0011
-local SICKNESS_DECAY_ANTIBIOTICS = 0.0018
+local SICKNESS_DECAY_BASE = 0.0002              -- safety decay for residual sickness in stages 0-3
 local SICKNESS_RECOVERY_COMPLETE = 0.02
+local TSS_SICKNESS_STAGE4_START = 0.26          -- SICKNESS set to this when Stage 4 triggers
+local TSS_SICKNESS_RAMP_PER_MIN = (1.0 - 0.26) / (12.0 * 60)   -- 0.26→1.0 over 12 in-game hours (~0.001028/min)
+local SICKNESS_RECOVERY_DECAY_PER_MIN = 1.0 / (12.0 * 60)      -- fixed decay rate; 12h from 1.0, shorter if treated early
 local BLUR_STAGE3_TARGET = 0.35
 local BLUR_RAMP_UP = 0.01
 local BLUR_RAMP_DOWN = 0.008
+local NORMAL_BODY_TEMP_C = 37.0
+local TSS_FEVER_TARGET_C = 42.0
+local TSS_FEVER_NUDGE_MIN_SICKNESS = 0.91              -- only nudge after vanilla stage-4 sickness is active
+local TSS_FEVER_NUDGE_START_TEMP_C = 37.8              -- wait until vanilla fever reaches plateau band
+local TSS_FEVER_NUDGE_FULL_TEMP_C = 38.2               -- full nudge strength by this temp
+-- Fever pressure knobs — units are CharacterStat.TEMPERATURE stat units per in-game minute.
+-- The game uses stats:add(CharacterStat.TEMPERATURE, gain) to push real body temp each minute;
+-- the vanilla thermoregulator fights back naturally (homeostasis = tug-of-war).
+-- This is intentionally a nudge layer: vanilla sickness should do most of the heating up to ~38C.
+local TSS_FEVER_PRESSURE_BASE_GAIN_PER_MIN = 0.0015
+local TSS_FEVER_PRESSURE_CATCHUP_PER_DEG_PER_MIN = 0.01
+local TSS_FEVER_PRESSURE_MAX_GAIN_PER_MIN = 0.06
+local TSS_FEVER_PRESSURE_MIN_GAIN_PER_MIN = 0.0
+local TSS_FEVER_HIGH_TEMP_START_C = 38.0                   -- begin high-temp bonus here
+local TSS_FEVER_HIGH_TEMP_BONUS_MULT = 0.0                 -- disable extra high-temp boost in nudge mode
+local TSS_FEVER_INTEGRATOR_GAIN_PER_DEG_PER_MIN = 0.02
+local TSS_FEVER_INTEGRATOR_MAX_GAIN_PER_MIN = 0.05
+local TSS_FEVER_INTEGRATOR_DECAY_PER_MIN = 0.08
+
+-- Stage 4 HP-drain temperature scaling knobs.
+-- Two-segment linear: 37.0C=1x → 38.5C=2x → 40.0C=3x (cap; game body temp rarely exceeds ~40C).
+local TSS_FEVER_DRAIN_HOT_BREAK_C    = 38.5   -- 2x multiplier at this temperature
+local TSS_FEVER_DRAIN_HOT_BREAK_MULT = 2.0
+local TSS_FEVER_DRAIN_HOT_CAP_C      = 39.0   -- 3x cap; game core temp plateaus near here
+local TSS_FEVER_DRAIN_HOT_CAP_MULT   = 3.0
+local TSS_COLD_STAGE1_TEMP_C = 36.1
+local TSS_COLD_STAGE2_TEMP_C = 34.9
+local TSS_COLD_STAGE3_TEMP_C = 29.9
+local TSS_COLD_STAGE4_TEMP_C = 24.9
+local TSS_COLD_MIN_TEMP_C = 20.0
+local TSS_COLD_STAGE1_MULT = 1.10
+local TSS_COLD_STAGE2_MULT = 1.25
+local TSS_COLD_STAGE3_MULT = 1.70
+local TSS_COLD_STAGE4_MULT = 2.20
+local TSS_COLD_MIN_MULT = 2.40
+local TSS_STAGE4_BASE_HP_DRAIN = 0.15
+local FEVER_TICK_INTERVAL_S = 3.0 -- Apply fever pressure every N in-game seconds
 
 local function getSandbox()
     return SandboxVars.RedDays or {}
@@ -219,20 +254,19 @@ local function applySicknessProgression(player, tss)
     local stats = player:getStats()
     if not stats then return end
 
-    local currentSickness = player:getCorpseSicknessRate()
+    -- CharacterStat.SICKNESS is the primary fever driver (separate from corpse-proximity sickness).
+    -- Stages 0-3: held at 0 (SICKNESS only active in Stage 4 and during recovery decay).
+    -- Stage 4:    ramps 0.26 → 1.0 over 12 in-game hours; game natively holds body temp at ~38C
+    --             once SICKNESS ≥ 0.91 (~10.4h in). ApplyFeverPressure pushes further toward 42C.
+    -- Recovery:   fixed decay rate; reaches 0 in 12h from 1.0, faster if treated early.
+    local currentSickness = stats:get(CharacterStat.SICKNESS) or 0
     local newSickness = currentSickness
 
     if tss.recovery_mode ~= "none" then
-        local decayRate = SICKNESS_DECAY_BASE
-        if tss.recovery_mode == "antibiotics" then
-            decayRate = SICKNESS_DECAY_ANTIBIOTICS
-        elseif tss.recovery_mode == "fallback" then
-            decayRate = SICKNESS_DECAY_FALLBACK
-        end
-
-        newSickness = math.max(0, currentSickness - decayRate)
+        newSickness = math.max(0, currentSickness - SICKNESS_RECOVERY_DECAY_PER_MIN)
 
         if newSickness <= SICKNESS_RECOVERY_COMPLETE then
+            stats:set(CharacterStat.SICKNESS, 0)
             tss.stage = 0
             tss.exposure_minutes = 0
             tss.severity = 0
@@ -245,28 +279,21 @@ local function applySicknessProgression(player, tss)
             tss.recovery_mode = "none"
             notifyPlayer("TSS symptoms have resolved.")
             transmitNow()
+            applyBlurEffect(player, tss)
+            return
         end
-    elseif tss.stage >= 1 then
-        local rampRate = SICKNESS_RAMP_STAGE1
-        if tss.stage == 2 then
-            rampRate = SICKNESS_RAMP_STAGE2
-        elseif tss.stage >= 3 then
-            rampRate = SICKNESS_RAMP_STAGE3
+    elseif tss.stage == 4 then
+        if (tss.abx_suppress_mins or 0) > 0 then
+            -- Antibiotic suppression window active: freeze sickness, no fever ramp
+        else
+            newSickness = math.min(1.0, currentSickness + TSS_SICKNESS_RAMP_PER_MIN)
         end
-
-        if not tss.source_active then
-            rampRate = rampRate * 0.35
-        end
-        if tss.stabilized_until and tss.stabilized_until > 0 then
-            rampRate = rampRate * 0.5
-        end
-
-        newSickness = math.min(1, currentSickness + rampRate)
     else
+        -- Stages 0-3: decay any residual sickness to zero as a safety measure
         newSickness = math.max(0, currentSickness - SICKNESS_DECAY_BASE)
     end
 
-    player:setCorpseSicknessRate(newSickness)
+    stats:set(CharacterStat.SICKNESS, newSickness)
     applyBlurEffect(player, tss)
 end
 
@@ -374,6 +401,11 @@ local function rollTSSTransition(player, tss)
         tss.stage_threshold = 0
         tss.abx_toxin_level = 100
         tss.abx_dose_count = 0
+        tss._tempDiagPrinted = nil  -- ensure calibration print fires on first Stage 4 tick
+        tss._feverDrive = 0
+        tss._feverAccum = 0
+        local s4Stats = player:getStats()
+        if s4Stats then s4Stats:set(CharacterStat.SICKNESS, TSS_SICKNESS_STAGE4_START) end
         print("[RedDays][TSS] Toxic shock triggered. Toxin score set to 100. Take antibiotics repeatedly.")
         transmitNow()
     end
@@ -399,19 +431,56 @@ local function applyStageStatEffects(player, tss)
         stats:set(CharacterStat.THIRST, math.min(1, stats:get(CharacterStat.THIRST) + 0.002))
         stats:set(CharacterStat.UNHAPPINESS, math.min(100, stats:get(CharacterStat.UNHAPPINESS) + 0.2))
         if tss.stage == 4 then
+            -- Clamp endurance and fatigue at the sickness Stage 4 plateau (clamp only, no ramp)
+            local currentSickness = stats:get(CharacterStat.SICKNESS) or 0
+            if currentSickness >= TSS_FEVER_NUDGE_MIN_SICKNESS then
+                local endurance = stats:get(CharacterStat.ENDURANCE) or 1
+                if endurance > 0.8 then stats:set(CharacterStat.ENDURANCE, 0.8) end
+                local fatigue = stats:get(CharacterStat.FATIGUE) or 0
+                if fatigue < 0.4 then stats:set(CharacterStat.FATIGUE, 0.4) end
+            end
             -- HP drain only when antibiotic suppression window has expired
             if (tss.abx_suppress_mins or 0) <= 0 then
                 local bd = player:getBodyDamage()
                 if bd then
-                    local drain = 0.08
+                    local sbDrainPct = getSandbox().tss_stage4_hp_drain_pct or 100
+                    local baseDrain = TSS_STAGE4_BASE_HP_DRAIN * (sbDrainPct / 100)
+                    local drain = baseDrain
                     local thermo = bd:getThermoregulator()
                     if thermo then
                         local bodyTemp = thermo:getCoreCelcius()
                         if bodyTemp then
-                            -- Effective temp = actual body temp + TSS-induced fever component
-                            local effectiveTemp = bodyTemp + (tss.tss_fever_induced or 0)
-                            local fever = math.max(0, math.min(effectiveTemp - 37.0, 5.0))
-                            drain = drain + fever * 0.02
+                            -- Two-segment linear drain curve, asymmetric around 37C.
+                            -- Hot: 37.0C=1x → 38.5C=2x → 40.0C=3x (cap; game body temp rarely exceeds ~40C).
+                            -- Cold: forgiving curve down to 20C.
+                            local mult
+                            if bodyTemp >= TSS_FEVER_DRAIN_HOT_CAP_C then
+                                mult = TSS_FEVER_DRAIN_HOT_CAP_MULT
+                            elseif bodyTemp >= TSS_FEVER_DRAIN_HOT_BREAK_C then
+                                local t = (bodyTemp - TSS_FEVER_DRAIN_HOT_BREAK_C) / (TSS_FEVER_DRAIN_HOT_CAP_C - TSS_FEVER_DRAIN_HOT_BREAK_C)
+                                mult = TSS_FEVER_DRAIN_HOT_BREAK_MULT + t * (TSS_FEVER_DRAIN_HOT_CAP_MULT - TSS_FEVER_DRAIN_HOT_BREAK_MULT)
+                            elseif bodyTemp >= NORMAL_BODY_TEMP_C then
+                                local t = (bodyTemp - NORMAL_BODY_TEMP_C) / (TSS_FEVER_DRAIN_HOT_BREAK_C - NORMAL_BODY_TEMP_C)
+                                mult = 1.0 + t * (TSS_FEVER_DRAIN_HOT_BREAK_MULT - 1.0)
+                            elseif bodyTemp >= TSS_COLD_STAGE1_TEMP_C then
+                                local t = (NORMAL_BODY_TEMP_C - bodyTemp) / (NORMAL_BODY_TEMP_C - TSS_COLD_STAGE1_TEMP_C)
+                                mult = 1.0 + t * (TSS_COLD_STAGE1_MULT - 1.0)
+                            elseif bodyTemp >= TSS_COLD_STAGE2_TEMP_C then
+                                local t = (TSS_COLD_STAGE1_TEMP_C - bodyTemp) / (TSS_COLD_STAGE1_TEMP_C - TSS_COLD_STAGE2_TEMP_C)
+                                mult = TSS_COLD_STAGE1_MULT + t * (TSS_COLD_STAGE2_MULT - TSS_COLD_STAGE1_MULT)
+                            elseif bodyTemp >= TSS_COLD_STAGE3_TEMP_C then
+                                local t = (TSS_COLD_STAGE2_TEMP_C - bodyTemp) / (TSS_COLD_STAGE2_TEMP_C - TSS_COLD_STAGE3_TEMP_C)
+                                mult = TSS_COLD_STAGE2_MULT + t * (TSS_COLD_STAGE3_MULT - TSS_COLD_STAGE2_MULT)
+                            elseif bodyTemp >= TSS_COLD_STAGE4_TEMP_C then
+                                local t = (TSS_COLD_STAGE3_TEMP_C - bodyTemp) / (TSS_COLD_STAGE3_TEMP_C - TSS_COLD_STAGE4_TEMP_C)
+                                mult = TSS_COLD_STAGE3_MULT + t * (TSS_COLD_STAGE4_MULT - TSS_COLD_STAGE3_MULT)
+                            elseif bodyTemp >= TSS_COLD_MIN_TEMP_C then
+                                local t = (TSS_COLD_STAGE4_TEMP_C - bodyTemp) / (TSS_COLD_STAGE4_TEMP_C - TSS_COLD_MIN_TEMP_C)
+                                mult = TSS_COLD_STAGE4_MULT + t * (TSS_COLD_MIN_MULT - TSS_COLD_STAGE4_MULT)
+                            else
+                                mult = TSS_COLD_MIN_MULT
+                            end
+                            drain = baseDrain * mult
                         end
                     end
                     bd:ReduceGeneralHealth(drain)
@@ -553,6 +622,104 @@ local function rollComplication(player, tss)
     end
 end
 
+-- ===== FEVER PRESSURE (OnPlayerUpdate, throttled by in-game time) =====
+-- Called from OnPlayerUpdate in main.lua every frame.
+-- Accumulates in-game seconds via getGameWorldSecondsSinceLastUpdate() and fires every
+-- FEVER_TICK_INTERVAL_S game-seconds, which is frame-rate independent and scales correctly
+-- with game speed (4x speed = fires 4x more often in real-time, matching thermoregulator pace).
+-- Per-frame cost when Stage 4 is inactive: ~2-3 field reads then return.
+-- local FEVER_TICK_INTERVAL_S = 3.0 -- This is moved to the top
+
+function RD_TSSManager.ApplyFeverPressure(player)
+    if not isEnabled() then return end
+
+    local md = getModData()
+    if not md then return end
+    local tss = md.ICdata.tss
+
+    -- Cheapest possible exit: not in Stage 4 or under antibiotic suppression
+    if tss.stage ~= 4 or (tss.abx_suppress_mins or 0) > 0 then
+        tss._feverAccum = 0
+        tss._feverDrive = 0
+        return
+    end
+
+    -- Accumulate in-game seconds; only do real work once the interval is reached
+    local dt = getGameTime():getGameWorldSecondsSinceLastUpdate()
+    tss._feverAccum = (tss._feverAccum or 0) + dt
+    if tss._feverAccum < FEVER_TICK_INTERVAL_S then return end
+    local elapsedGameSecs = tss._feverAccum
+    tss._feverAccum = 0
+
+    local bd = player:getBodyDamage()
+    if not bd then return end
+    local thermo = bd:getThermoregulator()
+    local feverStats = player:getStats()
+    if not thermo or not feverStats then return end
+    local currentTempC = thermo:getCoreCelcius()
+    if not currentTempC then return end
+    local sickness = feverStats:get(CharacterStat.SICKNESS) or 0
+
+    -- Let vanilla stage-4 sickness establish fever first; this controller only nudges on top.
+    if sickness < TSS_FEVER_NUDGE_MIN_SICKNESS or currentTempC < TSS_FEVER_NUDGE_START_TEMP_C then
+        tss._feverDrive = 0
+        return
+    end
+
+    -- One-time calibration print when Stage 4 first fires so knob values can be verified
+    if not tss._tempDiagPrinted then
+        tss._tempDiagPrinted = true
+        local statVal = feverStats:get(CharacterStat.TEMPERATURE)
+        print(string.format(
+            "[RedDays][TEMP] Scale calibration: getCoreCelcius()=%.4f  stats:get(TEMPERATURE)=%.4f  min=%.4f  max=%.4f  default=%.4f",
+            currentTempC, statVal or 0,
+            CharacterStat.TEMPERATURE:getMinimumValue(),
+            CharacterStat.TEMPERATURE:getMaximumValue(),
+            CharacterStat.TEMPERATURE:getDefaultValue()))
+    end
+
+    local elapsedGameMins = elapsedGameSecs / 60.0
+    local gapC = math.max(0, TSS_FEVER_TARGET_C - currentTempC)
+
+    -- Integrator stores persistent fever drive so pressure does not stall in upper temperatures.
+    local drive = tss._feverDrive or 0
+    if gapC > 0 then
+        drive = math.min(
+            TSS_FEVER_INTEGRATOR_MAX_GAIN_PER_MIN,
+            drive + gapC * TSS_FEVER_INTEGRATOR_GAIN_PER_DEG_PER_MIN * elapsedGameMins)
+    else
+        drive = math.max(0, drive - TSS_FEVER_INTEGRATOR_DECAY_PER_MIN * elapsedGameMins)
+    end
+    tss._feverDrive = drive
+
+    if gapC > 0 then
+        local proportionalGain = TSS_FEVER_PRESSURE_BASE_GAIN_PER_MIN
+            + gapC * TSS_FEVER_PRESSURE_CATCHUP_PER_DEG_PER_MIN
+
+        local sicknessReadiness = math.max(0, math.min(1, (sickness - TSS_FEVER_NUDGE_MIN_SICKNESS) / (1.0 - TSS_FEVER_NUDGE_MIN_SICKNESS)))
+        local plateauReadiness = math.max(0, math.min(1, (currentTempC - TSS_FEVER_NUDGE_START_TEMP_C) / (TSS_FEVER_NUDGE_FULL_TEMP_C - TSS_FEVER_NUDGE_START_TEMP_C)))
+        local nudgeReadiness = math.min(sicknessReadiness, plateauReadiness)
+        if nudgeReadiness <= 0 then
+            tss._feverDrive = 0
+            return
+        end
+
+        -- As core temp rises, vanilla pushes harder; add a controlled high-temp bonus to compensate.
+        local highTempSpan = math.max(0.1, TSS_FEVER_TARGET_C - TSS_FEVER_HIGH_TEMP_START_C)
+        local highBand = math.max(0, math.min(1, (currentTempC - TSS_FEVER_HIGH_TEMP_START_C) / highTempSpan))
+        local highTempMult = 1.0 + highBand * TSS_FEVER_HIGH_TEMP_BONUS_MULT
+
+        local rawGain = (proportionalGain * highTempMult + drive) * nudgeReadiness
+        local gainPerMin = math.max(
+            TSS_FEVER_PRESSURE_MIN_GAIN_PER_MIN,
+            math.min(TSS_FEVER_PRESSURE_MAX_GAIN_PER_MIN, rawGain))
+
+        local nudgePct = getSandbox().tss_fever_nudge_strength_pct or 100
+        local debugMult = RD_TSSManager._debugSpeedMult or 1
+        feverStats:add(CharacterStat.TEMPERATURE, gainPerMin * elapsedGameMins * debugMult * (nudgePct / 100))
+    end
+end
+
 function RD_TSSManager.LoadPlayerData()
     local md = getModData()
     if not md then return end
@@ -591,6 +758,8 @@ function RD_TSSManager.LoadPlayerData()
     tss.abx_suppress_mins = tss.abx_suppress_mins or 0
     tss.abx_dose_count = tss.abx_dose_count or 0
     tss.tss_fever_induced = tss.tss_fever_induced or 0
+    tss._feverDrive = tss._feverDrive or 0
+    tss._feverAccum = tss._feverAccum or 0
     tss.stage_threshold = tss.stage_threshold or rollNextStageThreshold(tss.stage)
 
     local player = getPlayer()
@@ -639,18 +808,6 @@ function RD_TSSManager.registerTreatmentFromItem(item, actionName)
         print("[RedDays][TSS] Dose " .. tss.abx_dose_count .. ". Severity reduced by " .. severityReduction .. " mins. Symptoms eased for " .. math.floor(suppressMins / MINUTES_PER_HOUR) .. "h.")
     end
     transmitNow()
-end
-
-function RD_TSSManager.ISTakePillAction_perform(self)
-    if not self or not self.item then return end
-    RD_TSSManager.registerTreatmentFromItem(self.item, "ISTakePillAction")
-end
-
-function RD_TSSManager.ISApplyDisinfectant_perform(self)
-    if not self then return end
-    local item = self.item or self.disinfectant or self.alcohol
-    if not item then return end
-    RD_TSSManager.registerTreatmentFromItem(item, "ISApplyDisinfectant")
 end
 
 function RD_TSSManager.EveryOneMinute(cycle)
@@ -714,19 +871,8 @@ function RD_TSSManager.EveryOneMinute(cycle)
             tss.abx_suppress_mins = tss.abx_suppress_mins - 1
         end
 
-        -- TSS fever: ramps toward configured max while in Stage 4 and not antibiotic-suppressed.
-        -- Rate: reaches 40C (3C above 37C baseline) within tss_fever_ramp_hours in-game hours.
-        if tss.stage == 4 and (tss.abx_suppress_mins or 0) <= 0 then
-            local sb = getSandbox()
-            local maxFeverOffset = math.max(1.0, (sb.tss_fever_max_celsius or 42) - 37.0)
-            local rampHours = math.max(1, sb.tss_fever_ramp_hours or 12)
-            local rampRate = 3.0 / (rampHours * 60.0)
-            local debugMult = RD_TSSManager._debugSpeedMult or 1
-            tss.tss_fever_induced = math.min(maxFeverOffset, (tss.tss_fever_induced or 0) + rampRate * debugMult)
-        elseif (tss.tss_fever_induced or 0) > 0 then
-            -- Fever gradually breaks once out of Stage 4 or during antibiotic suppression
-            tss.tss_fever_induced = math.max(0, tss.tss_fever_induced - 0.02)
-        end
+        -- Fever pressure is applied via ApplyFeverPressure() in OnPlayerUpdate (main.lua),
+        -- throttled to every 6 in-game seconds for smooth, frame-rate-independent pressure.
 
         -- Check if Stage 4 toxin has been cleared by antibiotic course
         if tss.stage == 4 and (tss.abx_toxin_level or 0) <= 0 and (tss.abx_dose_count or 0) > 0 then
@@ -735,7 +881,13 @@ function RD_TSSManager.EveryOneMinute(cycle)
             tss.stage3_minutes = 0
             tss.stage_threshold = 0
             tss.tss_risk = 0
-            tss.tss_fever_induced = 0
+            tss._tempDiagPrinted = nil  -- reset so calibration prints if Stage 4 recurs
+            tss._feverDrive = 0
+            tss._feverAccum = 0
+            -- ApplyFeverPressure stops immediately (stage ≠ 4). CharacterStat.SICKNESS remains
+            -- elevated and the game's thermoregulator keeps body temp near 38C until SICKNESS
+            -- decays below ~0.91 via applySicknessProgression (recovery_mode = "antibiotics").
+            -- Fever breaks gradually as the player recovers — no manual TEMPERATURE reset needed.
             tss.recovery_mode = "antibiotics"
             print("[RedDays][TSS] Toxin cleared by antibiotics. Fever breaking. Transitioning to Stage 3 recovery.")
             transmitNow()

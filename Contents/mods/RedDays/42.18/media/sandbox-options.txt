@@ -367,22 +367,22 @@ option RedDays.tss_abx_suppress_window_hours
 	translation = RedDays_tss_abx_suppress_window_hours,
 }
 
-option RedDays.tss_fever_max_celsius
+option RedDays.tss_stage4_hp_drain_pct
 {
 	type = integer,
-	min = 38,
-	max = 44,
-	default = 42,
+	min = 25,
+	max = 400,
+	default = 100,
 	page = RedDays,
-	translation = RedDays_tss_fever_max_celsius,
+	translation = RedDays_tss_stage4_hp_drain_pct,
 }
 
-option RedDays.tss_fever_ramp_hours
+option RedDays.tss_fever_nudge_strength_pct
 {
 	type = integer,
-	min = 4,
-	max = 48,
-	default = 12,
+	min = 0,
+	max = 300,
+	default = 100,
 	page = RedDays,
-	translation = RedDays_tss_fever_ramp_hours,
+	translation = RedDays_tss_fever_nudge_strength_pct,
 }

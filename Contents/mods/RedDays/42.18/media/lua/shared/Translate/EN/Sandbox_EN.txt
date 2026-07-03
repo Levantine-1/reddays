@@ -115,9 +115,9 @@ Sandbox_EN = {
     Sandbox_RedDays_tss_abx_suppress_window_hours = "Antibiotic HP Shield Duration (Hours)",
     Sandbox_RedDays_tss_abx_suppress_window_hours_tooltip = "Hours after taking an antibiotic dose that fatal HP drain from Stage 4 TSS is suppressed. Gives a survival window between doses.",
 
-    Sandbox_RedDays_tss_fever_max_celsius = "TSS Peak Fever Temperature (Celsius)",
-    Sandbox_RedDays_tss_fever_max_celsius_tooltip = "Absolute peak body temperature that TSS will drive the patient toward. At 40C symptoms intensify. At the default 42C, HP drain is at maximum. Staying cool slows the effective fever and reduces HP loss.",
+    Sandbox_RedDays_tss_stage4_hp_drain_pct = "TSS Stage 4 HP Drain (%)",
+    Sandbox_RedDays_tss_stage4_hp_drain_pct_tooltip = "Percentage multiplier for base HP drain during Stage 4 Toxic Shock Syndrome. 100 = normal (0.20 HP/min base). 200 = double drain. 50 = half drain. Drain scales further with body temperature.",
 
-    Sandbox_RedDays_tss_fever_ramp_hours = "TSS Fever Ramp Speed (Hours to 40C)",
-    Sandbox_RedDays_tss_fever_ramp_hours_tooltip = "How many in-game hours for TSS fever to climb from a normal 37C to 40C in average conditions. Lower values cause faster, more aggressive fever onset.",
+    Sandbox_RedDays_tss_fever_nudge_strength_pct = "TSS Fever Nudge Strength (%)",
+    Sandbox_RedDays_tss_fever_nudge_strength_pct_tooltip = "Percentage multiplier for how hard TSS pushes the fever above the vanilla Stage 4 sickness plateau (~38C). 0 disables the extra heat push entirely; 100 is standard nudge intensity. Body temperature is still primarily driven by the sickness moodle.",
 }
