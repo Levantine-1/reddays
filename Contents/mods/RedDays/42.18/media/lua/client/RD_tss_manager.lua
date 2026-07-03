@@ -41,6 +41,7 @@ local TSS_FEVER_DRAIN_HOT_BREAK_C    = 38.5   -- 2x multiplier at this temperatu
 local TSS_FEVER_DRAIN_HOT_BREAK_MULT = 2.0
 local TSS_FEVER_DRAIN_HOT_CAP_C      = 39.0   -- 3x cap; game core temp plateaus near here
 local TSS_FEVER_DRAIN_HOT_CAP_MULT   = 3.0
+
 local TSS_COLD_STAGE1_TEMP_C = 36.1
 local TSS_COLD_STAGE2_TEMP_C = 34.9
 local TSS_COLD_STAGE3_TEMP_C = 29.9
@@ -51,8 +52,13 @@ local TSS_COLD_STAGE2_MULT = 1.25
 local TSS_COLD_STAGE3_MULT = 1.70
 local TSS_COLD_STAGE4_MULT = 2.20
 local TSS_COLD_MIN_MULT = 2.40
+
 local TSS_STAGE4_BASE_HP_DRAIN = 0.15
+local TSS_STAGE4_ABX_FLAT_DRAIN = 0.05       -- Stage 4 + ABX suppression active + HP <= cap
+local TSS_STAGE4_ABX_HEALTH_CAP = 50.0       -- Stage 4 + ABX suppression active health ceiling
 local FEVER_TICK_INTERVAL_S = 3.0 -- Apply fever pressure every N in-game seconds
+local ABX_SEVERITY_PER_TOXIN_POINT = MINUTES_PER_HOUR -- Stage 1-3 relief conversion
+local ABX_BANK_POINTS_PER_DOSE = 10
 
 local function getSandbox()
     return SandboxVars.RedDays or {}
@@ -78,6 +84,16 @@ end
 local function getTamponGraceMinutes()
     local sb = getSandbox()
     return (sb.tss_tampon_grace_hours or 8) * MINUTES_PER_HOUR
+end
+
+local function getABXDoseParams()
+    local sb = getSandbox()
+    local cooldownMins = (sb.tss_abx_dose_cooldown_hours or 12) * MINUTES_PER_HOUR
+    local suppressMins = (sb.tss_abx_suppress_window_hours or 12) * MINUTES_PER_HOUR
+    local toxinPerDose = ABX_BANK_POINTS_PER_DOSE
+    local bankCap = ABX_BANK_POINTS_PER_DOSE
+    local toxinDrainPerMin = toxinPerDose / math.max(1, cooldownMins)
+    return cooldownMins, suppressMins, toxinPerDose, bankCap, toxinDrainPerMin
 end
 
 local function getSandboxStageBounds(stage)
@@ -144,7 +160,15 @@ local function getModData()
         abx_cooldown_mins = 0,
         abx_suppress_mins = 0,
         abx_dose_count = 0,
+        abx_bank_points = 0,
+        abx_bank_cap = 0,
+        abx_bank_drain_per_min = 0,
         tss_fever_induced = 0,
+        _lastHPDrainPerMin = 0,
+        _lastHPDrainMode = "none",
+        _lastHPDrainMult = 1,
+        _lastHPBaseDrainPerMin = 0,
+        _lastHealthAtTick = 0,
     }
     return md
 end
@@ -226,6 +250,9 @@ local function cureTSS(tss)
     tss.cured = true
     tss.stabilized_until = 0
     tss.recovery_mode = "antibiotics"
+    tss.abx_bank_points = 0
+    tss.abx_cooldown_mins = 0
+    tss.abx_suppress_mins = 0
     resetTreatmentFlags(tss)
     notifyPlayer("Treatment started. TSS symptoms should gradually improve.")
     transmitNow()
@@ -401,6 +428,9 @@ local function rollTSSTransition(player, tss)
         tss.stage_threshold = 0
         tss.abx_toxin_level = 100
         tss.abx_dose_count = 0
+        tss.abx_bank_points = 0
+        tss.abx_cooldown_mins = 0
+        tss.abx_suppress_mins = 0
         tss._tempDiagPrinted = nil  -- ensure calibration print fires on first Stage 4 tick
         tss._feverDrive = 0
         tss._feverAccum = 0
@@ -411,80 +441,112 @@ local function rollTSSTransition(player, tss)
     end
 end
 
+local function getStage4TempDrainMultiplier(bodyTemp)
+    if not bodyTemp then return 1.0 end
+
+    if bodyTemp >= TSS_FEVER_DRAIN_HOT_CAP_C then
+        return TSS_FEVER_DRAIN_HOT_CAP_MULT
+    elseif bodyTemp >= TSS_FEVER_DRAIN_HOT_BREAK_C then
+        local t = (bodyTemp - TSS_FEVER_DRAIN_HOT_BREAK_C) / (TSS_FEVER_DRAIN_HOT_CAP_C - TSS_FEVER_DRAIN_HOT_BREAK_C)
+        return TSS_FEVER_DRAIN_HOT_BREAK_MULT + t * (TSS_FEVER_DRAIN_HOT_CAP_MULT - TSS_FEVER_DRAIN_HOT_BREAK_MULT)
+    elseif bodyTemp >= NORMAL_BODY_TEMP_C then
+        local t = (bodyTemp - NORMAL_BODY_TEMP_C) / (TSS_FEVER_DRAIN_HOT_BREAK_C - NORMAL_BODY_TEMP_C)
+        return 1.0 + t * (TSS_FEVER_DRAIN_HOT_BREAK_MULT - 1.0)
+    elseif bodyTemp >= TSS_COLD_STAGE1_TEMP_C then
+        local t = (NORMAL_BODY_TEMP_C - bodyTemp) / (NORMAL_BODY_TEMP_C - TSS_COLD_STAGE1_TEMP_C)
+        return 1.0 + t * (TSS_COLD_STAGE1_MULT - 1.0)
+    elseif bodyTemp >= TSS_COLD_STAGE2_TEMP_C then
+        local t = (TSS_COLD_STAGE1_TEMP_C - bodyTemp) / (TSS_COLD_STAGE1_TEMP_C - TSS_COLD_STAGE2_TEMP_C)
+        return TSS_COLD_STAGE1_MULT + t * (TSS_COLD_STAGE2_MULT - TSS_COLD_STAGE1_MULT)
+    elseif bodyTemp >= TSS_COLD_STAGE3_TEMP_C then
+        local t = (TSS_COLD_STAGE2_TEMP_C - bodyTemp) / (TSS_COLD_STAGE2_TEMP_C - TSS_COLD_STAGE3_TEMP_C)
+        return TSS_COLD_STAGE2_MULT + t * (TSS_COLD_STAGE3_MULT - TSS_COLD_STAGE2_MULT)
+    elseif bodyTemp >= TSS_COLD_STAGE4_TEMP_C then
+        local t = (TSS_COLD_STAGE3_TEMP_C - bodyTemp) / (TSS_COLD_STAGE3_TEMP_C - TSS_COLD_STAGE4_TEMP_C)
+        return TSS_COLD_STAGE3_MULT + t * (TSS_COLD_STAGE4_MULT - TSS_COLD_STAGE3_MULT)
+    elseif bodyTemp >= TSS_COLD_MIN_TEMP_C then
+        local t = (TSS_COLD_STAGE4_TEMP_C - bodyTemp) / (TSS_COLD_STAGE4_TEMP_C - TSS_COLD_MIN_TEMP_C)
+        return TSS_COLD_STAGE4_MULT + t * (TSS_COLD_MIN_MULT - TSS_COLD_STAGE4_MULT)
+    else
+        return TSS_COLD_MIN_MULT
+    end
+end
+
 local function applyStageStatEffects(player, tss)
     if not player then return end
     local stats = player:getStats()
     if not stats then return end
+    local isSleeping = player.isAsleep and player:isAsleep() or false
 
     if tss.stage == 1 then
-        stats:set(CharacterStat.ENDURANCE, math.max(0, stats:get(CharacterStat.ENDURANCE) - 0.00005))
-        stats:set(CharacterStat.FATIGUE, math.min(1, stats:get(CharacterStat.FATIGUE) + 0.0002))
+        if not isSleeping then
+            stats:set(CharacterStat.ENDURANCE, math.max(0, stats:get(CharacterStat.ENDURANCE) - 0.00005))
+            stats:set(CharacterStat.FATIGUE, math.min(1, stats:get(CharacterStat.FATIGUE) + 0.0002))
+        end
         stats:set(CharacterStat.UNHAPPINESS, math.min(100, stats:get(CharacterStat.UNHAPPINESS) + 0.05))
     elseif tss.stage == 2 then
-        stats:set(CharacterStat.ENDURANCE, math.max(0, stats:get(CharacterStat.ENDURANCE) - 0.0002))
-        stats:set(CharacterStat.FATIGUE, math.min(1, stats:get(CharacterStat.FATIGUE) + 0.0004))
+        if not isSleeping then
+            stats:set(CharacterStat.ENDURANCE, math.max(0, stats:get(CharacterStat.ENDURANCE) - 0.0002))
+            stats:set(CharacterStat.FATIGUE, math.min(1, stats:get(CharacterStat.FATIGUE) + 0.0004))
+        end
         stats:set(CharacterStat.THIRST, math.min(1, stats:get(CharacterStat.THIRST) + 0.001))
         stats:set(CharacterStat.UNHAPPINESS, math.min(100, stats:get(CharacterStat.UNHAPPINESS) + 0.1))
     elseif tss.stage >= 3 then
-        stats:set(CharacterStat.ENDURANCE, math.max(0, stats:get(CharacterStat.ENDURANCE) - 0.0007))
-        stats:set(CharacterStat.FATIGUE, math.min(1, stats:get(CharacterStat.FATIGUE) + 0.001))
+        if not isSleeping then
+            stats:set(CharacterStat.ENDURANCE, math.max(0, stats:get(CharacterStat.ENDURANCE) - 0.0007))
+            stats:set(CharacterStat.FATIGUE, math.min(1, stats:get(CharacterStat.FATIGUE) + 0.001))
+        end
         stats:set(CharacterStat.THIRST, math.min(1, stats:get(CharacterStat.THIRST) + 0.002))
         stats:set(CharacterStat.UNHAPPINESS, math.min(100, stats:get(CharacterStat.UNHAPPINESS) + 0.2))
         if tss.stage == 4 then
-            -- Clamp endurance and fatigue at the sickness Stage 4 plateau (clamp only, no ramp)
+            -- Clamp endurance and fatigue at the sickness Stage 4 plateau (awake only)
             local currentSickness = stats:get(CharacterStat.SICKNESS) or 0
-            if currentSickness >= TSS_FEVER_NUDGE_MIN_SICKNESS then
+            if (not isSleeping) and currentSickness >= TSS_FEVER_NUDGE_MIN_SICKNESS then
                 local endurance = stats:get(CharacterStat.ENDURANCE) or 1
                 if endurance > 0.8 then stats:set(CharacterStat.ENDURANCE, 0.8) end
                 local fatigue = stats:get(CharacterStat.FATIGUE) or 0
                 if fatigue < 0.4 then stats:set(CharacterStat.FATIGUE, 0.4) end
             end
-            -- HP drain only when antibiotic suppression window has expired
-            if (tss.abx_suppress_mins or 0) <= 0 then
-                local bd = player:getBodyDamage()
-                if bd then
-                    local sbDrainPct = getSandbox().tss_stage4_hp_drain_pct or 100
-                    local baseDrain = TSS_STAGE4_BASE_HP_DRAIN * (sbDrainPct / 100)
-                    local drain = baseDrain
-                    local thermo = bd:getThermoregulator()
-                    if thermo then
-                        local bodyTemp = thermo:getCoreCelcius()
-                        if bodyTemp then
-                            -- Two-segment linear drain curve, asymmetric around 37C.
-                            -- Hot: 37.0C=1x → 38.5C=2x → 40.0C=3x (cap; game body temp rarely exceeds ~40C).
-                            -- Cold: forgiving curve down to 20C.
-                            local mult
-                            if bodyTemp >= TSS_FEVER_DRAIN_HOT_CAP_C then
-                                mult = TSS_FEVER_DRAIN_HOT_CAP_MULT
-                            elseif bodyTemp >= TSS_FEVER_DRAIN_HOT_BREAK_C then
-                                local t = (bodyTemp - TSS_FEVER_DRAIN_HOT_BREAK_C) / (TSS_FEVER_DRAIN_HOT_CAP_C - TSS_FEVER_DRAIN_HOT_BREAK_C)
-                                mult = TSS_FEVER_DRAIN_HOT_BREAK_MULT + t * (TSS_FEVER_DRAIN_HOT_CAP_MULT - TSS_FEVER_DRAIN_HOT_BREAK_MULT)
-                            elseif bodyTemp >= NORMAL_BODY_TEMP_C then
-                                local t = (bodyTemp - NORMAL_BODY_TEMP_C) / (TSS_FEVER_DRAIN_HOT_BREAK_C - NORMAL_BODY_TEMP_C)
-                                mult = 1.0 + t * (TSS_FEVER_DRAIN_HOT_BREAK_MULT - 1.0)
-                            elseif bodyTemp >= TSS_COLD_STAGE1_TEMP_C then
-                                local t = (NORMAL_BODY_TEMP_C - bodyTemp) / (NORMAL_BODY_TEMP_C - TSS_COLD_STAGE1_TEMP_C)
-                                mult = 1.0 + t * (TSS_COLD_STAGE1_MULT - 1.0)
-                            elseif bodyTemp >= TSS_COLD_STAGE2_TEMP_C then
-                                local t = (TSS_COLD_STAGE1_TEMP_C - bodyTemp) / (TSS_COLD_STAGE1_TEMP_C - TSS_COLD_STAGE2_TEMP_C)
-                                mult = TSS_COLD_STAGE1_MULT + t * (TSS_COLD_STAGE2_MULT - TSS_COLD_STAGE1_MULT)
-                            elseif bodyTemp >= TSS_COLD_STAGE3_TEMP_C then
-                                local t = (TSS_COLD_STAGE2_TEMP_C - bodyTemp) / (TSS_COLD_STAGE2_TEMP_C - TSS_COLD_STAGE3_TEMP_C)
-                                mult = TSS_COLD_STAGE2_MULT + t * (TSS_COLD_STAGE3_MULT - TSS_COLD_STAGE2_MULT)
-                            elseif bodyTemp >= TSS_COLD_STAGE4_TEMP_C then
-                                local t = (TSS_COLD_STAGE3_TEMP_C - bodyTemp) / (TSS_COLD_STAGE3_TEMP_C - TSS_COLD_STAGE4_TEMP_C)
-                                mult = TSS_COLD_STAGE3_MULT + t * (TSS_COLD_STAGE4_MULT - TSS_COLD_STAGE3_MULT)
-                            elseif bodyTemp >= TSS_COLD_MIN_TEMP_C then
-                                local t = (TSS_COLD_STAGE4_TEMP_C - bodyTemp) / (TSS_COLD_STAGE4_TEMP_C - TSS_COLD_MIN_TEMP_C)
-                                mult = TSS_COLD_STAGE4_MULT + t * (TSS_COLD_MIN_MULT - TSS_COLD_STAGE4_MULT)
-                            else
-                                mult = TSS_COLD_MIN_MULT
-                            end
-                            drain = baseDrain * mult
+            local bd = player:getBodyDamage()
+            if bd then
+                local sbDrainPct = getSandbox().tss_stage4_hp_drain_pct or 100
+                local baseDrain = TSS_STAGE4_BASE_HP_DRAIN * (sbDrainPct / 100)
+                local thermo = bd:getThermoregulator()
+                local bodyTemp = thermo and thermo:getCoreCelcius() or nil
+                local mult = getStage4TempDrainMultiplier(bodyTemp)
+                local sicknessDrain = baseDrain * mult
+                local health = bd:getHealth() or 0
+                local suppressActive = (tss.abx_suppress_mins or 0) > 0
+                local appliedDrain = 0
+                local mode = "none"
+
+                if suppressActive then
+                    -- While ABX suppression is active, HP above cap is pulled down with the same
+                    -- sickness drain rate. At/below cap, use a flat non-multiplied ABX drain.
+                    if health > TSS_STAGE4_ABX_HEALTH_CAP then
+                        appliedDrain = sicknessDrain
+                        mode = "abx_cap_sickness_drain"
+                        bd:ReduceGeneralHealth(appliedDrain)
+                        local healthAfter = bd:getHealth() or health
+                        if healthAfter < TSS_STAGE4_ABX_HEALTH_CAP then
+                            bd:setOverallBodyHealth(TSS_STAGE4_ABX_HEALTH_CAP)
                         end
+                    else
+                        appliedDrain = TSS_STAGE4_ABX_FLAT_DRAIN
+                        mode = "abx_flat_regen_slow"
+                        bd:ReduceGeneralHealth(appliedDrain)
                     end
-                    bd:ReduceGeneralHealth(drain)
+                else
+                    appliedDrain = sicknessDrain
+                    mode = "stage4_sickness_drain"
+                    bd:ReduceGeneralHealth(appliedDrain)
                 end
+
+                tss._lastHPDrainPerMin = appliedDrain
+                tss._lastHPDrainMode = mode
+                tss._lastHPDrainMult = mult
+                tss._lastHPBaseDrainPerMin = baseDrain
+                tss._lastHealthAtTick = bd:getHealth() or health
             end
         end
     end
@@ -577,6 +639,7 @@ local function rollComplication(player, tss)
     local bonus = 0
     local stats = player and player:getStats()
     local bd = player and player:getBodyDamage()
+    local isSleeping = player and player.isAsleep and player:isAsleep() or false
     if stats then
         local fatigue = stats:get(CharacterStat.FATIGUE) or 0
         if fatigue > 0.80 then bonus = bonus + 10 end
@@ -598,8 +661,10 @@ local function rollComplication(player, tss)
     local roll = ZombRand(100)
     if roll < 60 then
         if stats then
-            stats:set(CharacterStat.FATIGUE, math.min(1, stats:get(CharacterStat.FATIGUE) + 0.1))
-            stats:set(CharacterStat.ENDURANCE, math.max(0, stats:get(CharacterStat.ENDURANCE) - 0.05))
+            if not isSleeping then
+                stats:set(CharacterStat.FATIGUE, math.min(1, stats:get(CharacterStat.FATIGUE) + 0.1))
+                stats:set(CharacterStat.ENDURANCE, math.max(0, stats:get(CharacterStat.ENDURANCE) - 0.05))
+            end
             stats:set(CharacterStat.UNHAPPINESS, math.min(100, stats:get(CharacterStat.UNHAPPINESS) + 5))
         end
         print("[RedDays][TSS] Complication: mild symptom flare.")
@@ -757,7 +822,18 @@ function RD_TSSManager.LoadPlayerData()
     tss.abx_cooldown_mins = tss.abx_cooldown_mins or 0
     tss.abx_suppress_mins = tss.abx_suppress_mins or 0
     tss.abx_dose_count = tss.abx_dose_count or 0
+    tss.abx_bank_points = tss.abx_bank_points or 0
+    tss.abx_bank_cap = tss.abx_bank_cap or 0
+    tss.abx_bank_drain_per_min = tss.abx_bank_drain_per_min or 0
+    local _, _, _, bankCap, toxinDrainPerMin = getABXDoseParams()
+    tss.abx_bank_cap = bankCap
+    tss.abx_bank_drain_per_min = toxinDrainPerMin
     tss.tss_fever_induced = tss.tss_fever_induced or 0
+    tss._lastHPDrainPerMin = tss._lastHPDrainPerMin or 0
+    tss._lastHPDrainMode = tss._lastHPDrainMode or "none"
+    tss._lastHPDrainMult = tss._lastHPDrainMult or 1
+    tss._lastHPBaseDrainPerMin = tss._lastHPBaseDrainPerMin or 0
+    tss._lastHealthAtTick = tss._lastHealthAtTick or 0
     tss._feverDrive = tss._feverDrive or 0
     tss._feverAccum = tss._feverAccum or 0
     tss.stage_threshold = tss.stage_threshold or rollNextStageThreshold(tss.stage)
@@ -781,31 +857,30 @@ function RD_TSSManager.registerTreatmentFromItem(item, actionName)
         return
     end
 
-    if (tss.abx_cooldown_mins or 0) > 0 then
-        local hoursLeft = math.ceil(tss.abx_cooldown_mins / MINUTES_PER_HOUR)
-        print("[RedDays][TSS] Antibiotic dose not ready. Next effective dose in ~" .. hoursLeft .. " hours.")
-        return
-    end
+    local cooldownMins, suppressMins, toxinReduction, bankCap, toxinDrainPerMin = getABXDoseParams()
 
-    local sb = getSandbox()
-    local cooldownMins = (sb.tss_abx_dose_cooldown_hours or 6) * MINUTES_PER_HOUR
-    local suppressMins = (sb.tss_abx_suppress_window_hours or 8) * MINUTES_PER_HOUR
-    local toxinReduction = sb.tss_abx_toxin_per_dose or 7
-
-    tss.abx_cooldown_mins = cooldownMins
     tss.abx_suppress_mins = suppressMins
     tss.abx_dose_count = (tss.abx_dose_count or 0) + 1
+    tss.abx_bank_cap = bankCap
+    tss.abx_bank_drain_per_min = toxinDrainPerMin
+
+    tss.abx_bank_points = bankCap
+    tss.abx_cooldown_mins = math.min(cooldownMins, math.ceil((tss.abx_bank_points or 0) / math.max(0.000001, toxinDrainPerMin)))
+    tss.antibiotics_taken_recently = true
 
     if tss.stage == 4 then
-        tss.abx_toxin_level = math.max(0, (tss.abx_toxin_level or 100) - toxinReduction)
-        print("[RedDays][TSS] Dose " .. tss.abx_dose_count .. ". Toxin: " .. tss.abx_toxin_level .. "/100. HP drain suppressed for " .. math.floor(suppressMins / MINUTES_PER_HOUR) .. "h.")
+        print("[RedDays][TSS] Dose " .. tss.abx_dose_count
+            .. ". ABX bank: " .. string.format("%.2f", tss.abx_bank_points or 0)
+            .. "/" .. string.format("%.2f", bankCap)
+            .. ". Toxin drains over " .. math.floor(cooldownMins / MINUTES_PER_HOUR) .. "h.")
     else
-        -- Stages 1-3: slow progression and suppress sickness ramp
-        local severityReduction = toxinReduction * MINUTES_PER_HOUR
-        tss.severity = math.max(0, (tss.severity or 0) - severityReduction)
+        -- Stages 1-3: ABX relief now drains over time from the same bank model.
         tss.stabilized_until = math.max(tss.stabilized_until or 0, suppressMins)
         tss.recovery_mode = "antibiotics"
-        print("[RedDays][TSS] Dose " .. tss.abx_dose_count .. ". Severity reduced by " .. severityReduction .. " mins. Symptoms eased for " .. math.floor(suppressMins / MINUTES_PER_HOUR) .. "h.")
+        print("[RedDays][TSS] Dose " .. tss.abx_dose_count
+            .. ". ABX bank: " .. string.format("%.2f", tss.abx_bank_points or 0)
+            .. "/" .. string.format("%.2f", bankCap)
+            .. ". Severity relief drains over " .. math.floor(cooldownMins / MINUTES_PER_HOUR) .. "h.")
     end
     transmitNow()
 end
@@ -864,12 +939,26 @@ function RD_TSSManager.EveryOneMinute(cycle)
         end
 
         -- Tick antibiotic treatment timers
-        if (tss.abx_cooldown_mins or 0) > 0 then
-            tss.abx_cooldown_mins = tss.abx_cooldown_mins - 1
-        end
         if (tss.abx_suppress_mins or 0) > 0 then
             tss.abx_suppress_mins = tss.abx_suppress_mins - 1
         end
+
+        -- ABX bank drains over time in all active TSS stages.
+        local bankPoints = tss.abx_bank_points or 0
+        local bankDrainPerMin = tss.abx_bank_drain_per_min or 0
+        if bankPoints > 0 and bankDrainPerMin > 0 then
+            local drained = math.min(bankPoints, bankDrainPerMin)
+            tss.abx_bank_points = math.max(0, bankPoints - drained)
+
+            if tss.stage == 4 then
+                tss.abx_toxin_level = math.max(0, (tss.abx_toxin_level or 0) - drained)
+            else
+                local severityRelief = drained * ABX_SEVERITY_PER_TOXIN_POINT
+                tss.severity = math.max(0, (tss.severity or 0) - severityRelief)
+                tss.recovery_mode = "antibiotics"
+            end
+        end
+        tss.abx_cooldown_mins = math.ceil((tss.abx_bank_points or 0) / math.max(0.000001, bankDrainPerMin))
 
         -- Fever pressure is applied via ApplyFeverPressure() in OnPlayerUpdate (main.lua),
         -- throttled to every 6 in-game seconds for smooth, frame-rate-independent pressure.

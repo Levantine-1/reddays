@@ -44,6 +44,9 @@ local TSS_DEFAULTS = {
     abx_cooldown_mins = 0,
     abx_suppress_mins = 0,
     abx_dose_count = 0,
+    abx_bank_points = 0,
+    abx_bank_cap = 0,
+    abx_bank_drain_per_min = 0,
     tss_fever_induced = 0,
 }
 
@@ -214,6 +217,15 @@ end)
 defineAccessor(rd.tss, "abx_dose_count", getTSS, "abx_dose_count", function(v)
     return clampNumber(v, 0, nil, 0)
 end)
+defineAccessor(rd.tss, "abx_bank_points", getTSS, "abx_bank_points", function(v)
+    return clampNumber(v, 0, nil, 0)
+end)
+defineAccessor(rd.tss, "abx_bank_cap", getTSS, "abx_bank_cap", function(v)
+    return clampNumber(v, 0, nil, 0)
+end)
+defineAccessor(rd.tss, "abx_bank_drain_per_min", getTSS, "abx_bank_drain_per_min", function(v)
+    return clampNumber(v, 0, nil, 0)
+end)
 defineAccessor(rd.tss, "tss_fever_induced", getTSS, "tss_fever_induced", function(v)
     return clampNumber(v, 0, 10, 0)
 end)
@@ -237,6 +249,9 @@ rd.tss.reset_progression.set = function(value)
     tss.abx_cooldown_mins = 0
     tss.abx_suppress_mins = 0
     tss.abx_dose_count = 0
+    tss.abx_bank_points = 0
+    tss.abx_bank_cap = 0
+    tss.abx_bank_drain_per_min = 0
     tss.tss_fever_induced = 0
     tss._feverDrive = 0
     tss._feverAccum = 0
@@ -299,6 +314,33 @@ rd.debug.speedMult.set = function(value)
         print("[rd.debug.speedMult] " .. mult .. "x -- TSS thresholds and cycle durations compressed")
     end
     return mult
+end
+
+
+-- Enable: rd.debug.hunger_thirst_zero.set(true)
+-- Disable: rd.debug.hunger_thirst_zero.set(false)
+-- Check state: rd.debug.hunger_thirst_zero.get()
+
+rd.debug.hunger_thirst_zero = rd.debug.hunger_thirst_zero or {}
+
+rd.debug.hunger_thirst_zero.get = function()
+    return RD_CycleDebugger._debugClampHungerThirst == true
+end
+
+rd.debug.hunger_thirst_zero.set = function(value)
+    local enabled = clampBoolean(value)
+    RD_CycleDebugger._debugClampHungerThirst = enabled
+    print("[rd.debug.hunger_thirst_zero] " .. (enabled and "enabled" or "disabled"))
+    return enabled
+end
+
+function RD_CycleDebugger.ApplyDebugStatClamps(player)
+    if RD_CycleDebugger._debugClampHungerThirst ~= true then return end
+    if not player then return end
+    local stats = player:getStats()
+    if not stats then return end
+    stats:set(CharacterStat.HUNGER, 0)
+    stats:set(CharacterStat.THIRST, 0)
 end
 
 defineAccessor(rd.cycle, "current_phase", getCycle, "current_phase", function(v)
@@ -387,6 +429,9 @@ rd.status.get = function()
             abx_cooldown_mins = tss.abx_cooldown_mins,
             abx_suppress_mins = tss.abx_suppress_mins,
             abx_dose_count = tss.abx_dose_count,
+            abx_bank_points = tss.abx_bank_points,
+            abx_bank_cap = tss.abx_bank_cap,
+            abx_bank_drain_per_min = tss.abx_bank_drain_per_min,
             tss_fever_induced = tss.tss_fever_induced,
         } or nil,
         cycle = cycle and {
@@ -416,15 +461,21 @@ rd.status.print = function()
 
     local t = s.tss or {}
     local c = s.cycle or {}
+    local player = RD_zapi.getPlayer()
+    local isSleeping = player and player.isAsleep and player:isAsleep() or false
+    local efSleepGate = isSleeping and ((t.stage or 0) >= 1)
     print("[RedDays][rd.status] tss.stage=" .. tostring(t.stage)
         .. " tss.risk=" .. tostring(t.tss_risk)
         .. " tss.severity=" .. tostring(t.severity)
         .. " abx.toxin=" .. tostring(t.abx_toxin_level)
-        .. " abx.cd=" .. tostring(t.abx_cooldown_mins)
+        .. " abx.bank=" .. string.format("%.2f", t.abx_bank_points or 0)
+        .. "/" .. string.format("%.2f", t.abx_bank_cap or 0)
+        .. " abx.cdEta=" .. tostring(t.abx_cooldown_mins)
         .. " abx.sup=" .. tostring(t.abx_suppress_mins)
         .. " fever=" .. string.format("%.2f", t.tss_fever_induced or 0)
         .. " cycle.phase=" .. tostring(c.current_phase)
         .. " cycle.remaining=" .. tostring(c.phase_minutes_remaining))
+    print("[RedDays][rd.status] sleep=" .. tostring(isSleeping) .. " ef_sleep_gate=" .. tostring(efSleepGate))
     return s
 end
 
@@ -740,7 +791,18 @@ local function printTSSStatus()
     print("TSS first symptom minutes --------------- " .. tostring(tss.first_symptom_minutes or 0))
     print("TSS warning cooldown -------------------- " .. tostring(tss.warning_cooldown or 0))
     print("TSS stabilized until -------------------- " .. tostring(tss.stabilized_until or 0))
-    print("TSS treatment flags --------------------- ABX=" .. tostring(tss.antibiotics_taken_recently or false) .. ", DIS=" .. tostring(tss.disinfectant_recently or false) .. ", ALC=" .. tostring(tss.alcohol_recently or false))
+    local abxSuppress = tss.abx_suppress_mins or 0
+    local abxCooldown = tss.abx_cooldown_mins or 0
+    local abxDoses = tss.abx_dose_count or 0
+    local abxBank = tss.abx_bank_points or 0
+    local abxBankCap = tss.abx_bank_cap or 0
+    local abxBankDrain = tss.abx_bank_drain_per_min or 0
+    local abxEffective = (abxSuppress > 0) and (abxBank > 0)
+    local toxinPerDose = 10
+    local pillsToCure = math.ceil(100 / toxinPerDose)
+    print("TSS treatment state --------------------- ABX_EFFECTIVE=" .. tostring(abxEffective) .. ", suppress=" .. tostring(abxSuppress) .. "m, cdEta=" .. tostring(abxCooldown) .. "m, doses=" .. tostring(abxDoses))
+    print("TSS ABX bank ---------------------------- " .. string.format("%.2f", abxBank) .. "/" .. string.format("%.2f", abxBankCap) .. " (drain=" .. string.format("%.4f", abxBankDrain) .. "/min)")
+    print("TSS ABX cure plan ----------------------- pillsToCure=" .. tostring(pillsToCure) .. ", toxinPerDose=" .. tostring(toxinPerDose))
     print("TSS counters ---------------------------- rolls=" .. tostring(tss.tss_rolls or 0) .. ", treatmentAttempts=" .. tostring(tss.treatment_attempts or 0))
 
     local player = RD_zapi.getPlayer()
@@ -809,12 +871,17 @@ local function printTSSStatus()
             end
             local sbDrainPct = (SandboxVars.RedDays or {}).tss_stage4_hp_drain_pct or 100
             local baseDrain = 0.15 * (sbDrainPct / 100)
-            local hpDrainPerMin = baseDrain * mult
+            local sicknessDrainPerMin = baseDrain * mult
+            local activeDrainPerMin = tss._lastHPDrainPerMin or sicknessDrainPerMin
+            local activeMode = tostring(tss._lastHPDrainMode or "none")
             print("TSS drain mult at " .. string.format("%.2f", coreTemp) .. "C ------------ " .. string.format("%.3f", mult) .. "x")
-            if stage == 4 and (tss.abx_suppress_mins or 0) <= 0 then
-                print("TSS HP drain per minute ----------------- " .. string.format("%.4f", hpDrainPerMin) .. " (ACTIVE)")
+            print("TSS sickness drain per minute ----------- " .. string.format("%.4f", sicknessDrainPerMin))
+            print("TSS HP drain mode ----------------------- " .. activeMode)
+            if stage == 4 then
+                print("TSS HP drain per minute ----------------- " .. string.format("%.4f", activeDrainPerMin) .. " (Stage 4 active)")
+                print("TSS ABX HP cap -------------------------- 50.0 (current=" .. string.format("%.2f", tss._lastHealthAtTick or (bd:getHealth() or 0)) .. ")")
             else
-                print("TSS HP drain per minute ----------------- " .. string.format("%.4f", hpDrainPerMin) .. " (suppressed or not Stage 4)")
+                print("TSS HP drain per minute ----------------- " .. string.format("%.4f", activeDrainPerMin) .. " (not Stage 4)")
             end
         else
             print("TSS drain mult / HP drain per min ------- unavailable (no core temp)")
@@ -828,9 +895,11 @@ local function printTSSStatus()
             print("TSS endurance / fatigue ----------------- END=" .. string.format("%.3f", endurance) .. "  FAT=" .. string.format("%.3f", fatigue) .. clampStr)
         end
         -- ABX metrics
-        print("TSS ABX cooldown remaining -------------- " .. tostring(tss.abx_cooldown_mins or 0) .. " mins")
+        print("TSS ABX cooldown ETA -------------------- " .. tostring(tss.abx_cooldown_mins or 0) .. " mins")
         print("TSS ABX suppression remaining ----------- " .. tostring(tss.abx_suppress_mins or 0) .. " mins")
         print("TSS ABX toxin score --------------------- " .. tostring(tss.abx_toxin_level or 0) .. "/100")
+        print("TSS ABX bank points --------------------- " .. string.format("%.2f", tss.abx_bank_points or 0) .. "/" .. string.format("%.2f", tss.abx_bank_cap or 0))
+        print("TSS ABX bank drain per minute ----------- " .. string.format("%.4f", tss.abx_bank_drain_per_min or 0))
         print("TSS ABX total dose count ---------------- " .. tostring(tss.abx_dose_count or 0))
     else
         print("TSS current CharacterStat.SICKNESS ------ unavailable")

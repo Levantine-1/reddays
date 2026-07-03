@@ -341,20 +341,20 @@ option RedDays.tss_abx_dose_cooldown_hours
 {
 	type = integer,
 	min = 1,
-	max = 12,
-	default = 6,
+	max = 24,
+	default = 12,
 	page = RedDays,
 	translation = RedDays_tss_abx_dose_cooldown_hours,
 }
 
-option RedDays.tss_abx_toxin_per_dose
+option RedDays.tss_abx_pills_to_cure
 {
 	type = integer,
 	min = 1,
-	max = 25,
-	default = 7,
+	max = 50,
+	default = 10,
 	page = RedDays,
-	translation = RedDays_tss_abx_toxin_per_dose,
+	translation = RedDays_tss_abx_pills_to_cure,
 }
 
 option RedDays.tss_abx_suppress_window_hours
@@ -362,7 +362,7 @@ option RedDays.tss_abx_suppress_window_hours
 	type = integer,
 	min = 1,
 	max = 24,
-	default = 8,
+	default = 12,
 	page = RedDays,
 	translation = RedDays_tss_abx_suppress_window_hours,
 }

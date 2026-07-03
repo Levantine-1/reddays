@@ -79,6 +79,9 @@ Events.EveryOneMinute.Add(EveryOneMinute)
 local function OnPlayerUpdate(player) -- This is very expensive, make sure everything in here is optimized and only runs when necessary.
     if not isValidGenderCheck() then return end
     RD_TSSManager.ApplyFeverPressure(player)
+    if RD_CycleDebugger and RD_CycleDebugger.ApplyDebugStatClamps then
+        RD_CycleDebugger.ApplyDebugStatClamps(player)
+    end
 end
 Events.OnPlayerUpdate.Add(OnPlayerUpdate)
 

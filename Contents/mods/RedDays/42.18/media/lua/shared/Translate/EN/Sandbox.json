@@ -107,13 +107,13 @@
     "Sandbox_RedDays_tss_complication_chance_pct_tooltip": "Hourly chance for sudden complications while pre-TSS infection is active. Complications are influenced by stress, fatigue, dehydration, and body temperature.",
 
     "Sandbox_RedDays_tss_abx_dose_cooldown_hours": "Antibiotic Dose Interval (Hours)",
-    "Sandbox_RedDays_tss_abx_dose_cooldown_hours_tooltip": "Minimum hours between effective antibiotic doses during TSS treatment. Taking antibiotics sooner has no effect on the infection.",
+    "Sandbox_RedDays_tss_abx_dose_cooldown_hours_tooltip": "Hours used for antibiotic bank drain pacing. Each antibiotic dose refills a fixed 10-point ABX bank; those points drain into treatment effect over this interval.",
 
-    "Sandbox_RedDays_tss_abx_toxin_per_dose": "Toxin Reduction Per Dose",
-    "Sandbox_RedDays_tss_abx_toxin_per_dose_tooltip": "How much each antibiotic dose reduces the TSS toxin score (out of 100). Higher values shorten the treatment course needed to recover from Stage 4 toxic shock.",
+    "Sandbox_RedDays_tss_abx_pills_to_cure": "ABX Pills Needed To Cure Stage 4",
+    "Sandbox_RedDays_tss_abx_pills_to_cure_tooltip": "How many antibiotic doses are required to reduce Stage 4 toxin from 100 to 0. Default 10 matches one full antibiotics case and a 5-day course at 2 doses/day.",
 
     "Sandbox_RedDays_tss_abx_suppress_window_hours": "Antibiotic HP Shield Duration (Hours)",
-    "Sandbox_RedDays_tss_abx_suppress_window_hours_tooltip": "Hours after taking an antibiotic dose that fatal HP drain from Stage 4 TSS is suppressed. Gives a survival window between doses.",
+    "Sandbox_RedDays_tss_abx_suppress_window_hours_tooltip": "Hours after taking an antibiotic dose that full Stage 4 sickness drain is suppressed. Default is 12h to match 2-dose/day treatment cadence.",
 
     "Sandbox_RedDays_tss_stage4_hp_drain_pct": "TSS Stage 4 HP Drain (%)",
     "Sandbox_RedDays_tss_stage4_hp_drain_pct_tooltip": "Percentage multiplier for base HP drain during Stage 4 Toxic Shock Syndrome. 100 = normal (0.15 HP/min base). 200 = double drain. 50 = half drain. Drain scales further with body temperature.",
