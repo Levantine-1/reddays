@@ -34,6 +34,7 @@ local TSS_DEFAULTS = {
     baseline_blur_effect = 0,
     tss_risk = 0,
     stage_threshold = 0,
+    recovery_timer = 0,
     stage3_minutes = 0,
     complication_cooldown = 60,
     abx_toxin_level = 0,
@@ -164,6 +165,11 @@ end)
 defineAccessor(rd.tss, "stage_threshold", getTSS, "stage_threshold", function(v)
     return clampNumber(v, 0, nil, 0)
 end)
+defineAccessor(rd.tss, "recovery_timer", getTSS, "recovery_timer", function(v)
+    -- Fixed-rate healing progress (minutes, source removed) toward the next stage-down; see
+    -- getRecoveryMinutesPerStage()/updateStageByUntreated in RD_tss_manager.lua.
+    return clampNumber(v, 0, nil, 0)
+end)
 defineAccessor(rd.tss, "tss_risk", getTSS, "tss_risk", function(v)
     return clampNumber(v, 0, nil, 0)
 end)
@@ -233,6 +239,7 @@ rd.tss.reset_progression.set = function(value)
     tss.severity = 0
     tss.stage3_minutes = 0
     tss.stage_threshold = 0
+    tss.recovery_timer = 0
     tss.tss_risk = 0
     tss.warning_cooldown = 0
     tss.abx_toxin_level = 0
@@ -528,6 +535,7 @@ local TSS_STAGE_PROFILES = {
     stage1_early = {
         stage = 1, exposure_minutes = 3500, severity = 0,
         stage_threshold = 10080,   -- mid range stage1to2 (7 days)
+        recovery_timer = 0,  -- set source_active false to start the fixed recovery timer (see tss_recovery_hours_per_stage)
         tss_risk = 0,
         source_active = true, source_removed = false, source_type = "tampon",
         recovery_mode = "none", warning_cooldown = 0, stabilized_until = 0,
@@ -537,6 +545,7 @@ local TSS_STAGE_PROFILES = {
     stage2_progressing = {
         stage = 2, exposure_minutes = 5760, severity = 0,
         stage_threshold = 14400,   -- mid range stage2to3 (10 days)
+        recovery_timer = 0,  -- set source_active false to start the fixed recovery timer
         tss_risk = 0,
         source_active = true, source_removed = false, source_type = "tampon",
         recovery_mode = "none", warning_cooldown = 0, stabilized_until = 0,
@@ -545,11 +554,12 @@ local TSS_STAGE_PROFILES = {
     },
     stage3_stable = {
         stage = 3, exposure_minutes = 8640, severity = 0,
+        recovery_timer = 200,  -- source already removed: drops to stage 2 in a few mins (default threshold 240)
         tss_risk = 0,
         source_active = false, source_removed = true, source_type = "tampon",
         recovery_mode = "none", warning_cooldown = 0, stabilized_until = 720,
         first_symptom_minutes = 4320, cured = false,
-        _note = "Stage 3 critical but stabilized. Source removed. Risk not yet accumulating.",
+        _note = "Stage 3 critical but stabilized. Source removed. Natural recovery in progress; risk not yet accumulating.",
     },
     stage3_risky = {
         stage = 3, exposure_minutes = 8640, severity = 0,
@@ -749,6 +759,21 @@ local function printTSSStatus()
     if stage >= 1 and stage < 3 and threshold > 0 then
         local minsLeft = math.max(0, threshold - severity)
         print("TSS progression remaining --------------- " .. tostring(math.floor(minsLeft)) .. " mins (~" .. string.format("%.2f", minsLeft / MINUTES_PER_DAY) .. " days at 1x stress)")
+    end
+    local recoveryPerStage = (sb.tss_recovery_hours_per_stage or 4) * MINUTES_PER_HOUR
+    local recoveryTimer = tss.recovery_timer or 0
+    if stage >= 1 and stage <= 3 then
+        local recoveryMinsLeft = math.max(0, recoveryPerStage - recoveryTimer)
+        local recoveryState
+        if tss.source_active then
+            recoveryState = "paused, source active"
+        elseif (tss.abx_bank_points or 0) > 0 then
+            recoveryState = "counting, ABX active = 2x speed"
+        else
+            recoveryState = "counting, source removed"
+        end
+        print("TSS recovery timer ----------------------- " .. tostring(recoveryTimer) .. "/" .. tostring(recoveryPerStage) .. " mins toward Stage " .. (stage - 1) .. " (" .. recoveryState .. ")")
+        print("TSS recovery remaining ------------------- " .. tostring(math.floor(recoveryMinsLeft)) .. " mins (~" .. string.format("%.2f", recoveryMinsLeft / MINUTES_PER_HOUR) .. " hours at current speed)")
     end
     if stage == 3 then
         local minStage3Hours = (SandboxVars.RedDays or {}).tss_min_stage3_hours or 48

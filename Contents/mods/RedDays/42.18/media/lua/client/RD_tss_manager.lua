@@ -57,7 +57,6 @@ local TSS_STAGE4_ABX_FLAT_DRAIN = 0.05       -- Stage 4 + ABX suppression active
 local TSS_STAGE4_ABX_SLEEP_REGEN = 0.05      -- Stage 4 + ABX + asleep + HP <= cap: restore toward cap
 local TSS_STAGE4_ABX_HEALTH_CAP_DEFAULT = 50 -- fallback if tss_abx_sleep_health_cap_pct is unset
 local FEVER_TICK_INTERVAL_S = 3.0 -- Apply fever pressure every N in-game seconds
-local ABX_SEVERITY_PER_TOXIN_POINT = MINUTES_PER_HOUR -- Stage 1-3 relief conversion
 local ABX_BANK_POINTS_PER_DOSE = 10
 local ABX_TOXIN_MAX = 100                    -- Stage 4 toxin score scale (0..100)
 
@@ -117,6 +116,7 @@ local function getSandboxStageBounds(stage)
         return (sb.tss_stage2_duration_lowerBound or 120) * MINUTES_PER_HOUR,
                (sb.tss_stage2_duration_upperBound or 240) * MINUTES_PER_HOUR
     end
+    -- Stage 3 has no severity-gated advance; toxic shock is a separate risk roll (rollTSSTransition).
     return 0, 0
 end
 
@@ -126,6 +126,14 @@ local function getRiskMultiplier()
     local debugMult = RD_TSSManager._debugSpeedMult or 1
     if debugMult > 1 then return mult * debugMult end
     return mult
+end
+
+-- Fixed in-game minutes of source-removed healing needed to drop one stage (1-3), regardless of
+-- how far severity climbed. Doubled speed while antibiotics are actively working (bank not empty).
+local TSS_RECOVERY_ABX_SPEED_MULT = 2
+
+local function getRecoveryMinutesPerStage()
+    return (getSandbox().tss_recovery_hours_per_stage or 4) * MINUTES_PER_HOUR
 end
 
 local function rollNextStageThreshold(stage)
@@ -159,6 +167,7 @@ local function getModData()
         baseline_blur_effect = 0,
         tss_risk = 0,
         stage_threshold = 0,
+        recovery_timer = 0,
         stage3_minutes = 0,
         complication_cooldown = 60,
         abx_toxin_level = 0,
@@ -268,10 +277,13 @@ local function applySicknessProgression(player, tss)
     -- Stage 4:    ramps 0.26 → 1.0 over 12 in-game hours; game natively holds body temp at ~38C
     --             once SICKNESS ≥ 0.91 (~10.4h in). ApplyFeverPressure pushes further toward 42C.
     -- Recovery:   fixed decay rate; reaches 0 in 12h from 1.0, faster if treated early.
+    -- This full-reset path only fires post-Stage-4 (SICKNESS was actually elevated); stages 1-3
+    -- recover via the fixed recovery_timer in updateStageByUntreated instead, since SICKNESS
+    -- is never raised there and recovery_mode alone would otherwise trigger an instant "cure".
     local currentSickness = stats:get(CharacterStat.SICKNESS) or 0
     local newSickness = currentSickness
 
-    if tss.recovery_mode ~= "none" then
+    if tss.recovery_mode ~= "none" and currentSickness > 0 then
         newSickness = math.max(0, currentSickness - SICKNESS_RECOVERY_DECAY_PER_MIN)
 
         if newSickness <= SICKNESS_RECOVERY_COMPLETE then
@@ -550,22 +562,45 @@ local function updateStageByUntreated(tss)
     if tss.stage == 0 or tss.stage >= 4 then return end
 
     local prev = tss.stage
-    if tss.stage_threshold > 0 and (tss.severity or 0) >= tss.stage_threshold then
+    local severity = tss.severity or 0
+    if tss.stage_threshold > 0 and severity >= tss.stage_threshold then
+        -- Worsening: source is still active and symptoms have built up past the threshold.
         if tss.stage == 1 then
             tss.stage = 2
         elseif tss.stage == 2 then
             tss.stage = 3
         end
+    elseif (tss.recovery_timer or 0) >= getRecoveryMinutesPerStage() then
+        -- Recovering: source has been removed for a fixed duration per stage (faster with
+        -- antibiotics), independent of how far severity climbed while the source was active.
+        tss.stage = tss.stage - 1
     end
 
     if tss.stage ~= prev then
         tss.severity = 0
         tss.stage3_minutes = 0
-        tss.stage_threshold = rollNextStageThreshold(tss.stage)
-        if tss.stage == 2 then
-            notifyPlayer("TSS symptoms are worsening. Replace hygiene item and treat immediately.")
-        elseif tss.stage == 3 then
-            notifyPlayer("Critical TSS symptoms. Risk of toxic shock if left untreated.")
+        tss.recovery_timer = 0
+        if tss.stage <= 0 then
+            tss.stage = 0
+            tss.exposure_minutes = 0
+            tss.stage_threshold = 0
+            tss.first_symptom_minutes = 0
+            tss.warning_cooldown = 0
+            tss.tss_risk = 0
+            tss.cured = false
+            notifyPlayer("TSS symptoms have resolved.")
+        else
+            -- Stage 3 has no severity-gated advance (see rollTSSTransition's risk roll instead).
+            tss.stage_threshold = (tss.stage < 3) and rollNextStageThreshold(tss.stage) or 0
+            if tss.stage > prev then
+                if tss.stage == 2 then
+                    notifyPlayer("TSS symptoms are worsening. Replace hygiene item and treat immediately.")
+                elseif tss.stage == 3 then
+                    notifyPlayer("Critical TSS symptoms. Risk of toxic shock if left untreated.")
+                end
+            else
+                notifyPlayer("TSS symptoms are improving. Keep the source removed to continue recovering.")
+            end
         end
         transmitNow()
     end
@@ -792,6 +827,7 @@ function RD_TSSManager.LoadPlayerData()
     end
     tss.untreated_minutes = nil
     tss.severity = tss.severity or 0
+    tss.recovery_timer = tss.recovery_timer or 0
     tss.stage3_minutes = tss.stage3_minutes or 0
     tss.complication_cooldown = tss.complication_cooldown or 60
     tss.first_symptom_minutes = tss.first_symptom_minutes or 0
@@ -910,6 +946,7 @@ function RD_TSSManager.EveryOneMinute(cycle)
         tss.stage = 1
         tss.severity = 0
         tss.stage3_minutes = 0
+        tss.recovery_timer = 0
         tss.stage_threshold = rollNextStageThreshold(1)
         tss.first_symptom_minutes = 0
         tss.warning_cooldown = 0
@@ -926,8 +963,16 @@ function RD_TSSManager.EveryOneMinute(cycle)
 
         if tss.source_active then
             tss.severity = (tss.severity or 0) + stressMult
+            tss.recovery_timer = 0  -- reinfected: healing progress toward the next stage-down resets
         else
-            tss.severity = (tss.severity or 0) + (0.25 * stressMult)
+            -- Source removed: a fixed timer counts toward stepping down a stage (checked in
+            -- updateStageByUntreated), independent of how far severity climbed. Antibiotics
+            -- (active bank) double the rate, letting the player heal without them, just slower.
+            local recoveryRate = 1
+            if (tss.abx_bank_points or 0) > 0 then
+                recoveryRate = TSS_RECOVERY_ABX_SPEED_MULT
+            end
+            tss.recovery_timer = (tss.recovery_timer or 0) + recoveryRate
         end
 
         -- Tick antibiotic treatment timers
@@ -947,8 +992,10 @@ function RD_TSSManager.EveryOneMinute(cycle)
                 local toxinCleared = drained * (tss.abx_toxin_clear_per_point or 1)
                 tss.abx_toxin_level = math.max(0, (tss.abx_toxin_level or 0) - toxinCleared)
             else
-                local severityRelief = drained * ABX_SEVERITY_PER_TOXIN_POINT
-                tss.severity = math.max(0, (tss.severity or 0) - severityRelief)
+                -- Stages 1-3: no direct severity effect here -- an active bank simply doubles the
+                -- recovery_timer rate above (see the source-removed branch). recovery_mode is only
+                -- flavor/status at these stages since applySicknessProgression's reset requires
+                -- currentSickness > 0, which stages 1-3 never have.
                 tss.recovery_mode = "antibiotics"
             end
         end
@@ -963,6 +1010,7 @@ function RD_TSSManager.EveryOneMinute(cycle)
             tss.stage = 3
             tss.severity = 0
             tss.stage3_minutes = 0
+            tss.recovery_timer = 0
             tss.stage_threshold = 0
             tss.tss_risk = 0
             tss._tempDiagPrinted = nil  -- reset so calibration prints if Stage 4 recurs

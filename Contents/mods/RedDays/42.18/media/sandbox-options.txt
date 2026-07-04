@@ -317,6 +317,16 @@ option RedDays.tss_stage2_duration_upperBound
 	translation = RedDays_tss_stage2_duration_upperBound,
 }
 
+option RedDays.tss_recovery_hours_per_stage
+{
+	type = integer,
+	min = 1,
+	max = 168,
+	default = 4,
+	page = RedDays,
+	translation = RedDays_tss_recovery_hours_per_stage,
+}
+
 option RedDays.tss_min_stage3_hours
 {
 	type = integer,

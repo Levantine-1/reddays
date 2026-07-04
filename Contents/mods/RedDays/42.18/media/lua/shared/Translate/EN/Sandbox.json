@@ -100,6 +100,9 @@
     "Sandbox_RedDays_tss_stage2_duration_upperBound": "TSS: Stage 2 to 3 Max Time (Hours)",
     "Sandbox_RedDays_tss_stage2_duration_upperBound_tooltip": "Maximum time Stage 2 infection can persist before progressing into Stage 3. Higher values slow severe illness onset.",
 
+    "Sandbox_RedDays_tss_recovery_hours_per_stage": "TSS Recovery Time Per Stage (Hours)",
+    "Sandbox_RedDays_tss_recovery_hours_per_stage_tooltip": "In-game hours of healing needed (tampon/pad removed, no antibiotics) to drop one TSS stage, e.g. Stage 3 to Stage 0 takes 3x this. Antibiotics double the speed while a dose is still active.",
+
     "Sandbox_RedDays_tss_min_stage3_hours": "TSS: Min Time in Stage 3 Before Toxic Shock (Hours)",
     "Sandbox_RedDays_tss_min_stage3_hours_tooltip": "Minimum in-game hours that must be spent in Stage 3 severe infection before Toxic Shock Syndrome (Stage 4) becomes eligible. TSS cannot occur before this threshold.",
 
