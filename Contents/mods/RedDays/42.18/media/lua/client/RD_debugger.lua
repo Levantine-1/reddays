@@ -739,7 +739,9 @@ local function printTSSStatus()
     local tss = RD_modData and RD_modData.ICdata and RD_modData.ICdata.tss or nil
 
     print("--- TSS Diagnostics ---------------------")
-    print("TSS enabled ----------------------------- " .. tostring(sb.tss_enabled ~= false))
+    local tssActuallyEnabled = (sb.tss_enabled ~= false) and not isClient()
+    print("TSS enabled ----------------------------- " .. tostring(tssActuallyEnabled)
+        .. (isClient() and " (auto-disabled in multiplayer)" or ""))
     print("TSS lethal enabled ---------------------- " .. tostring(sb.tss_lethal_enabled ~= false))
     print("TSS risk multiplier pct ----------------- " .. tostring(sb.tss_risk_multiplier_pct or 100))
 

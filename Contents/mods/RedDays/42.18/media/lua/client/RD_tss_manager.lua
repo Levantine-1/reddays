@@ -65,6 +65,9 @@ local function getSandbox()
 end
 
 local function isEnabled()
+    -- TSS is disabled in true multiplayer for now: dose registration and stat sync have
+    -- unresolved desync issues (see notes/apiDocumentation). Singleplayer is unaffected.
+    if isClient() then return false end
     local sb = getSandbox()
     if sb.tss_enabled == nil then return true end
     return sb.tss_enabled
@@ -183,6 +186,7 @@ local function getModData()
         _lastHPDrainMult = 1,
         _lastHPBaseDrainPerMin = 0,
         _lastHealthAtTick = 0,
+        _pendingTemperatureAdd = 0,
     }
     return md
 end
@@ -249,7 +253,7 @@ local function clampStage(stage)
     return stage
 end
 
-local function applyBlurEffect(player, tss)
+local function applyBlurEffect(player, tss, pending)
     if not player then return end
 
     local baseline = tss.baseline_blur_effect or 0
@@ -260,14 +264,19 @@ local function applyBlurEffect(player, tss)
         target = math.max(baseline, BLUR_STAGE3_TARGET)
     end
 
+    local newBlur = nil
     if currentBlur < target then
-        player:setSleepingTabletEffect(math.min(target, currentBlur + BLUR_RAMP_UP))
+        newBlur = math.min(target, currentBlur + BLUR_RAMP_UP)
     elseif currentBlur > target then
-        player:setSleepingTabletEffect(math.max(target, currentBlur - BLUR_RAMP_DOWN))
+        newBlur = math.max(target, currentBlur - BLUR_RAMP_DOWN)
+    end
+    if newBlur ~= nil then
+        player:setSleepingTabletEffect(newBlur)
+        if pending then pending.blur = newBlur end
     end
 end
 
-local function applySicknessProgression(player, tss)
+local function applySicknessProgression(player, tss, pending)
     if not player then return end
     local stats = player:getStats()
     if not stats then return end
@@ -288,6 +297,7 @@ local function applySicknessProgression(player, tss)
 
         if newSickness <= SICKNESS_RECOVERY_COMPLETE then
             stats:set(CharacterStat.SICKNESS, 0)
+            if pending then pending.sickness = 0 end
             tss.stage = 0
             tss.exposure_minutes = 0
             tss.severity = 0
@@ -300,7 +310,7 @@ local function applySicknessProgression(player, tss)
             tss.recovery_mode = "none"
             notifyPlayer("TSS symptoms have resolved.")
             transmitNow()
-            applyBlurEffect(player, tss)
+            applyBlurEffect(player, tss, pending)
             return
         end
     elseif tss.stage == 4 then
@@ -315,7 +325,8 @@ local function applySicknessProgression(player, tss)
     end
 
     stats:set(CharacterStat.SICKNESS, newSickness)
-    applyBlurEffect(player, tss)
+    if pending then pending.sickness = newSickness end
+    applyBlurEffect(player, tss, pending)
 end
 
 local function getProgressionMultiplier(player)
@@ -401,7 +412,7 @@ local function getTSSRiskGain(player)
     return math.floor(gain * (getRiskMultiplier() / 100))
 end
 
-local function rollTSSTransition(player, tss)
+local function rollTSSTransition(player, tss, pending)
     if not isLethalEnabled() then return end
     if tss.stage ~= 3 then return end
     local sb = getSandbox()
@@ -429,7 +440,10 @@ local function rollTSSTransition(player, tss)
         tss._feverDrive = 0
         tss._feverAccum = 0
         local s4Stats = player:getStats()
-        if s4Stats then s4Stats:set(CharacterStat.SICKNESS, TSS_SICKNESS_STAGE4_START) end
+        if s4Stats then
+            s4Stats:set(CharacterStat.SICKNESS, TSS_SICKNESS_STAGE4_START)
+            if pending then pending.sickness = TSS_SICKNESS_STAGE4_START end
+        end
         print("[RedDays][TSS] Toxic shock triggered. Toxin score set to 100. Take antibiotics repeatedly.")
         transmitNow()
     end
@@ -466,42 +480,47 @@ local function getStage4TempDrainMultiplier(bodyTemp)
     end
 end
 
-local function applyStageStatEffects(player, tss)
+local function applyStageStatEffects(player, tss, pending)
     if not player then return end
     local stats = player:getStats()
     if not stats then return end
     local isSleeping = player.isAsleep and player:isAsleep() or false
 
+    local function setStat(statEnum, field, value)
+        stats:set(statEnum, value)
+        if pending then pending[field] = value end
+    end
+
     if tss.stage == 1 then
         if not isSleeping then
-            stats:set(CharacterStat.ENDURANCE, math.max(0, stats:get(CharacterStat.ENDURANCE) - 0.00005))
-            stats:set(CharacterStat.FATIGUE, math.min(1, stats:get(CharacterStat.FATIGUE) + 0.0002))
+            setStat(CharacterStat.ENDURANCE, "endurance", math.max(0, stats:get(CharacterStat.ENDURANCE) - 0.00005))
+            setStat(CharacterStat.FATIGUE, "fatigue", math.min(1, stats:get(CharacterStat.FATIGUE) + 0.0002))
         end
-        stats:set(CharacterStat.UNHAPPINESS, math.min(100, stats:get(CharacterStat.UNHAPPINESS) + 0.05))
+        setStat(CharacterStat.UNHAPPINESS, "unhappiness", math.min(100, stats:get(CharacterStat.UNHAPPINESS) + 0.05))
     elseif tss.stage == 2 then
         if not isSleeping then
-            stats:set(CharacterStat.ENDURANCE, math.max(0, stats:get(CharacterStat.ENDURANCE) - 0.0002))
-            stats:set(CharacterStat.FATIGUE, math.min(1, stats:get(CharacterStat.FATIGUE) + 0.0004))
+            setStat(CharacterStat.ENDURANCE, "endurance", math.max(0, stats:get(CharacterStat.ENDURANCE) - 0.0002))
+            setStat(CharacterStat.FATIGUE, "fatigue", math.min(1, stats:get(CharacterStat.FATIGUE) + 0.0004))
         end
         if not isSleeping then
-            stats:set(CharacterStat.THIRST, math.min(1, stats:get(CharacterStat.THIRST) + 0.001))
+            setStat(CharacterStat.THIRST, "thirst", math.min(1, stats:get(CharacterStat.THIRST) + 0.001))
         end
-        stats:set(CharacterStat.UNHAPPINESS, math.min(100, stats:get(CharacterStat.UNHAPPINESS) + 0.1))
+        setStat(CharacterStat.UNHAPPINESS, "unhappiness", math.min(100, stats:get(CharacterStat.UNHAPPINESS) + 0.1))
     elseif tss.stage >= 3 then
         if not isSleeping then
-            stats:set(CharacterStat.ENDURANCE, math.max(0, stats:get(CharacterStat.ENDURANCE) - 0.0007))
-            stats:set(CharacterStat.FATIGUE, math.min(1, stats:get(CharacterStat.FATIGUE) + 0.001))
-            stats:set(CharacterStat.THIRST, math.min(1, stats:get(CharacterStat.THIRST) + 0.002))
+            setStat(CharacterStat.ENDURANCE, "endurance", math.max(0, stats:get(CharacterStat.ENDURANCE) - 0.0007))
+            setStat(CharacterStat.FATIGUE, "fatigue", math.min(1, stats:get(CharacterStat.FATIGUE) + 0.001))
+            setStat(CharacterStat.THIRST, "thirst", math.min(1, stats:get(CharacterStat.THIRST) + 0.002))
         end
-        stats:set(CharacterStat.UNHAPPINESS, math.min(100, stats:get(CharacterStat.UNHAPPINESS) + 0.2))
+        setStat(CharacterStat.UNHAPPINESS, "unhappiness", math.min(100, stats:get(CharacterStat.UNHAPPINESS) + 0.2))
         if tss.stage == 4 then
             -- Clamp endurance and fatigue at the sickness Stage 4 plateau (awake only)
             local currentSickness = stats:get(CharacterStat.SICKNESS) or 0
             if (not isSleeping) and currentSickness >= TSS_FEVER_NUDGE_MIN_SICKNESS then
                 local endurance = stats:get(CharacterStat.ENDURANCE) or 1
-                if endurance > 0.8 then stats:set(CharacterStat.ENDURANCE, 0.8) end
+                if endurance > 0.8 then setStat(CharacterStat.ENDURANCE, "endurance", 0.8) end
                 local fatigue = stats:get(CharacterStat.FATIGUE) or 0
-                if fatigue < 0.4 then stats:set(CharacterStat.FATIGUE, 0.4) end
+                if fatigue < 0.4 then setStat(CharacterStat.FATIGUE, "fatigue", 0.4) end
             end
             local bd = player:getBodyDamage()
             if bd then
@@ -537,15 +556,30 @@ local function applyStageStatEffects(player, tss)
                         mode = "abx_sleep_regen"
                         bd:setOverallBodyHealth(math.min(cap, health + TSS_STAGE4_ABX_SLEEP_REGEN))
                     else
+                        -- Awake + ABX + at/below cap: same floor as the sickness-drain branch
+                        -- above -- "at/below the cap the player cannot die" must hold here too.
                         appliedDrain = TSS_STAGE4_ABX_FLAT_DRAIN
                         mode = "abx_flat_drain"
                         bd:ReduceGeneralHealth(appliedDrain)
+                        local healthAfter = bd:getHealth() or health
+                        if healthAfter < cap then
+                            bd:setOverallBodyHealth(cap)
+                        end
                     end
                 else
                     -- No ABX: toxic shock drains health and can be lethal, awake or asleep.
                     appliedDrain = sicknessDrain
                     mode = isSleeping and "stage4_sleep_drain" or "stage4_sickness_drain"
                     bd:ReduceGeneralHealth(appliedDrain)
+                end
+
+                if pending then
+                    -- Server replicates this exact branch off its own live health (see
+                    -- Commands.applyTSSStats in RD_server_commands.lua), not a client-supplied
+                    -- absolute, so any prior client/server drift self-corrects.
+                    pending.hpMode = mode
+                    pending.hpDrain = appliedDrain
+                    pending.hpCap = cap
                 end
 
                 tss._lastHPDrainPerMin = appliedDrain
@@ -658,7 +692,7 @@ local function updateSourceState(tss)
     tss.source_active = sourceActive
 end
 
-local function rollComplication(player, tss)
+local function rollComplication(player, tss, pending)
     tss.complication_cooldown = (tss.complication_cooldown or 60) - 1
     if tss.complication_cooldown > 0 then return end
     tss.complication_cooldown = 60
@@ -691,10 +725,18 @@ local function rollComplication(player, tss)
     if roll < 60 then
         if stats then
             if not isSleeping then
-                stats:set(CharacterStat.FATIGUE, math.min(1, stats:get(CharacterStat.FATIGUE) + 0.1))
-                stats:set(CharacterStat.ENDURANCE, math.max(0, stats:get(CharacterStat.ENDURANCE) - 0.05))
+                local newFatigue = math.min(1, stats:get(CharacterStat.FATIGUE) + 0.1)
+                stats:set(CharacterStat.FATIGUE, newFatigue)
+                local newEndurance = math.max(0, stats:get(CharacterStat.ENDURANCE) - 0.05)
+                stats:set(CharacterStat.ENDURANCE, newEndurance)
+                if pending then
+                    pending.fatigue = newFatigue
+                    pending.endurance = newEndurance
+                end
             end
-            stats:set(CharacterStat.UNHAPPINESS, math.min(100, stats:get(CharacterStat.UNHAPPINESS) + 5))
+            local newUnhappiness = math.min(100, stats:get(CharacterStat.UNHAPPINESS) + 5)
+            stats:set(CharacterStat.UNHAPPINESS, newUnhappiness)
+            if pending then pending.unhappiness = newUnhappiness end
         end
         print("[RedDays][TSS] Complication: mild symptom flare.")
     elseif roll < 85 then
@@ -810,7 +852,13 @@ function RD_TSSManager.ApplyFeverPressure(player)
 
         local nudgePct = getSandbox().tss_fever_nudge_strength_pct or 100
         local debugMult = RD_TSSManager._debugSpeedMult or 1
-        feverStats:add(CharacterStat.TEMPERATURE, gainPerMin * elapsedGameMins * debugMult * (nudgePct / 100))
+        local tempAdd = gainPerMin * elapsedGameMins * debugMult * (nudgePct / 100)
+        feverStats:add(CharacterStat.TEMPERATURE, tempAdd)
+        -- CharacterStat is server-authoritative in multiplayer (same as the Stage 4 HP drain
+        -- below); this fires far too often (every ~3 game-seconds) to send a network command
+        -- each time, so accumulate here and let EveryOneMinute flush it to the server once a
+        -- game-minute alongside everything else (stats:add is commutative, so batching is safe).
+        tss._pendingTemperatureAdd = (tss._pendingTemperatureAdd or 0) + tempAdd
     end
 end
 
@@ -861,6 +909,7 @@ function RD_TSSManager.LoadPlayerData()
     tss._lastHPDrainMult = tss._lastHPDrainMult or 1
     tss._lastHPBaseDrainPerMin = tss._lastHPBaseDrainPerMin or 0
     tss._lastHealthAtTick = tss._lastHealthAtTick or 0
+    tss._pendingTemperatureAdd = tss._pendingTemperatureAdd or 0
     tss._feverDrive = tss._feverDrive or 0
     tss._feverAccum = tss._feverAccum or 0
     tss.stage_threshold = tss.stage_threshold or rollNextStageThreshold(tss.stage)
@@ -872,6 +921,7 @@ function RD_TSSManager.LoadPlayerData()
 end
 
 function RD_TSSManager.registerTreatmentFromItem(item, actionName)
+    if not isEnabled() then return end
     if not item then return end
     local md = getModData()
     if not md then return end
@@ -913,7 +963,26 @@ function RD_TSSManager.registerTreatmentFromItem(item, actionName)
     transmitNow()
 end
 
-function RD_TSSManager.EveryOneMinute(cycle)
+-- Flushes one game-minute's worth of CharacterStat/BodyDamage/blur changes to the server.
+-- These are already applied directly above (for instant local feedback and correct intra-tick
+-- stacking, e.g. rollComplication's fatigue hit feeding into applyStageStatEffects' own read of
+-- it), but CharacterStat and BodyDamage are server-authoritative in true client-server multiplayer
+-- (same reasoning as applyBodyStiffness in RD_server_commands.lua) -- without this, a remote
+-- client's local changes get silently reverted by the next server state sync. No-op in
+-- singleplayer/hosting, where the direct calls above are already authoritative.
+local function flushPendingStats(player, pending)
+    if not player or not pending or not isClient() then return end
+    -- Kahlua (PZ's Lua VM) doesn't expose the standard next() global, only pairs()/ipairs().
+    local hasAny = false
+    for _ in pairs(pending) do
+        hasAny = true
+        break
+    end
+    if not hasAny then return end
+    sendClientCommand(player, 'RedDays', 'applyTSSStats', pending)
+end
+
+local function doEveryOneMinute(cycle, pending)
     if not isEnabled() then return end
 
     local md = getModData()
@@ -922,6 +991,10 @@ function RD_TSSManager.EveryOneMinute(cycle)
     if not player or player:isDead() then return end
 
     local tss = md.ICdata.tss
+    if (tss._pendingTemperatureAdd or 0) ~= 0 then
+        pending.temperatureAdd = tss._pendingTemperatureAdd
+        tss._pendingTemperatureAdd = 0
+    end
     if tss.stage == 0 and tss.recovery_mode == "none" then
         tss.baseline_blur_effect = player:getSleepingTabletEffect()
     end
@@ -1026,15 +1099,21 @@ function RD_TSSManager.EveryOneMinute(cycle)
             return
         end
 
-        rollComplication(player, tss)
+        rollComplication(player, tss, pending)
         updateStageByUntreated(tss)
-        rollTSSTransition(player, tss)
+        rollTSSTransition(player, tss, pending)
         maybeWarn(tss)
-        applySicknessProgression(player, tss)
-        applyStageStatEffects(player, tss)
+        applySicknessProgression(player, tss, pending)
+        applyStageStatEffects(player, tss, pending)
     else
-        applySicknessProgression(player, tss)
+        applySicknessProgression(player, tss, pending)
     end
+end
+
+function RD_TSSManager.EveryOneMinute(cycle)
+    local pending = {}
+    doEveryOneMinute(cycle, pending)
+    flushPendingStats(getPlayer(), pending)
 end
 
 return RD_TSSManager

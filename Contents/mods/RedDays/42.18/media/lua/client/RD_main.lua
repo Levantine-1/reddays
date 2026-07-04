@@ -120,8 +120,9 @@ function ISTakePillAction:perform()
     o_ISTakePillAction_perform(self)
 end
 
--- Antibiotics are a food item (ItemType = base:food, CustomContextMenu = Take).
--- They are consumed via ISEatFoodAction, not ISTakePillAction.
+-- Antibiotics are Type=Food (confirmed via https://pzwiki.net/wiki/Antibiotics), consumed via
+-- ISEatFoodAction:complete(), same as any other food item. Works correctly in singleplayer;
+-- the MP failure to register a dose is not an action-class mismatch (verified 2026-07-04).
 local o_ISEatFoodAction_complete = ISEatFoodAction.complete
 function ISEatFoodAction:complete()
     if isValidGenderCheck() then
