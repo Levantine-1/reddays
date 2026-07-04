@@ -55,13 +55,13 @@ Events.OnCreatePlayer.Add(OnCreatePlayer)
 -- ================= TIMED EVENT HOOKS =================
 local function EveryHours()
     if not isValidGenderCheck() then return end
-    -- RD_CycleDebugger.printWrapper()
+    RD_CycleDebugger.printWrapper()
 end
 Events.EveryHours.Add(EveryHours)
 
 local function EveryTenMinutes()
     if not isValidGenderCheck() then return end
-    RD_CycleDebugger.printWrapper()
+    -- RD_CycleDebugger.printWrapper()
     transmitModDataToServer() -- Periodically sync modData to server for persistence
 end
 Events.EveryTenMinutes.Add(EveryTenMinutes)
@@ -128,15 +128,4 @@ function ISEatFoodAction:complete()
         RD_TSSManager.registerTreatmentFromItem(self.item, "ISEatFoodAction")
     end
     return o_ISEatFoodAction_complete(self)
-end
-
-if ISApplyDisinfectant and ISApplyDisinfectant.perform then
-    local o_ISApplyDisinfectant_perform = ISApplyDisinfectant.perform
-    function ISApplyDisinfectant:perform()
-        if isValidGenderCheck() then
-            local item = self.item or self.disinfectant or self.alcohol
-            RD_TSSManager.registerTreatmentFromItem(item, "ISApplyDisinfectant")
-        end
-        o_ISApplyDisinfectant_perform(self)
-    end
 end

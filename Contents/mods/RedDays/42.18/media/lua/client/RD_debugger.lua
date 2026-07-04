@@ -8,13 +8,18 @@ require "RD_game_api"
 local MINUTES_PER_DAY = 1440
 local MINUTES_PER_HOUR = 60
 
-rd = rd or {}
-rd.tss = rd.tss or {}
-rd.cycle = rd.cycle or {}
-rd.hygiene = rd.hygiene or {}
-rd.pms = rd.pms or {}
-rd.status = rd.status or {}
-rd.debug = rd.debug or {}
+-- All debug console functionality lives under this RedDays-specific global so it can never
+-- collide with or corrupt another mod's data. `rd` below is only a convenience alias for typing
+-- shorter console commands (e.g. rd.tss.stage.get()) -- if another mod already claims the
+-- generic `rd` name, that alias silently fails to attach and RD_DebugAPI.* still works fully.
+RD_DebugAPI = RD_DebugAPI or {}
+RD_DebugAPI.tss = RD_DebugAPI.tss or {}
+RD_DebugAPI.cycle = RD_DebugAPI.cycle or {}
+RD_DebugAPI.hygiene = RD_DebugAPI.hygiene or {}
+RD_DebugAPI.pms = RD_DebugAPI.pms or {}
+RD_DebugAPI.status = RD_DebugAPI.status or {}
+RD_DebugAPI.debug = RD_DebugAPI.debug or {}
+rd = rd or RD_DebugAPI
 
 local TSS_DEFAULTS = {
     stage = 0,
@@ -150,87 +155,87 @@ local function defineAccessor(namespace, name, rootGetter, fieldName, normalizer
     end
 end
 
-defineAccessor(rd.tss, "stage", getTSS, "stage", function(v)
+defineAccessor(RD_DebugAPI.tss, "stage", getTSS, "stage", function(v)
     return clampNumber(v, 0, 4, 0)
 end)
-defineAccessor(rd.tss, "exposure_minutes", getTSS, "exposure_minutes", function(v)
+defineAccessor(RD_DebugAPI.tss, "exposure_minutes", getTSS, "exposure_minutes", function(v)
     return clampNumber(v, 0, nil, 0)
 end)
-defineAccessor(rd.tss, "severity", getTSS, "severity", function(v)
+defineAccessor(RD_DebugAPI.tss, "severity", getTSS, "severity", function(v)
     return clampNumber(v, 0, nil, 0)
 end)
-defineAccessor(rd.tss, "stage3_minutes", getTSS, "stage3_minutes", function(v)
+defineAccessor(RD_DebugAPI.tss, "stage3_minutes", getTSS, "stage3_minutes", function(v)
     return clampNumber(v, 0, nil, 0)
 end)
-defineAccessor(rd.tss, "stage_threshold", getTSS, "stage_threshold", function(v)
+defineAccessor(RD_DebugAPI.tss, "stage_threshold", getTSS, "stage_threshold", function(v)
     return clampNumber(v, 0, nil, 0)
 end)
-defineAccessor(rd.tss, "recovery_timer", getTSS, "recovery_timer", function(v)
+defineAccessor(RD_DebugAPI.tss, "recovery_timer", getTSS, "recovery_timer", function(v)
     -- Fixed-rate healing progress (minutes, source removed) toward the next stage-down; see
     -- getRecoveryMinutesPerStage()/updateStageByUntreated in RD_tss_manager.lua.
     return clampNumber(v, 0, nil, 0)
 end)
-defineAccessor(rd.tss, "tss_risk", getTSS, "tss_risk", function(v)
+defineAccessor(RD_DebugAPI.tss, "tss_risk", getTSS, "tss_risk", function(v)
     return clampNumber(v, 0, nil, 0)
 end)
-defineAccessor(rd.tss, "source_active", getTSS, "source_active", function(v)
+defineAccessor(RD_DebugAPI.tss, "source_active", getTSS, "source_active", function(v)
     return clampBoolean(v)
 end)
-defineAccessor(rd.tss, "source_removed", getTSS, "source_removed", function(v)
+defineAccessor(RD_DebugAPI.tss, "source_removed", getTSS, "source_removed", function(v)
     return clampBoolean(v)
 end)
-defineAccessor(rd.tss, "source_type", getTSS, "source_type", function(v)
+defineAccessor(RD_DebugAPI.tss, "source_type", getTSS, "source_type", function(v)
     return asString(v, "")
 end)
-defineAccessor(rd.tss, "warning_cooldown", getTSS, "warning_cooldown", function(v)
+defineAccessor(RD_DebugAPI.tss, "warning_cooldown", getTSS, "warning_cooldown", function(v)
     return clampNumber(v, 0, nil, 0)
 end)
-defineAccessor(rd.tss, "stabilized_until", getTSS, "stabilized_until", function(v)
+defineAccessor(RD_DebugAPI.tss, "stabilized_until", getTSS, "stabilized_until", function(v)
     return clampNumber(v, 0, nil, 0)
 end)
-defineAccessor(rd.tss, "recovery_mode", getTSS, "recovery_mode", function(v)
+defineAccessor(RD_DebugAPI.tss, "recovery_mode", getTSS, "recovery_mode", function(v)
     local m = asString(v, "none")
     if m ~= "none" and m ~= "antibiotics" and m ~= "fallback" then
         return "none"
     end
     return m
 end)
-defineAccessor(rd.tss, "antibiotics_taken_recently", getTSS, "antibiotics_taken_recently", function(v)
+defineAccessor(RD_DebugAPI.tss, "antibiotics_taken_recently", getTSS, "antibiotics_taken_recently", function(v)
     return clampBoolean(v)
 end)
-defineAccessor(rd.tss, "baseline_blur_effect", getTSS, "baseline_blur_effect", function(v)
+defineAccessor(RD_DebugAPI.tss, "baseline_blur_effect", getTSS, "baseline_blur_effect", function(v)
     return clampNumber(v, 0, nil, 0)
 end)
-defineAccessor(rd.tss, "abx_toxin_level", getTSS, "abx_toxin_level", function(v)
+defineAccessor(RD_DebugAPI.tss, "abx_toxin_level", getTSS, "abx_toxin_level", function(v)
     return clampNumber(v, 0, 100, 0)
 end)
-defineAccessor(rd.tss, "abx_cooldown_mins", getTSS, "abx_cooldown_mins", function(v)
+defineAccessor(RD_DebugAPI.tss, "abx_cooldown_mins", getTSS, "abx_cooldown_mins", function(v)
     return clampNumber(v, 0, nil, 0)
 end)
-defineAccessor(rd.tss, "abx_suppress_mins", getTSS, "abx_suppress_mins", function(v)
+defineAccessor(RD_DebugAPI.tss, "abx_suppress_mins", getTSS, "abx_suppress_mins", function(v)
     return clampNumber(v, 0, nil, 0)
 end)
-defineAccessor(rd.tss, "abx_dose_count", getTSS, "abx_dose_count", function(v)
+defineAccessor(RD_DebugAPI.tss, "abx_dose_count", getTSS, "abx_dose_count", function(v)
     return clampNumber(v, 0, nil, 0)
 end)
-defineAccessor(rd.tss, "abx_bank_points", getTSS, "abx_bank_points", function(v)
+defineAccessor(RD_DebugAPI.tss, "abx_bank_points", getTSS, "abx_bank_points", function(v)
     return clampNumber(v, 0, nil, 0)
 end)
-defineAccessor(rd.tss, "abx_bank_cap", getTSS, "abx_bank_cap", function(v)
+defineAccessor(RD_DebugAPI.tss, "abx_bank_cap", getTSS, "abx_bank_cap", function(v)
     return clampNumber(v, 0, nil, 0)
 end)
-defineAccessor(rd.tss, "abx_bank_drain_per_min", getTSS, "abx_bank_drain_per_min", function(v)
+defineAccessor(RD_DebugAPI.tss, "abx_bank_drain_per_min", getTSS, "abx_bank_drain_per_min", function(v)
     return clampNumber(v, 0, nil, 0)
 end)
-defineAccessor(rd.tss, "abx_toxin_clear_per_point", getTSS, "abx_toxin_clear_per_point", function(v)
+defineAccessor(RD_DebugAPI.tss, "abx_toxin_clear_per_point", getTSS, "abx_toxin_clear_per_point", function(v)
     return clampNumber(v, 0, nil, 1)
 end)
 
-rd.tss.reset_progression = rd.tss.reset_progression or {}
-rd.tss.reset_progression.get = function()
+RD_DebugAPI.tss.reset_progression = RD_DebugAPI.tss.reset_progression or {}
+RD_DebugAPI.tss.reset_progression.get = function()
     return "Call rd.tss.reset_progression.set(true)"
 end
-rd.tss.reset_progression.set = function(value)
+RD_DebugAPI.tss.reset_progression.set = function(value)
     if not clampBoolean(value) then return false end
     local tss = getTSS(true)
     if not tss then return false end
@@ -264,15 +269,15 @@ rd.tss.reset_progression.set = function(value)
     return true
 end
 
-rd.debug.speedMult = rd.debug.speedMult or {}
+RD_DebugAPI.debug.speedMult = RD_DebugAPI.debug.speedMult or {}
 
 -- rd.debug.speedMult.set(10)  -- compress all time values 10x for fast testing
 -- rd.debug.speedMult.set(1)   -- clear override (normal speed on next rolls)
-rd.debug.speedMult.get = function()
+RD_DebugAPI.debug.speedMult.get = function()
     return (RD_TSSManager and RD_TSSManager._debugSpeedMult) or 1
 end
 
-rd.debug.speedMult.set = function(value)
+RD_DebugAPI.debug.speedMult.set = function(value)
     local mult = clampNumber(value, 1, 1000, 1)
     local isReset = mult <= 1
 
@@ -317,13 +322,13 @@ end
 -- Disable: rd.debug.hunger_thirst_zero.set(false)
 -- Check state: rd.debug.hunger_thirst_zero.get()
 
-rd.debug.hunger_thirst_zero = rd.debug.hunger_thirst_zero or {}
+RD_DebugAPI.debug.hunger_thirst_zero = RD_DebugAPI.debug.hunger_thirst_zero or {}
 
-rd.debug.hunger_thirst_zero.get = function()
+RD_DebugAPI.debug.hunger_thirst_zero.get = function()
     return RD_CycleDebugger._debugClampHungerThirst == true
 end
 
-rd.debug.hunger_thirst_zero.set = function(value)
+RD_DebugAPI.debug.hunger_thirst_zero.set = function(value)
     local enabled = clampBoolean(value)
     RD_CycleDebugger._debugClampHungerThirst = enabled
     print("[rd.debug.hunger_thirst_zero] " .. (enabled and "enabled" or "disabled"))
@@ -339,24 +344,24 @@ function RD_CycleDebugger.ApplyDebugStatClamps(player)
     stats:set(CharacterStat.THIRST, 0)
 end
 
-defineAccessor(rd.cycle, "current_phase", getCycle, "current_phase", function(v)
+defineAccessor(RD_DebugAPI.cycle, "current_phase", getCycle, "current_phase", function(v)
     local p = asString(v, "redPhase")
     if p ~= "redPhase" and p ~= "follicularPhase" and p ~= "ovulationPhase" and p ~= "lutealPhase" then
         return "redPhase"
     end
     return p
 end)
-defineAccessor(rd.cycle, "phase_minutes_remaining", getCycle, "phase_minutes_remaining", function(v)
+defineAccessor(RD_DebugAPI.cycle, "phase_minutes_remaining", getCycle, "phase_minutes_remaining", function(v)
     return clampNumber(v, 0, nil, 0)
 end)
-defineAccessor(rd.cycle, "healthEffectSeverity", getCycle, "healthEffectSeverity", function(v)
+defineAccessor(RD_DebugAPI.cycle, "healthEffectSeverity", getCycle, "healthEffectSeverity", function(v)
     return clampNumber(v, 0, 100, 50)
 end)
-defineAccessor(rd.cycle, "reason_for_cycle", getCycle, "reason_for_cycle", function(v)
+defineAccessor(RD_DebugAPI.cycle, "reason_for_cycle", getCycle, "reason_for_cycle", function(v)
     return asString(v, "debug_override")
 end)
 
-defineAccessor(rd.hygiene, "cSIHDC_counter", function(create)
+defineAccessor(RD_DebugAPI.hygiene, "cSIHDC_counter", function(create)
     local ic = getICData(create)
     if not ic then return nil end
     if ic.cSIHDC_counter == nil then ic.cSIHDC_counter = 0 end
@@ -364,7 +369,7 @@ defineAccessor(rd.hygiene, "cSIHDC_counter", function(create)
 end, "cSIHDC_counter", function(v)
     return clampNumber(v, 0, nil, 0)
 end)
-defineAccessor(rd.hygiene, "leak_level", function(create)
+defineAccessor(RD_DebugAPI.hygiene, "leak_level", function(create)
     local ic = getICData(create)
     if not ic then return nil end
     if ic.LeakLevel == nil then ic.LeakLevel = 0.42 end
@@ -372,7 +377,7 @@ defineAccessor(rd.hygiene, "leak_level", function(create)
 end, "LeakLevel", function(v)
     return clampNumber(v, 0, 0.42, 0.42)
 end)
-defineAccessor(rd.hygiene, "leak_switch", function(create)
+defineAccessor(RD_DebugAPI.hygiene, "leak_switch", function(create)
     local ic = getICData(create)
     if not ic then return nil end
     if ic.LeakSwitchState == nil then ic.LeakSwitchState = false end
@@ -381,7 +386,7 @@ end, "LeakSwitchState", function(v)
     return clampBoolean(v)
 end)
 
-defineAccessor(rd.pms, "pill_recently_taken", function(create)
+defineAccessor(RD_DebugAPI.pms, "pill_recently_taken", function(create)
     local ic = getICData(create)
     if not ic then return nil end
     if ic.pill_recently_taken == nil then ic.pill_recently_taken = false end
@@ -389,7 +394,7 @@ defineAccessor(rd.pms, "pill_recently_taken", function(create)
 end, "pill_recently_taken", function(v)
     return clampBoolean(v)
 end)
-defineAccessor(rd.pms, "pill_effect_active", function(create)
+defineAccessor(RD_DebugAPI.pms, "pill_effect_active", function(create)
     local ic = getICData(create)
     if not ic then return nil end
     if ic.pill_effect_active == nil then ic.pill_effect_active = false end
@@ -397,7 +402,7 @@ defineAccessor(rd.pms, "pill_effect_active", function(create)
 end, "pill_effect_active", function(v)
     return clampBoolean(v)
 end)
-defineAccessor(rd.pms, "pill_effect_counter", function(create)
+defineAccessor(RD_DebugAPI.pms, "pill_effect_counter", function(create)
     local ic = getICData(create)
     if not ic then return nil end
     if ic.pill_effect_counter == nil then ic.pill_effect_counter = 0 end
@@ -406,7 +411,7 @@ end, "pill_effect_counter", function(v)
     return clampNumber(v, 0, nil, 0)
 end)
 
-rd.status.get = function()
+RD_DebugAPI.status.get = function()
     local tss = getTSS(false)
     local cycle = getCycle(false)
     local ic = getICData(false)
@@ -447,8 +452,8 @@ rd.status.get = function()
     }
 end
 
-rd.status.print = function()
-    local s = rd.status.get()
+RD_DebugAPI.status.print = function()
+    local s = RD_DebugAPI.status.get()
     if not s then
         print("[RedDays][rd.status] unavailable")
         return nil
@@ -490,7 +495,7 @@ local PHASE_ALIASES = {
 -- rd.goToPhase("red")                     -- jump to red phase, use existing duration
 -- rd.goToPhase("luteal", 1440)            -- jump to luteal with 1 day remaining
 -- rd.goToPhase("follicular", 2880, 80)    -- jump to follicular, 2 days remaining, severity 80
-rd.goToPhase = function(phase, minutesRemaining, severity)
+RD_DebugAPI.goToPhase = function(phase, minutesRemaining, severity)
     local cycle = getCycle(true)
     if not cycle then
         print("[rd.goToPhase] no cycle data available")
@@ -658,7 +663,7 @@ end
 -- rd.goToTSSStage(3)               -- jump to stage 3 using stage3_stable profile
 -- rd.goToTSSStage(4)               -- jump to stage 4 using stage4_critical profile
 -- rd.goToTSSStage(3, "risky")      -- jump to stage 3 using stage3_risky profile
-rd.goToTSSStage = function(stage, variant)
+RD_DebugAPI.goToTSSStage = function(stage, variant)
     local tss = getTSS(true)
     if not tss then
         print("[rd.goToTSSStage] no TSS data available")
@@ -699,7 +704,7 @@ end
 
 -- rd.tss.preset.apply("stage3_risky")   -- apply a named preset directly
 -- rd.tss.preset.list()                   -- print all available preset names and notes
-rd.tss.preset = {
+RD_DebugAPI.tss.preset = {
     apply = function(name)
         local tss = getTSS(true)
         if not tss then
