@@ -377,6 +377,26 @@ option RedDays.tss_stage4_hp_drain_pct
 	translation = RedDays_tss_stage4_hp_drain_pct,
 }
 
+option RedDays.tss_stage4_sleep_hp_drain_pct
+{
+	type = integer,
+	min = 0,
+	max = 400,
+	default = 50,
+	page = RedDays,
+	translation = RedDays_tss_stage4_sleep_hp_drain_pct,
+}
+
+option RedDays.tss_abx_sleep_health_cap_pct
+{
+	type = integer,
+	min = 0,
+	max = 100,
+	default = 50,
+	page = RedDays,
+	translation = RedDays_tss_abx_sleep_health_cap_pct,
+}
+
 option RedDays.tss_fever_nudge_strength_pct
 {
 	type = integer,

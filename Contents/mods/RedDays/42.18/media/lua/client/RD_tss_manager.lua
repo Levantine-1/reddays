@@ -6,7 +6,6 @@ require "RD_game_api"
 require "RD_hygiene_manager"
 
 local MINUTES_PER_HOUR = 60
-local MINUTES_PER_DAY = 1440
 
 local SICKNESS_DECAY_BASE = 0.0002              -- safety decay for residual sickness in stages 0-3
 local SICKNESS_RECOVERY_COMPLETE = 0.02
@@ -54,11 +53,13 @@ local TSS_COLD_STAGE4_MULT = 2.20
 local TSS_COLD_MIN_MULT = 2.40
 
 local TSS_STAGE4_BASE_HP_DRAIN = 0.15
-local TSS_STAGE4_ABX_FLAT_DRAIN = 0.05       -- Stage 4 + ABX suppression active + HP <= cap
-local TSS_STAGE4_ABX_HEALTH_CAP = 50.0       -- Stage 4 + ABX suppression active health ceiling
+local TSS_STAGE4_ABX_FLAT_DRAIN = 0.05       -- Stage 4 + ABX suppression active + HP <= cap (awake)
+local TSS_STAGE4_ABX_SLEEP_REGEN = 0.05      -- Stage 4 + ABX + asleep + HP <= cap: restore toward cap
+local TSS_STAGE4_ABX_HEALTH_CAP_DEFAULT = 50 -- fallback if tss_abx_sleep_health_cap_pct is unset
 local FEVER_TICK_INTERVAL_S = 3.0 -- Apply fever pressure every N in-game seconds
 local ABX_SEVERITY_PER_TOXIN_POINT = MINUTES_PER_HOUR -- Stage 1-3 relief conversion
 local ABX_BANK_POINTS_PER_DOSE = 10
+local ABX_TOXIN_MAX = 100                    -- Stage 4 toxin score scale (0..100)
 
 local function getSandbox()
     return SandboxVars.RedDays or {}
@@ -90,10 +91,18 @@ local function getABXDoseParams()
     local sb = getSandbox()
     local cooldownMins = (sb.tss_abx_dose_cooldown_hours or 12) * MINUTES_PER_HOUR
     local suppressMins = (sb.tss_abx_suppress_window_hours or 12) * MINUTES_PER_HOUR
-    local toxinPerDose = ABX_BANK_POINTS_PER_DOSE
     local bankCap = ABX_BANK_POINTS_PER_DOSE
-    local toxinDrainPerMin = toxinPerDose / math.max(1, cooldownMins)
-    return cooldownMins, suppressMins, toxinPerDose, bankCap, toxinDrainPerMin
+    local toxinDrainPerMin = bankCap / math.max(1, cooldownMins)
+    -- Stage-4 toxin (0..ABX_TOXIN_MAX) cleared per bank point drained, sized so a full course of
+    -- tss_abx_pills_to_cure doses clears the toxin exactly. Default 100/(10*10)=1.0 (unchanged).
+    local pillsToCure = math.max(1, sb.tss_abx_pills_to_cure or 10)
+    local toxinClearPerBankPoint = ABX_TOXIN_MAX / (pillsToCure * bankCap)
+    return cooldownMins, suppressMins, bankCap, toxinDrainPerMin, toxinClearPerBankPoint
+end
+
+-- Stage-4 ABX survival cap as a health value (0..100 health maps 1:1 to the pct knob).
+local function getABXSleepHealthCap()
+    return getSandbox().tss_abx_sleep_health_cap_pct or TSS_STAGE4_ABX_HEALTH_CAP_DEFAULT
 end
 
 local function getSandboxStageBounds(stage)
@@ -146,12 +155,8 @@ local function getModData()
         cured = false,
         stabilized_until = 0,
         antibiotics_taken_recently = false,
-        disinfectant_recently = false,
-        alcohol_recently = false,
         recovery_mode = "none",
         baseline_blur_effect = 0,
-        tss_rolls = 0,
-        treatment_attempts = 0,
         tss_risk = 0,
         stage_threshold = 0,
         stage3_minutes = 0,
@@ -163,7 +168,7 @@ local function getModData()
         abx_bank_points = 0,
         abx_bank_cap = 0,
         abx_bank_drain_per_min = 0,
-        tss_fever_induced = 0,
+        abx_toxin_clear_per_point = 1,
         _lastHPDrainPerMin = 0,
         _lastHPDrainMode = "none",
         _lastHPDrainMult = 1,
@@ -233,29 +238,6 @@ local function clampStage(stage)
     if stage < 0 then return 0 end
     if stage > 4 then return 4 end
     return stage
-end
-
-local function resetTreatmentFlags(tss)
-    tss.antibiotics_taken_recently = false
-    tss.disinfectant_recently = false
-    tss.alcohol_recently = false
-end
-
-local function cureTSS(tss)
-    tss.stage = 1
-    tss.severity = 0
-    tss.stage3_minutes = 0
-    tss.stage_threshold = rollNextStageThreshold(1)
-    tss.warning_cooldown = getWarningIntervalMinutes()
-    tss.cured = true
-    tss.stabilized_until = 0
-    tss.recovery_mode = "antibiotics"
-    tss.abx_bank_points = 0
-    tss.abx_cooldown_mins = 0
-    tss.abx_suppress_mins = 0
-    resetTreatmentFlags(tss)
-    notifyPlayer("Treatment started. TSS symptoms should gradually improve.")
-    transmitNow()
 end
 
 local function applyBlurEffect(player, tss)
@@ -511,7 +493,10 @@ local function applyStageStatEffects(player, tss)
             end
             local bd = player:getBodyDamage()
             if bd then
-                local sbDrainPct = getSandbox().tss_stage4_hp_drain_pct or 100
+                -- Awake and asleep use separate drain knobs so sleep can be tuned independently.
+                local sbDrainPct = isSleeping
+                    and (getSandbox().tss_stage4_sleep_hp_drain_pct or 50)
+                    or (getSandbox().tss_stage4_hp_drain_pct or 100)
                 local baseDrain = TSS_STAGE4_BASE_HP_DRAIN * (sbDrainPct / 100)
                 local thermo = bd:getThermoregulator()
                 local bodyTemp = thermo and thermo:getCoreCelcius() or nil
@@ -519,28 +504,35 @@ local function applyStageStatEffects(player, tss)
                 local sicknessDrain = baseDrain * mult
                 local health = bd:getHealth() or 0
                 local suppressActive = (tss.abx_suppress_mins or 0) > 0
+                local cap = getABXSleepHealthCap()
                 local appliedDrain = 0
                 local mode = "none"
 
                 if suppressActive then
-                    -- While ABX suppression is active, HP above cap is pulled down with the same
-                    -- sickness drain rate. At/below cap, use a flat non-multiplied ABX drain.
-                    if health > TSS_STAGE4_ABX_HEALTH_CAP then
+                    -- ABX taken: the player survives. HP above the cap is pulled down toward it;
+                    -- at/below the cap the player cannot die (asleep restores toward the cap).
+                    if health > cap then
                         appliedDrain = sicknessDrain
                         mode = "abx_cap_sickness_drain"
                         bd:ReduceGeneralHealth(appliedDrain)
                         local healthAfter = bd:getHealth() or health
-                        if healthAfter < TSS_STAGE4_ABX_HEALTH_CAP then
-                            bd:setOverallBodyHealth(TSS_STAGE4_ABX_HEALTH_CAP)
+                        if healthAfter < cap then
+                            bd:setOverallBodyHealth(cap)
                         end
+                    elseif isSleeping then
+                        -- Asleep + ABX + at/below cap: restore up to the cap, never lethal.
+                        appliedDrain = -TSS_STAGE4_ABX_SLEEP_REGEN
+                        mode = "abx_sleep_regen"
+                        bd:setOverallBodyHealth(math.min(cap, health + TSS_STAGE4_ABX_SLEEP_REGEN))
                     else
                         appliedDrain = TSS_STAGE4_ABX_FLAT_DRAIN
-                        mode = "abx_flat_regen_slow"
+                        mode = "abx_flat_drain"
                         bd:ReduceGeneralHealth(appliedDrain)
                     end
                 else
+                    -- No ABX: toxic shock drains health and can be lethal, awake or asleep.
                     appliedDrain = sicknessDrain
-                    mode = "stage4_sickness_drain"
+                    mode = isSleeping and "stage4_sleep_drain" or "stage4_sickness_drain"
                     bd:ReduceGeneralHealth(appliedDrain)
                 end
 
@@ -812,13 +804,9 @@ function RD_TSSManager.LoadPlayerData()
     tss.cured = tss.cured or false
     tss.stabilized_until = tss.stabilized_until or 0
     tss.antibiotics_taken_recently = tss.antibiotics_taken_recently or false
-    tss.disinfectant_recently = tss.disinfectant_recently or false
-    tss.alcohol_recently = tss.alcohol_recently or false
     tss.recovery_mode = tss.recovery_mode or "none"
     tss.baseline_blur_effect = tss.baseline_blur_effect or tss.baseline_drunkenness or 0
     tss.baseline_drunkenness = nil
-    tss.tss_rolls = tss.tss_rolls or 0
-    tss.treatment_attempts = tss.treatment_attempts or 0
     tss.tss_risk = tss.tss_risk or 0
     tss.abx_toxin_level = tss.abx_toxin_level or 0
     tss.abx_cooldown_mins = tss.abx_cooldown_mins or 0
@@ -827,10 +815,11 @@ function RD_TSSManager.LoadPlayerData()
     tss.abx_bank_points = tss.abx_bank_points or 0
     tss.abx_bank_cap = tss.abx_bank_cap or 0
     tss.abx_bank_drain_per_min = tss.abx_bank_drain_per_min or 0
-    local _, _, _, bankCap, toxinDrainPerMin = getABXDoseParams()
+    tss.abx_toxin_clear_per_point = tss.abx_toxin_clear_per_point or 1
+    local _, _, bankCap, toxinDrainPerMin, toxinClearPerBankPoint = getABXDoseParams()
     tss.abx_bank_cap = bankCap
     tss.abx_bank_drain_per_min = toxinDrainPerMin
-    tss.tss_fever_induced = tss.tss_fever_induced or 0
+    tss.abx_toxin_clear_per_point = toxinClearPerBankPoint
     tss._lastHPDrainPerMin = tss._lastHPDrainPerMin or 0
     tss._lastHPDrainMode = tss._lastHPDrainMode or "none"
     tss._lastHPDrainMult = tss._lastHPDrainMult or 1
@@ -859,12 +848,13 @@ function RD_TSSManager.registerTreatmentFromItem(item, actionName)
         return
     end
 
-    local cooldownMins, suppressMins, toxinReduction, bankCap, toxinDrainPerMin = getABXDoseParams()
+    local cooldownMins, suppressMins, bankCap, toxinDrainPerMin, toxinClearPerBankPoint = getABXDoseParams()
 
     tss.abx_suppress_mins = suppressMins
     tss.abx_dose_count = (tss.abx_dose_count or 0) + 1
     tss.abx_bank_cap = bankCap
     tss.abx_bank_drain_per_min = toxinDrainPerMin
+    tss.abx_toxin_clear_per_point = toxinClearPerBankPoint
 
     tss.abx_bank_points = bankCap
     tss.abx_cooldown_mins = math.min(cooldownMins, math.ceil((tss.abx_bank_points or 0) / math.max(0.000001, toxinDrainPerMin)))
@@ -953,7 +943,9 @@ function RD_TSSManager.EveryOneMinute(cycle)
             tss.abx_bank_points = math.max(0, bankPoints - drained)
 
             if tss.stage == 4 then
-                tss.abx_toxin_level = math.max(0, (tss.abx_toxin_level or 0) - drained)
+                -- Toxin clears at a rate sized so tss_abx_pills_to_cure full doses clear it exactly.
+                local toxinCleared = drained * (tss.abx_toxin_clear_per_point or 1)
+                tss.abx_toxin_level = math.max(0, (tss.abx_toxin_level or 0) - toxinCleared)
             else
                 local severityRelief = drained * ABX_SEVERITY_PER_TOXIN_POINT
                 tss.severity = math.max(0, (tss.severity or 0) - severityRelief)
@@ -963,7 +955,8 @@ function RD_TSSManager.EveryOneMinute(cycle)
         tss.abx_cooldown_mins = math.ceil((tss.abx_bank_points or 0) / math.max(0.000001, bankDrainPerMin))
 
         -- Fever pressure is applied via ApplyFeverPressure() in OnPlayerUpdate (main.lua),
-        -- throttled to every 6 in-game seconds for smooth, frame-rate-independent pressure.
+        -- throttled to every FEVER_TICK_INTERVAL_S in-game seconds for smooth,
+        -- frame-rate-independent pressure.
 
         -- Check if Stage 4 toxin has been cleared by antibiotic course
         if tss.stage == 4 and (tss.abx_toxin_level or 0) <= 0 and (tss.abx_dose_count or 0) > 0 then
