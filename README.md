@@ -62,6 +62,19 @@
 
 - Not wearing hyginene items increases "dirtiness/bloodiness" for certain clothing locations
     - Potential for interaction with other mods that have dirt/blood attracts zombies
+
+- Toxic Shock Syndrome (WARNING: TSS IS LETHAL BY DEFAULT! Can be disabled entirely or made non-lethal in sandbox options.)
+    - Neglecting your hygiene items for too long can develop into a progressive infection, starting with mild warning symptoms and, if ignored long enough, escalating all the way to full Toxic Shock.
+    - Early on it's just stamina/fatigue penalties and a nagging feeling something's off. Left unchecked, it can spiral into a dangerous late stage where your health itself starts draining -- made worse by stress, exhaustion, thirst, body temperature, and hunger.
+    - Changing your hygiene items regularly keeps it from ever starting. Once infected, removing the source lets your body recover on its own over time -- no medication strictly required, just patience.
+    - Antibiotics (a regular food item) speed up recovery and are your best safety net if things get bad.
+    - Known limitation: TSS is currently disabled automatically when playing on a true multiplayer/dedicated server, due to an unresolved sync bug -- it works as described above in singleplayer. Will be revisited in a future update. I've tested SP to work fine, but for both MP and SP, if you encounter something that doesn't seem right.
+        - RESET TSS:
+            - You can reset TSS by launching the game in debug mode, and running this command: rd.goToTSSStage(0)
+        - COLLECT REPORT:
+            - Go to your zomboid user data files, usually here: C:\Users\<your username>\Zomboid\console.txt
+            - Find a block of lines that look like : f:5891> =========================== Generated menstrual cycle details ==============================
+            - Submit the bug report, what you did leading up to the bug, what you expected, what you got and then the error.
     
 ## Planned features
 
@@ -83,8 +96,6 @@ Health affects menstrual cycle
     - Severe underweight/malnutrition can stop the cycle
     - Severe stress can alter the cycle
 
-Debuffs for insufficient hygienic care:
-- TSS or other sickness and debuffs
 
 ## Current Known Bugs or Basic ToDos:
 - Add more sandbox options:

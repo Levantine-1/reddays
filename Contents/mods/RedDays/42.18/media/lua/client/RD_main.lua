@@ -4,6 +4,7 @@ require "RD_cycle_tracker_logic"
 require "RD_effects_manager"
 require "RD_hygiene_manager"
 require "RD_effects_pms"
+require "RD_tss_manager"
 require "RD_moodles"
 require "RD_debugger"
 
@@ -32,6 +33,7 @@ local function initializePlayerData()
     RD_CycleManager.LoadPlayerData()
     RD_CycleTrackerLogic.LoadPlayerData()
     RD_EffectsPMS.LoadPlayerData()
+    RD_TSSManager.LoadPlayerData()
     RD_HygieneManager.LoadPlayerData()
     RD_moodles.LoadPlayerData()
     transmitModDataToServer() -- Sync initial/generated data to server
@@ -69,9 +71,19 @@ local function EveryOneMinute()
     local cycle = RD_CycleManager.tick(1)
     RD_EffectsManager.determineEffects(cycle)
     RD_EffectsPMS.applyPMSEffectsMain()
+    RD_TSSManager.EveryOneMinute(cycle)
     RD_moodles.mainLoop()
 end
 Events.EveryOneMinute.Add(EveryOneMinute)
+
+local function OnPlayerUpdate(player) -- This is very expensive, make sure everything in here is optimized and only runs when necessary.
+    if not isValidGenderCheck() then return end
+    RD_TSSManager.ApplyFeverPressure(player)
+    if RD_CycleDebugger and RD_CycleDebugger.ApplyDebugStatClamps then
+        RD_CycleDebugger.ApplyDebugStatClamps(player)
+    end
+end
+Events.OnPlayerUpdate.Add(OnPlayerUpdate)
 
 -- ================= INTERCEPT FUNCTIONS =================
 local o_ISUnequipAction_perform = ISUnequipAction.perform
@@ -106,4 +118,15 @@ function ISTakePillAction:perform()
         RD_EffectsPMS.ISTakePillAction_perform(self)
     end
     o_ISTakePillAction_perform(self)
+end
+
+-- Antibiotics are Type=Food (confirmed via https://pzwiki.net/wiki/Antibiotics), consumed via
+-- ISEatFoodAction:complete(), same as any other food item. Works correctly in singleplayer;
+-- the MP failure to register a dose is not an action-class mismatch (verified 2026-07-04).
+local o_ISEatFoodAction_complete = ISEatFoodAction.complete
+function ISEatFoodAction:complete()
+    if isValidGenderCheck() then
+        RD_TSSManager.registerTreatmentFromItem(self.item, "ISEatFoodAction")
+    end
+    return o_ISEatFoodAction_complete(self)
 end

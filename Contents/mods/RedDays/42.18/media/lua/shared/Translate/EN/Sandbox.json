@@ -65,5 +65,68 @@
     "Sandbox_RedDays_healthEffectLowerBound_tooltip": "Scales the pain, discomfort, fatigue and endurance effects during your period.",
 
     "Sandbox_RedDays_healthEffectUpperBound": "Maximum Health Impact",
-    "Sandbox_RedDays_healthEffectUpperBound_tooltip": "Scales the pain, discomfort, fatigue and endurance effects during your period."
+    "Sandbox_RedDays_healthEffectUpperBound_tooltip": "Scales the pain, discomfort, fatigue and endurance effects during your period.",
+
+    "Sandbox_RedDays_tss_enabled": "Enable TSS System",
+    "Sandbox_RedDays_tss_enabled_tooltip": "Enable or disable Red Days TSS progression and treatment mechanics.",
+
+    "Sandbox_RedDays_tss_lethal_enabled": "Enable Lethal TSS",
+    "Sandbox_RedDays_tss_lethal_enabled_tooltip": "If enabled, untreated Stage 3 can transition into Stage 4 toxic shock.",
+
+    "Sandbox_RedDays_tss_risk_multiplier_pct": "TSS Risk Multiplier",
+    "Sandbox_RedDays_tss_risk_multiplier_pct_tooltip": "Scales Stage 3 to Stage 4 risk gain. Lower is safer, higher is riskier.",
+
+    "Sandbox_RedDays_tss_tampon_grace_hours": "Tampon Grace Period (Hours)",
+    "Sandbox_RedDays_tss_tampon_grace_hours_tooltip": "How long a tampon can be worn before it starts contributing to TSS exposure.",
+
+    "Sandbox_RedDays_tss_warning_interval_mins": "TSS Warning Interval (Minutes)",
+    "Sandbox_RedDays_tss_warning_interval_mins_tooltip": "How often TSS warning messages are shown while symptoms are active.",
+
+    "Sandbox_RedDays_tss_stage0_duration_lowerBound": "TSS: Stage 0 to 1 Min Time (Hours)",
+    "Sandbox_RedDays_tss_stage0_duration_lowerBound_tooltip": "Minimum in-game hours before tampon exposure can begin progressing into Stage 1 infection. Lower values make infection start sooner under continuous use.",
+
+    "Sandbox_RedDays_tss_stage0_duration_upperBound": "TSS: Stage 0 to 1 Max Time (Hours)",
+    "Sandbox_RedDays_tss_stage0_duration_upperBound_tooltip": "Maximum time the uninfected state (Stage 0) can persist before progression to Stage 1 is forced. Higher values delay initial infection onset.",
+
+    "Sandbox_RedDays_tss_stage1_duration_lowerBound": "TSS: Stage 1 to 2 Min Time (Hours)",
+    "Sandbox_RedDays_tss_stage1_duration_lowerBound_tooltip": "Minimum in-game hours before early infection (Stage 1) can progress into established infection (Stage 2). Lower values accelerate worsening.",
+
+    "Sandbox_RedDays_tss_stage1_duration_upperBound": "TSS: Stage 1 to 2 Max Time (Hours)",
+    "Sandbox_RedDays_tss_stage1_duration_upperBound_tooltip": "Maximum time Stage 1 infection can persist before it is forced to progress into Stage 2. Higher values allow longer mild infection periods.",
+
+    "Sandbox_RedDays_tss_stage2_duration_lowerBound": "TSS: Stage 2 to 3 Min Time (Hours)",
+    "Sandbox_RedDays_tss_stage2_duration_lowerBound_tooltip": "Minimum in-game hours before established infection (Stage 2) can progress into severe systemic illness (Stage 3). Lower values increase danger speed.",
+
+    "Sandbox_RedDays_tss_stage2_duration_upperBound": "TSS: Stage 2 to 3 Max Time (Hours)",
+    "Sandbox_RedDays_tss_stage2_duration_upperBound_tooltip": "Maximum time Stage 2 infection can persist before progressing into Stage 3. Higher values slow severe illness onset.",
+
+    "Sandbox_RedDays_tss_recovery_hours_per_stage": "TSS Recovery Time Per Stage (Hours)",
+    "Sandbox_RedDays_tss_recovery_hours_per_stage_tooltip": "In-game hours of healing needed (tampon/pad removed, no antibiotics) to drop one TSS stage, e.g. Stage 3 to Stage 0 takes 3x this. Antibiotics double the speed while a dose is still active.",
+
+    "Sandbox_RedDays_tss_min_stage3_hours": "TSS: Min Time in Stage 3 Before Toxic Shock (Hours)",
+    "Sandbox_RedDays_tss_min_stage3_hours_tooltip": "Minimum in-game hours that must be spent in Stage 3 severe infection before Toxic Shock Syndrome (Stage 4) becomes eligible. TSS cannot occur before this threshold.",
+
+    "Sandbox_RedDays_tss_complication_chance_pct": "Base Complication Chance (%)",
+    "Sandbox_RedDays_tss_complication_chance_pct_tooltip": "When pre-TSS infection is active, this is the hourly chance for a sudden complication. Higher values mean symptoms can worsen more often, especially when you are sick, tired, thirsty, or cold/overheated.",
+
+    "Sandbox_RedDays_tss_abx_dose_cooldown_hours": "Antibiotic Dose Interval (Hours)",
+    "Sandbox_RedDays_tss_abx_dose_cooldown_hours_tooltip": "How many hours a single antibiotic dose keeps working before the next dose is needed. Each dose's treatment effect drains steadily over this period.",
+
+    "Sandbox_RedDays_tss_abx_pills_to_cure": "ABX Pills Needed To Cure Stage 4",
+    "Sandbox_RedDays_tss_abx_pills_to_cure_tooltip": "How many antibiotic doses are required to fully clear Stage 4 toxic shock. Default 10 is about a 5-day course at 2 doses/day.",
+
+    "Sandbox_RedDays_tss_abx_suppress_window_hours": "Antibiotic HP Shield Duration (Hours)",
+    "Sandbox_RedDays_tss_abx_suppress_window_hours_tooltip": "Hours after taking an antibiotic dose that full Stage 4 sickness drain is suppressed. Default is 12h to match 2-dose/day treatment cadence.",
+
+    "Sandbox_RedDays_tss_stage4_hp_drain_pct": "TSS Stage 4 HP Drain While Awake (%)",
+    "Sandbox_RedDays_tss_stage4_hp_drain_pct_tooltip": "Percentage multiplier for base HP drain during Stage 4 Toxic Shock Syndrome while awake. 100 = normal (0.15 HP/min base). 200 = double drain. 50 = half drain. Drain scales further with body temperature.",
+
+    "Sandbox_RedDays_tss_stage4_sleep_hp_drain_pct": "TSS Stage 4 HP Drain While Asleep (%)",
+    "Sandbox_RedDays_tss_stage4_sleep_hp_drain_pct_tooltip": "Percentage multiplier for base Stage 4 HP drain while the player is asleep, separate from the awake drain. 0 = no HP loss during sleep. Without antibiotics you can still die in your sleep; drain scales with body temperature like the awake value.",
+
+    "Sandbox_RedDays_tss_abx_sleep_health_cap_pct": "TSS Antibiotic Sleep Survival Cap (%)",
+    "Sandbox_RedDays_tss_abx_sleep_health_cap_pct_tooltip": "With active antibiotics, Stage 4 cannot drop health below this percentage. Sleeping with antibiotics restores health up to this cap and will not kill you. Without antibiotics this cap does not apply.",
+
+    "Sandbox_RedDays_tss_fever_nudge_strength_pct": "TSS Fever Nudge Strength (%)",
+    "Sandbox_RedDays_tss_fever_nudge_strength_pct_tooltip": "Percentage multiplier for how hard TSS pushes the fever above the vanilla Stage 4 sickness plateau (~38C). 0 disables the extra heat push entirely; 100 is standard nudge intensity. Body temperature is still primarily driven by the sickness moodle."
 }

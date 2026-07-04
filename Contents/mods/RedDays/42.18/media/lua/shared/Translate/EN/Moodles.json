@@ -38,5 +38,14 @@
     "Moodles_Leak_Bad_lvl3": "Embarrassing Situation",
     "Moodles_Leak_Bad_desc_lvl3": "This is not how you wanted your day to go.",
     "Moodles_Leak_Bad_lvl4": "Disaster Zone",
-    "Moodles_Leak_Bad_desc_lvl4": "It\u2019s everywhere..."
+    "Moodles_Leak_Bad_desc_lvl4": "It\u2019s everywhere...",
+
+    "Moodles_TSSInfection_Bad_lvl1": "Forgetting something?",
+    "Moodles_TSSInfection_Bad_desc_lvl1": "You're feeling a little uncomfortable down there...",
+    "Moodles_TSSInfection_Bad_lvl2": "Something doesn't feel right",
+    "Moodles_TSSInfection_Bad_desc_lvl2": "You're starting to feel under the weather. When was the last time you changed your tampon?",
+    "Moodles_TSSInfection_Bad_lvl3": "Severe Infection",
+    "Moodles_TSSInfection_Bad_desc_lvl3": "Dizziness, nausea, and a growing fever make even simple tasks difficult.",
+    "Moodles_TSSInfection_Bad_lvl4": "Toxic Shock Syndrome",
+    "Moodles_TSSInfection_Bad_desc_lvl4": "Your body is failing. Without immediate treatment, you may not survive."
 }

@@ -93,6 +93,52 @@ function Commands.applyBodyStiffness(player, args)
     if v ~= nil then bodyDamage:getBodyPart(BodyPartType.Torso_Upper):setStiffness(v) end
 end
 
+-- Command to apply TSS (toxic shock) CharacterStat/BodyDamage/blur changes server-side.
+-- Same reasoning as applyBodyStiffness above: CharacterStat and BodyDamage are server-authoritative,
+-- so a client's direct stats:set()/bd:ReduceGeneralHealth() calls get silently overwritten by the
+-- next server sync on a real dedicated-server client. RD_tss_manager.lua applies these locally too
+-- (for instant client-side feedback) and additionally sends this command so the server's own copy
+-- converges to the same value instead of reverting it later.
+function Commands.applyTSSStats(player, args)
+    if not player or not args then return end
+    local stats = player:getStats()
+    if stats then
+        if args.sickness ~= nil then stats:set(CharacterStat.SICKNESS, args.sickness) end
+        if args.endurance ~= nil then stats:set(CharacterStat.ENDURANCE, args.endurance) end
+        if args.fatigue ~= nil then stats:set(CharacterStat.FATIGUE, args.fatigue) end
+        if args.thirst ~= nil then stats:set(CharacterStat.THIRST, args.thirst) end
+        if args.unhappiness ~= nil then stats:set(CharacterStat.UNHAPPINESS, args.unhappiness) end
+        -- Delta, not absolute -- accumulated client-side across many ApplyFeverPressure ticks and
+        -- flushed once per game-minute, so this stays commutative regardless of send timing.
+        if args.temperatureAdd ~= nil then stats:add(CharacterStat.TEMPERATURE, args.temperatureAdd) end
+    end
+
+    -- Stage 4 HP drain/regen: replicate the exact branch the client took, using the SERVER's own
+    -- live health (not a client-supplied absolute), so any prior client/server drift self-corrects.
+    if args.hpMode then
+        local bd = player:getBodyDamage()
+        if bd then
+            if args.hpMode == "abx_cap_sickness_drain" or args.hpMode == "abx_flat_drain" then
+                -- ABX active: floor at the cap either way -- "at/below the cap the player
+                -- cannot die" must hold for both the sickness-scaled and flat-trickle drain.
+                bd:ReduceGeneralHealth(args.hpDrain or 0)
+                if (bd:getHealth() or 0) < (args.hpCap or 0) then
+                    bd:setOverallBodyHealth(args.hpCap)
+                end
+            elseif args.hpMode == "abx_sleep_regen" then
+                local health = bd:getHealth() or 0
+                bd:setOverallBodyHealth(math.min(args.hpCap or health, health + (args.hpDrain or 0)))
+            else -- stage4_sleep_drain, stage4_sickness_drain (no ABX -- can be lethal)
+                bd:ReduceGeneralHealth(args.hpDrain or 0)
+            end
+        end
+    end
+
+    if args.blur ~= nil then
+        player:setSleepingTabletEffect(args.blur)
+    end
+end
+
 -- Command handler for OnClientCommand event
 RD_ServerCommands.OnClientCommand = function(module, command, player, args)
     if module == 'RedDays' and Commands[command] then
