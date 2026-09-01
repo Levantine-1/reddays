@@ -1,0 +1,426 @@
+VERSION = 1,
+
+option RedDays.hygiene_items_spawn_on_corpses
+{
+	type = boolean,
+	default = true,
+	page = RedDays,
+	translation = RedDays_hygiene_items_spawn_on_corpses,
+}
+
+option RedDays.hygiene_item_packages_spawn_on_corpses
+{
+	type = boolean,
+	default = true,
+	page = RedDays,
+	translation = RedDays_hygiene_item_packages_spawn_on_corpses,
+}
+
+option RedDays.spawn_with_hygiene_products
+{
+	type = boolean,
+	default = false,
+	page = RedDays,
+	translation = RedDays_spawn_with_hygiene_products,
+}
+
+option RedDays.affectsAllGenders
+{
+	type = boolean,
+	default = false,
+	page = RedDays,
+	translation = RedDays_affectsAllGenders,
+}
+
+option RedDays.phase_start_delay_enabled
+{
+	type = boolean,
+	default = true,
+	page = RedDays,
+	translation = RedDays_phase_start_delay_enabled,
+}
+
+option RedDays.painkillerEffectDuration
+{
+	type = integer,
+	min = 0,
+	max = 300,
+	default = 36,
+	page = RedDays,
+	translation = RedDays_painkillerEffectDuration,
+}
+
+option RedDays.healthEffectLowerBound
+{
+	type = integer,
+	min = 0,
+	max = 100,
+	default = 30,
+	page = RedDays,
+	translation = RedDays_healthEffectLowerBound,
+}
+
+option RedDays.healthEffectUpperBound
+{
+	type = integer,
+	min = 0,
+	max = 100,
+	default = 100,
+	page = RedDays,
+	translation = RedDays_healthEffectUpperBound,
+}
+
+option RedDays.PMS_ConsistentVsRandom
+{
+	type = boolean,
+	default = true,
+	page = RedDays,
+	translation = RedDays_PMS_ConsistentVsRandom,
+}
+
+option RedDays.PMS_duration_upperbound
+{
+	type = integer,
+	min = 0,
+	max = 100,
+	default = 10,
+	page = RedDays,
+	translation = RedDays_PMS_duration_upperbound,
+}
+
+option RedDays.PMS_duration_lowerbound
+{
+	type = integer,
+	min = 0,
+	max = 99,
+	default = 2,
+	page = RedDays,
+	translation = RedDays_PMS_duration_lowerbound,
+}
+
+option RedDays.menstrual_cycle_duration_lowerBound
+{
+	type = integer,
+	min = -100,
+	max = 100,
+	default = 28,
+	page = RedDays,
+	translation = RedDays_menstrual_cycle_duration_lowerBound,
+}
+
+option RedDays.menstrual_cycle_duration_upperBound
+{
+	type = integer,
+	min = -100,
+	max = 100,
+	default = 34,
+	page = RedDays,
+	translation = RedDays_menstrual_cycle_duration_upperBound,
+}
+
+option RedDays.red_phase_duration_lowerBound
+{
+	type = integer,
+	min = -100,
+	max = 100,
+	default = 2,
+	page = RedDays,
+	translation = RedDays_red_phase_duration_lowerBound,
+}
+
+option RedDays.red_phase_duration_upperBound
+{
+	type = integer,
+	min = -100,
+	max = 100,
+	default = 5,
+	page = RedDays,
+	translation = RedDays_red_phase_duration_upperBound,
+}
+
+option RedDays.follicular_phase_duration_lowerBound
+{
+	type = integer,
+	min = -100,
+	max = 100,
+	default = 11,
+	page = RedDays,
+	translation = RedDays_follicular_phase_duration_lowerBound,
+}
+
+option RedDays.follicular_phase_duration_upperBound
+{
+	type = integer,
+	min = -100,
+	max = 100,
+	default = 16,
+	page = RedDays,
+	translation = RedDays_follicular_phase_duration_upperBound,
+}
+
+option RedDays.ovulation_phase_duration_lowerBound
+{
+	type = integer,
+	min = -100,
+	max = 100,
+	default = 1,
+	page = RedDays,
+	translation = RedDays_ovulation_phase_duration_lowerBound,
+}
+
+option RedDays.ovulation_phase_duration_upperBound
+{
+	type = integer,
+	min = -100,
+	max = 100,
+	default = 2,
+	page = RedDays,
+	translation = RedDays_ovulation_phase_duration_upperBound,
+}
+
+option RedDays.luteal_phase_duration_lowerBound
+{
+	type = integer,
+	min = -100,
+	max = 100,
+	default = 11,
+	page = RedDays,
+	translation = RedDays_luteal_phase_duration_lowerBound,
+}
+
+option RedDays.luteal_phase_duration_upperBound
+{
+	type = integer,
+	min = -100,
+	max = 100,
+	default = 18,
+	page = RedDays,
+	translation = RedDays_luteal_phase_duration_upperBound,
+}
+
+option RedDays.phase_start_delay_lowerBound
+{
+	type = integer,
+	min = 0,
+	max = 29,
+	default = 0,
+	page = RedDays,
+	translation = RedDays_phase_start_delay_lowerBound,
+}
+
+option RedDays.phase_start_delay_upperBound
+{
+	type = integer,
+	min = 1,
+	max = 30,
+	default = 5,
+	page = RedDays,
+	translation = RedDays_phase_start_delay_upperBound,
+}
+
+option RedDays.tss_enabled
+{
+	type = boolean,
+	default = true,
+	page = RedDays,
+	translation = RedDays_tss_enabled,
+}
+
+option RedDays.tss_lethal_enabled
+{
+	type = boolean,
+	default = true,
+	page = RedDays,
+	translation = RedDays_tss_lethal_enabled,
+}
+
+option RedDays.tss_risk_multiplier_pct
+{
+	type = integer,
+	min = 25,
+	max = 300,
+	default = 100,
+	page = RedDays,
+	translation = RedDays_tss_risk_multiplier_pct,
+}
+
+option RedDays.tss_tampon_grace_hours
+{
+	type = integer,
+	min = 1,
+	max = 48,
+	default = 8,
+	page = RedDays,
+	translation = RedDays_tss_tampon_grace_hours,
+}
+
+
+option RedDays.tss_warning_interval_mins
+{
+	type = integer,
+	min = 30,
+	max = 720,
+	default = 180,
+	page = RedDays,
+	translation = RedDays_tss_warning_interval_mins,
+}
+
+option RedDays.tss_stage0_duration_lowerBound
+{
+	type = integer,
+	min = 4,
+	max = 96,
+	default = 12,
+	page = RedDays,
+	translation = RedDays_tss_stage0_duration_lowerBound,
+}
+
+option RedDays.tss_stage0_duration_upperBound
+{
+	type = integer,
+	min = 4,
+	max = 96,
+	default = 48,
+	page = RedDays,
+	translation = RedDays_tss_stage0_duration_upperBound,
+}
+
+option RedDays.tss_stage1_duration_lowerBound
+{
+	type = integer,
+	min = 12,
+	max = 240,
+	default = 48,
+	page = RedDays,
+	translation = RedDays_tss_stage1_duration_lowerBound,
+}
+
+option RedDays.tss_stage1_duration_upperBound
+{
+	type = integer,
+	min = 12,
+	max = 240,
+	default = 120,
+	page = RedDays,
+	translation = RedDays_tss_stage1_duration_upperBound,
+}
+
+option RedDays.tss_stage2_duration_lowerBound
+{
+	type = integer,
+	min = 24,
+	max = 480,
+	default = 120,
+	page = RedDays,
+	translation = RedDays_tss_stage2_duration_lowerBound,
+}
+
+option RedDays.tss_stage2_duration_upperBound
+{
+	type = integer,
+	min = 24,
+	max = 480,
+	default = 240,
+	page = RedDays,
+	translation = RedDays_tss_stage2_duration_upperBound,
+}
+
+option RedDays.tss_recovery_hours_per_stage
+{
+	type = integer,
+	min = 1,
+	max = 168,
+	default = 4,
+	page = RedDays,
+	translation = RedDays_tss_recovery_hours_per_stage,
+}
+
+option RedDays.tss_min_stage3_hours
+{
+	type = integer,
+	min = 1,
+	max = 480,
+	default = 48,
+	page = RedDays,
+	translation = RedDays_tss_min_stage3_hours,
+}
+
+option RedDays.tss_complication_chance_pct
+{
+	type = integer,
+	min = 1,
+	max = 30,
+	default = 5,
+	page = RedDays,
+	translation = RedDays_tss_complication_chance_pct,
+}
+
+option RedDays.tss_abx_dose_cooldown_hours
+{
+	type = integer,
+	min = 1,
+	max = 24,
+	default = 12,
+	page = RedDays,
+	translation = RedDays_tss_abx_dose_cooldown_hours,
+}
+
+option RedDays.tss_abx_pills_to_cure
+{
+	type = integer,
+	min = 1,
+	max = 50,
+	default = 10,
+	page = RedDays,
+	translation = RedDays_tss_abx_pills_to_cure,
+}
+
+option RedDays.tss_abx_suppress_window_hours
+{
+	type = integer,
+	min = 1,
+	max = 24,
+	default = 12,
+	page = RedDays,
+	translation = RedDays_tss_abx_suppress_window_hours,
+}
+
+option RedDays.tss_stage4_hp_drain_pct
+{
+	type = integer,
+	min = 25,
+	max = 400,
+	default = 100,
+	page = RedDays,
+	translation = RedDays_tss_stage4_hp_drain_pct,
+}
+
+option RedDays.tss_stage4_sleep_hp_drain_pct
+{
+	type = integer,
+	min = 0,
+	max = 400,
+	default = 50,
+	page = RedDays,
+	translation = RedDays_tss_stage4_sleep_hp_drain_pct,
+}
+
+option RedDays.tss_abx_sleep_health_cap_pct
+{
+	type = integer,
+	min = 0,
+	max = 100,
+	default = 50,
+	page = RedDays,
+	translation = RedDays_tss_abx_sleep_health_cap_pct,
+}
+
+option RedDays.tss_fever_nudge_strength_pct
+{
+	type = integer,
+	min = 0,
+	max = 300,
+	default = 100,
+	page = RedDays,
+	translation = RedDays_tss_fever_nudge_strength_pct,
+}

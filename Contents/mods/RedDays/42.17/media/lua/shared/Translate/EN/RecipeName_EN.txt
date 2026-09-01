@@ -1,0 +1,9 @@
+RecipeName_EN = {
+    RecipeName_UnpackBoxOfTampons = "Unpack Box of Tampons",
+    RecipeName_PackBoxOfTampons = "Pack Box of Tampons",
+    RecipeName_UnpackBoxOfSanitaryPads = "Unpack Box of Sanitary Pads",
+    RecipeName_PackBoxOfSanitaryPads = "Pack Box of Sanitary Pads",
+    RecipeName_UnpackBoxOfPantyLiners = "Unpack Box of Panty Liners",
+    RecipeName_PackBoxOfPantyLiners = "Pack Box of Panty Liners",
+    RecipeName_CraftPeriodTracker = "Craft Period Tracker",
+}
