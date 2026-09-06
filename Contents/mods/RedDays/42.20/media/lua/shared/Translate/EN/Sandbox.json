@@ -10,6 +10,18 @@
     "Sandbox_RedDays_spawn_with_hygiene_products": "Spawn With Hygiene Products",
     "Sandbox_RedDays_spawn_with_hygiene_products_tooltip": "New characters start with 2 Panty Liners, 1 Tampon, and 1 Sanitary Pad in their inventory.",
 
+    "Sandbox_RedDays_follicular_irregularity_severity_pct": "Follicular Irregularity Severity",
+    "Sandbox_RedDays_follicular_irregularity_severity_pct_tooltip": "Scales how much extra time weight-related irregularity adds to the follicular phase. 0 disables it, 100 is normal, up to 300 for triple.",
+
+    "Sandbox_RedDays_follicular_phase_max_days": "Maximum Follicular Phase Length (Irregularity Cap)",
+    "Sandbox_RedDays_follicular_phase_max_days_tooltip": "Hard cap, in days, on how long the follicular phase can be extended by irregularity (weight or trauma).",
+
+    "Sandbox_RedDays_trauma_hp_threshold_pct": "Trauma Delay HP Threshold",
+    "Sandbox_RedDays_trauma_hp_threshold_pct_tooltip": "If health falls below this percent while in the follicular phase, the cycle is delayed once.",
+
+    "Sandbox_RedDays_trauma_follicular_delay_days": "Trauma Delay Length",
+    "Sandbox_RedDays_trauma_follicular_delay_days_tooltip": "How many days are added to the follicular phase when the trauma HP threshold is crossed.",
+
     "Sandbox_RedDays_affectsAllGenders": "Affect All Genders",
     "Sandbox_RedDays_affectsAllGenders_tooltip": "Enable to apply menstrual cycle to all characters regardless of gender",
 

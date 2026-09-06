@@ -57,6 +57,7 @@ local CYCLE_DEFAULTS = {
     phase_minutes_remaining = 0,
     healthEffectSeverity = 50,
     reason_for_cycle = "debug_override",
+    traumaDelayAppliedThisCycle = false,
 }
 
 local function transmitDebugData()
@@ -359,6 +360,12 @@ defineAccessor(RD_DebugAPI.cycle, "healthEffectSeverity", getCycle, "healthEffec
 end)
 defineAccessor(RD_DebugAPI.cycle, "reason_for_cycle", getCycle, "reason_for_cycle", function(v)
     return asString(v, "debug_override")
+end)
+defineAccessor(RD_DebugAPI.cycle, "trauma_delay_applied", getCycle, "traumaDelayAppliedThisCycle", function(v)
+    return clampBoolean(v)
+end)
+defineAccessor(RD_DebugAPI.cycle, "follicular_duration_mins", getCycle, "follicularPhase_duration_mins", function(v)
+    return clampNumber(v, 0, nil, 0)
 end)
 
 defineAccessor(RD_DebugAPI.hygiene, "cSIHDC_counter", function(create)
@@ -943,6 +950,34 @@ local function PrintStatus(cycle)
 
     print("Red phase duration ---------------------- " .. (cycle.redPhase_duration_mins / MINUTES_PER_DAY) .. " days (" .. cycle.redPhase_duration_mins .. " mins)")
     print("Follicular phase duration --------------- " .. (cycle.follicularPhase_duration_mins / MINUTES_PER_DAY) .. " days (" .. cycle.follicularPhase_duration_mins .. " mins)")
+
+    do
+        local sb = SandboxVars.RedDays or {}
+        local follicularMaxDays = sb.follicular_phase_max_days or 45
+        local follicularMaxMins = follicularMaxDays * MINUTES_PER_DAY
+        local followRoomMins = math.max(0, follicularMaxMins - cycle.follicularPhase_duration_mins)
+        print("Follicular irregularity cap -------------- " .. follicularMaxDays .. " days (" .. followRoomMins .. " mins of room left before cap)")
+        print("Follicular irregularity severity pct ----- " .. tostring(sb.follicular_irregularity_severity_pct or 100) .. "%")
+        print("Trauma delay applied this cycle ---------- " .. tostring(cycle.traumaDelayAppliedThisCycle or false)
+            .. " (threshold=" .. tostring(sb.trauma_hp_threshold_pct or 25) .. "% hp, delay=" .. tostring(sb.trauma_follicular_delay_days or 30) .. " days)")
+
+        local player = RD_zapi.getPlayer()
+        if player then
+            local weightTierLabel = "normal"
+            if player:hasTrait(CharacterTrait.VERY_UNDERWEIGHT) then weightTierLabel = "very underweight (severe)"
+            elseif player:hasTrait(CharacterTrait.OBESE) then weightTierLabel = "obese (severe)"
+            elseif player:hasTrait(CharacterTrait.EMACIATED) then weightTierLabel = "emaciated (severe)"
+            elseif player:hasTrait(CharacterTrait.UNDERWEIGHT) then weightTierLabel = "underweight (mild)"
+            elseif player:hasTrait(CharacterTrait.OVERWEIGHT) then weightTierLabel = "overweight (mild)"
+            end
+            print("Weight irregularity tier ------------------ " .. weightTierLabel)
+            local bd = player:getBodyDamage()
+            if bd then
+                print("Current HP (getHealth) ------------------- " .. tostring(bd:getHealth()))
+            end
+        end
+    end
+
     print("Ovulation phase duration ---------------- " .. (cycle.ovulationPhase_duration_mins / MINUTES_PER_DAY) .. " days (" .. cycle.ovulationPhase_duration_mins .. " mins)")
     print("Luteal phase duration ------------------- " .. (cycle.lutealPhase_duration_mins / MINUTES_PER_DAY) .. " days (" .. cycle.lutealPhase_duration_mins .. " mins)")
 

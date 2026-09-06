@@ -143,7 +143,7 @@ option RedDays.follicular_phase_duration_lowerBound
 	type = integer,
 	min = -100,
 	max = 100,
-	default = 11,
+	default = 12,
 	page = RedDays,
 	translation = RedDays_follicular_phase_duration_lowerBound,
 }
@@ -153,9 +153,49 @@ option RedDays.follicular_phase_duration_upperBound
 	type = integer,
 	min = -100,
 	max = 100,
-	default = 16,
+	default = 15,
 	page = RedDays,
 	translation = RedDays_follicular_phase_duration_upperBound,
+}
+
+option RedDays.follicular_irregularity_severity_pct
+{
+	type = integer,
+	min = 0,
+	max = 300,
+	default = 100,
+	page = RedDays,
+	translation = RedDays_follicular_irregularity_severity_pct,
+}
+
+option RedDays.follicular_phase_max_days
+{
+	type = integer,
+	min = 1,
+	max = 100,
+	default = 45,
+	page = RedDays,
+	translation = RedDays_follicular_phase_max_days,
+}
+
+option RedDays.trauma_hp_threshold_pct
+{
+	type = integer,
+	min = 0,
+	max = 100,
+	default = 25,
+	page = RedDays,
+	translation = RedDays_trauma_hp_threshold_pct,
+}
+
+option RedDays.trauma_follicular_delay_days
+{
+	type = integer,
+	min = 0,
+	max = 60,
+	default = 30,
+	page = RedDays,
+	translation = RedDays_trauma_follicular_delay_days,
 }
 
 option RedDays.ovulation_phase_duration_lowerBound

@@ -130,7 +130,10 @@ local function default_cycle() -- Default cycle values if a new cycle cannot be 
         pms_Sadness = false,
         
         -- Metadata
-        reason_for_cycle = "defaultCycle"
+        reason_for_cycle = "defaultCycle",
+
+        -- Follicular irregularity tracking
+        traumaDelayAppliedThisCycle = false
     }
 end
 
@@ -167,7 +170,10 @@ local function test_debug_cycle() -- The faster cycle for testing purposes
         pms_Sadness = false,
 
         -- Metadata
-        reason_for_cycle = "testDebugCycle"
+        reason_for_cycle = "testDebugCycle",
+
+        -- Follicular irregularity tracking
+        traumaDelayAppliedThisCycle = false
     }
 end
 
@@ -386,7 +392,10 @@ function RD_CycleManager.newCycle(whoDidThis)
         pms_Sadness = pms_symptoms.pms_Sadness,
         
         -- Metadata
-        reason_for_cycle = whoDidThis
+        reason_for_cycle = whoDidThis,
+
+        -- Follicular irregularity tracking
+        traumaDelayAppliedThisCycle = false
     }
 
     if whoDidThis ~= "isCycleValid" then

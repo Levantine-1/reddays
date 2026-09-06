@@ -1,5 +1,6 @@
 require "RD_game_api"
 require "RD_cycle_manager"
+require "RD_cycle_irregularity"
 require "RD_cycle_tracker_logic"
 require "RD_effects_manager"
 require "RD_hygiene_manager"
@@ -62,7 +63,7 @@ Events.EveryHours.Add(EveryHours)
 
 local function EveryTenMinutes()
     if not isValidGenderCheck() then return end
-    -- RD_CycleDebugger.printWrapper()
+    RD_CycleDebugger.printWrapper()
     transmitModDataToServer() -- Periodically sync modData to server for persistence
 end
 Events.EveryTenMinutes.Add(EveryTenMinutes)
@@ -70,12 +71,19 @@ Events.EveryTenMinutes.Add(EveryTenMinutes)
 local function EveryOneMinute()
     if not isValidGenderCheck() then return end
     local cycle = RD_CycleManager.tick(1)
+    RD_CycleIrregularity.checkTraumaCause(cycle)
     RD_EffectsManager.determineEffects(cycle)
     RD_EffectsPMS.applyPMSEffectsMain()
     RD_TSSManager.EveryOneMinute(cycle)
     RD_moodles.mainLoop()
 end
 Events.EveryOneMinute.Add(EveryOneMinute)
+
+local function EveryDays()
+    if not isValidGenderCheck() then return end
+    RD_CycleIrregularity.applyDailyWeightCause(RD_modData.ICdata.currentCycle)
+end
+Events.EveryDays.Add(EveryDays)
 
 local function OnPlayerUpdate(player) -- This is very expensive, make sure everything in here is optimized and only runs when necessary.
     if not isValidGenderCheck() then return end
