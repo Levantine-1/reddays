@@ -97,6 +97,60 @@ Health affects menstrual cycle
     - Severe stress can alter the cycle
 
 
+## Investigated and abandoned: real fluid containers for hygiene items
+
+Tampons/pads/liners currently track saturation as a simple integer `condition`
+(10→1) that decrements on a timer. It would be more realistic to track real
+fluid volume (mL of blood vs. discharge) using Project Zomboid's native
+`FluidContainer` item component instead of a plain counter, and it was tried.
+It's being shelved: the engine fights this use case hard enough that every
+fix required another workaround, and the payoff (more realistic numbers
+under the hood) is invisible to players either way. Documenting the findings
+here so nobody re-discovers them the hard way:
+
+- **50 mL hard floor.** `FluidContainer.setCapacity()` is
+  `this.capacity = PZMath.max(f, 0.05f)` (confirmed by disassembling
+  `projectzomboid.jar`) — any script `Capacity` below 0.05 L is silently
+  clamped up to it. A real tampon/pad/liner (3-12 mL) can't be expressed as a
+  capacity at all; the smallest capacity used anywhere in vanilla is 0.1 L
+  (100 mL), so nothing this small had ever been exercised before. Workable
+  around by giving every item the same 0.1 L container and treating it as an
+  abstract 0-100 percentage gauge, with the real mL numbers kept in Lua.
+- **The player-facing locks also lock out the mod's own code.**
+  `Opened = false` and `InputLocked = true` are needed to stop players from
+  pouring, filling, transferring, or drinking from these items — but
+  `FluidContainer.canAddFluid()` returns `false` whenever either flag is
+  set, and `addFluid()` silently no-ops when `canAddFluid()` is false (no
+  error, no return value). That means the exact flags needed to lock the
+  player out also silently blocked every fluid addition the mod itself tried
+  to make. Workable around by having the mod unlock the container, write,
+  and immediately relock it, all inside one synchronous call.
+- **The item renames itself and nothing can stop it.** Once a
+  `FluidContainer` holds any fluid, `InventoryItem.getName()` unconditionally
+  returns `FluidContainer.getUiName()` — confirmed as the very first branch
+  of that method, with no script field, tag, or `HiddenAmount` setting able
+  to suppress it. A worn tampon would start display as "Menstrual Blood
+  (Tampon)" everywhere: inventory, tooltip, hotbar, world-floor label. This
+  one had no clean workaround — patching every Lua UI surface that calls
+  `item:getName()` would still miss native-only surfaces like the
+  floor-drop label, so the item would show inconsistent names depending on
+  where you looked at it.
+
+None of these are bugs in this mod's own code — all three were confirmed at
+the engine bytecode level. The first two have workarounds; the third
+doesn't, short of abandoning the display name entirely (which defeats the
+point of a game that's supposed to read clearly at a glance). Combined with
+the growing pile of workarounds needed just to get partway there, it wasn't
+worth it for a change players would never actually see the internals of.
+
+If this gets revisited: track saturation as a plain number pair in the
+item's own `modData` (blood mL, discharge mL) instead of a real
+`FluidContainer`. That sidesteps all three problems outright — no engine
+capacity, no engine locks to fight, and the item's name stays under the
+mod's own control — at the cost of not being backed by the engine's native
+fluid API (which wasn't buying anything user-visible anyway, since the
+numbers were being hidden from players either way).
+
 ## Current Known Bugs or Basic ToDos:
 - Add more sandbox options:
     - Stat degrade rates
