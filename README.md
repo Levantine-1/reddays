@@ -60,7 +60,6 @@
     - Cheese (regular or Processed Cheese): -8%
     - Bowl of Oatmeal: -6%
     - Peanuts / Peanut Butter / Banana / Fish (any raw species, or Fish Fillet): -4%
-        - Only raw fish counts, not an already-cooked fish item eaten on its own (Fried Fish, Fish Fingers, Sushi). Cooking a stew or other dish you added raw fish to is fine -- the dish still gets credit for what went in.
     - Home-cooked meals count too: a stew, soup, or other cooked dish gets credit for whichever of the above ingredients were mixed in, on top of the meal's own type if it matches. Works if food is divided into bowls.
 
     PMS Effects:
@@ -107,7 +106,13 @@ Traits:
 - Endometriosis by popular request
 - PMS symptoms as traits
 
+- Birth control pills
 
+- Ingame informational magazines and posters
+
+- Revamp period tracker with a custom user interface.
+
+- Make the hot water bag actually wearable and useful.
 
 ## Investigated and abandoned: real fluid containers for hygiene items
 
