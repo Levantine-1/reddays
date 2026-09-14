@@ -142,6 +142,27 @@ local o_ISEatFoodAction_complete = ISEatFoodAction.complete
 function ISEatFoodAction:complete()
     if isValidGenderCheck() then
         RD_TSSManager.registerTreatmentFromItem(self.item, "ISEatFoodAction")
+        -- pcall-wrapped so an exception in our own food-PMS logic (a mistagged item, an
+        -- unanticipated composite meal shape, anything) can NEVER skip the vanilla Eat()
+        -- effect below -- confirmed the hard way once already (see RD_effects_pms.lua).
+        local ok, err = pcall(RD_EffectsPMS.ISEatFoodAction_complete, self)
+        if not ok then
+            print("[RedDays] food-PMS effect skipped for this item (see error): " .. tostring(err))
+        end
     end
     return o_ISEatFoodAction_complete(self)
+end
+
+-- Milk (Base.Milk/MilkBottle/Milk_Personalsized) is a FluidContainer item, drunk via
+-- ISDrinkFluidAction rather than eaten via ISEatFoodAction -- confirmed via vanilla source
+-- (media/lua/shared/TimedActions/ISDrinkFluidAction.lua). This is its only consumption path.
+local o_ISDrinkFluidAction_complete = ISDrinkFluidAction.complete
+function ISDrinkFluidAction:complete()
+    if isValidGenderCheck() then
+        local ok, err = pcall(RD_EffectsPMS.ISDrinkFluidAction_complete, self)
+        if not ok then
+            print("[RedDays] food-PMS effect skipped for this item (see error): " .. tostring(err))
+        end
+    end
+    return o_ISDrinkFluidAction_complete(self)
 end

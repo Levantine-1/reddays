@@ -50,6 +50,36 @@ option RedDays.painkillerEffectDuration
 	translation = RedDays_painkillerEffectDuration,
 }
 
+option RedDays.painkillerEffectReductionPct
+{
+	type = integer,
+	min = 0,
+	max = 100,
+	default = 50,
+	page = RedDays,
+	translation = RedDays_painkillerEffectReductionPct,
+}
+
+option RedDays.foodPMSReductionCapPct
+{
+	type = integer,
+	min = 0,
+	max = 100,
+	default = 20,
+	page = RedDays,
+	translation = RedDays_foodPMSReductionCapPct,
+}
+
+option RedDays.foodPMSEffectDuration
+{
+	type = integer,
+	min = 0,
+	max = 300,
+	default = 36,
+	page = RedDays,
+	translation = RedDays_foodPMSEffectDuration,
+}
+
 option RedDays.healthEffectLowerBound
 {
 	type = integer,

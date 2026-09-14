@@ -2,6 +2,62 @@ RD_EffectsPMS = RD_EffectsPMS or {}
 RDEffectsPMS = RD_EffectsPMS -- Alias for backward compatibility
 require "RD_game_api"
 
+-- FullType -> percent PMS reduction (doubled from the original design values per user request).
+-- Sourced from vanilla item scripts (media/scripts/generated/items/{food,normal}.txt) -- note the
+-- mod's real names differ from common usage: Yoghurt (not Yogurt), no "Bowl of Oatmeal"/"Chocolate2"/"PeanutButter2".
+local FOOD_PMS_REDUCTIONS = {
+    ["Base.Milk"] = 10, ["Base.MilkBottle"] = 10, ["Base.Milk_Personalsized"] = 10,  -- drunk, not eaten -- see ISDrinkFluidAction hook
+    ["Base.Yoghurt"] = 10,
+    ["Base.Cheese"] = 8, ["Base.Processedcheese"] = 8,
+    ["Base.Chocolate"] = 10,
+    ["Base.Oatmeal"] = 6,
+    ["Base.PeanutButter"] = 4,
+    ["Base.Peanuts"] = 4,
+    ["Base.Banana"] = 4,
+}
+local FISH_TAG_REDUCTION_PCT = 4  -- fish items are inconsistent on FoodType but consistently tagged base:fishmeat
+
+-- Returns the PMS-reduction percent for one full type, or 0 if it doesn't qualify.
+--
+-- Evolved-recipe ingredient lists (getExtraItems / getSpices) hold full-type STRINGS, not
+-- items -- confirmed via bytecode: both return ArrayList<String>. Tags are checked with the
+-- global hasItemTag(String, ItemTag), the same idiom vanilla uses on these exact elements
+-- (ISAddItemInRecipe.lua). This one path serves both the eaten item and its ingredients.
+local function getFoodPMSReductionForType(fullType)
+    if type(fullType) ~= "string" or fullType == "" then return 0 end
+    -- Tolerate an unqualified name, so the table lookup doesn't depend on which form
+    -- the engine stored.
+    if not string.find(fullType, ".", 1, true) then fullType = "Base." .. fullType end
+    if FOOD_PMS_REDUCTIONS[fullType] then return FOOD_PMS_REDUCTIONS[fullType] end
+    -- The tag must be an ItemTag object -- a raw string throws "No implementation found".
+    if hasItemTag(fullType, ItemTag.FISH_MEAT) then return FISH_TAG_REDUCTION_PCT end
+    return 0
+end
+
+-- Sums the eaten item's own reduction plus every qualifying ingredient folded into it via the
+-- evolved-recipe system (stew/soup/pizza/etc.), so a home-cooked meal gets credit for its
+-- matching ingredients even though the meal's own FullType is a fixed Base.PotOfStew/etc.
+-- Bowls served from a pot inherit the same lists (InheritFood -> Food.copyExtraItems).
+local function getTotalFoodPMSReduction(item)
+    if not item then return 0 end
+    local total = getFoodPMSReductionForType(item:getFullType())
+    if instanceof(item, "Food") and item:haveExtraItems() then
+        local extras = item:getExtraItems()
+        if extras then
+            for i = 0, extras:size() - 1 do
+                total = total + getFoodPMSReductionForType(extras:get(i))
+            end
+        end
+        local spices = item:getSpices()
+        if spices then
+            for i = 0, spices:size() - 1 do
+                total = total + getFoodPMSReductionForType(spices:get(i))
+            end
+        end
+    end
+    return total
+end
+
 function RD_EffectsPMS.setAngerMoodle(stats, target_value, rate_multiplier)
         -- Anger or irritability tends to rise during the late luteal phase (about 1 week before period).
         -- Often linked to progesterone dominance and serotonin fluctuations.
@@ -209,7 +265,12 @@ local function applyEnabledSymptomEffects(currentCycle, pms_severity, rate_multi
         end
 
         if RD_modData.ICdata.pill_effect_active then
-            target_value = target_value * 0.25 -- Reduce severity by 75% if pills are active
+            local pillReductionPct = SandboxVars.RedDays.painkillerEffectReductionPct or 50
+            target_value = target_value * (1 - (pillReductionPct / 100))
+        end
+
+        if (RD_modData.ICdata.food_pms_reduction_pct or 0) > 0 then
+            target_value = target_value * (1 - (RD_modData.ICdata.food_pms_reduction_pct / 100))
         end
 
         if currentCycle.pms_agitation then
@@ -234,7 +295,12 @@ end
 
 local pill_effect_counter_max = SandboxVars.RedDays.painkillerEffectDuration or 36
 local function takePillsStiffness()
-    if not RD_modData.ICdata.pill_effect_counter then return end
+    if not RD_modData.ICdata.pill_effect_active then
+        -- Self-heals an orphaned duplicate registration (see ISTakePillAction_perform below)
+        -- or a save already affected by that bug -- unregister THIS copy and stop.
+        Events.EveryTenMinutes.Remove(takePillsStiffness)
+        return
+    end
     if RD_modData.ICdata.pill_effect_counter < pill_effect_counter_max then
         RD_modData.ICdata.pill_effect_counter = RD_modData.ICdata.pill_effect_counter + 1
     else
@@ -253,11 +319,70 @@ function RD_EffectsPMS.ISTakePillAction_perform(self)
     if fullType == "Base.Pills" then
         print("Painkillers Taken, Reducing PMS Symptoms")
         RD_modData.ICdata.pill_recently_taken = true
+        local wasActive = RD_modData.ICdata.pill_effect_active
         RD_modData.ICdata.pill_effect_active = true
         RD_modData.ICdata.pill_effect_counter = 0
-        Events.EveryTenMinutes.Add(takePillsStiffness)
+        if not wasActive then
+            -- Events.Add never dedupes (confirmed via bytecode: plain ArrayList.add with no
+            -- contains() check) -- registering again while already active would double the
+            -- countdown speed and orphan a copy in the handler list forever after expiry.
+            Events.EveryTenMinutes.Add(takePillsStiffness)
+        end
     end
 
+end
+
+local food_effect_counter_max = SandboxVars.RedDays.foodPMSEffectDuration or 36
+local function takeFoodPMSCountdown()
+    if not RD_modData.ICdata.food_pms_effect_active then
+        -- Self-heals an orphaned duplicate registration (see registerFoodPMSEffect below) or
+        -- a save already affected by that bug -- unregister THIS copy and stop.
+        Events.EveryTenMinutes.Remove(takeFoodPMSCountdown)
+        return
+    end
+    if RD_modData.ICdata.food_pms_effect_counter < food_effect_counter_max then
+        RD_modData.ICdata.food_pms_effect_counter = RD_modData.ICdata.food_pms_effect_counter + 1
+    else
+        print("PMS Food Effect Ended")
+        Events.EveryTenMinutes.Remove(takeFoodPMSCountdown)
+        RD_modData.ICdata.food_pms_effect_active = false
+        RD_modData.ICdata.food_pms_effect_counter = 0
+        RD_modData.ICdata.food_pms_reduction_pct = 0
+        return
+    end
+end
+
+-- Called whenever a food or drink item finishes being consumed. Tops up the shared food-PMS
+-- reduction (capped) and resets the shared countdown to full duration -- same reset-on-redose
+-- behavior as taking another painkiller, just tracking a variable magnitude instead of a fixed one.
+function RD_EffectsPMS.registerFoodPMSEffect(item)
+    local reduction = getTotalFoodPMSReduction(item)
+    if reduction <= 0 then return end
+
+    local cap = SandboxVars.RedDays.foodPMSReductionCapPct or 20
+    local newTotal = math.min(cap, (RD_modData.ICdata.food_pms_reduction_pct or 0) + reduction)
+    local wasActive = RD_modData.ICdata.food_pms_effect_active
+
+    print("PMS-reducing food eaten (+" .. reduction .. "%, total " .. newTotal .. "%)")
+    RD_modData.ICdata.food_pms_reduction_pct = newTotal
+    RD_modData.ICdata.food_pms_effect_active = true
+    RD_modData.ICdata.food_pms_effect_counter = 0  -- reset, exactly like re-taking a pill
+    if not wasActive then
+        -- Events.Add never dedupes (confirmed via bytecode: plain ArrayList.add with no
+        -- contains() check) -- registering again while already active would double the
+        -- countdown speed and orphan a copy in the handler list forever after expiry.
+        Events.EveryTenMinutes.Add(takeFoodPMSCountdown)
+    end
+end
+
+function RD_EffectsPMS.ISEatFoodAction_complete(self)
+    if not self.item then return end
+    RD_EffectsPMS.registerFoodPMSEffect(self.item)
+end
+
+function RD_EffectsPMS.ISDrinkFluidAction_complete(self)
+    if not self.item then return end
+    RD_EffectsPMS.registerFoodPMSEffect(self.item)
 end
 
 function RD_EffectsPMS.LoadPlayerData()
@@ -266,6 +391,13 @@ function RD_EffectsPMS.LoadPlayerData()
     RD_modData.ICdata.pill_effect_active = RD_modData.ICdata.pill_effect_active or false
     if RD_modData.ICdata.pill_effect_active then
         Events.EveryTenMinutes.Add(takePillsStiffness)
+    end
+
+    RD_modData.ICdata.food_pms_reduction_pct = RD_modData.ICdata.food_pms_reduction_pct or 0
+    RD_modData.ICdata.food_pms_effect_counter = RD_modData.ICdata.food_pms_effect_counter or 0
+    RD_modData.ICdata.food_pms_effect_active = RD_modData.ICdata.food_pms_effect_active or false
+    if RD_modData.ICdata.food_pms_effect_active then
+        Events.EveryTenMinutes.Add(takeFoodPMSCountdown)
     end
 end
 

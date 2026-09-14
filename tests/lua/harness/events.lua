@@ -44,10 +44,17 @@ function M.new()
             if eventObjects[name] then return eventObjects[name] end
             local ev = {}
             function ev.Add(fn) table.insert(slot(name), fn) end
+            -- Matches real PZ's Event$Remove, which is a plain ArrayList.remove(Object) --
+            -- confirmed via bytecode to strip only the FIRST match, not every occurrence.
+            -- This matters: a handler added twice (Add never dedupes either) needs two
+            -- Removes to fully unregister, and tests rely on that to catch double-registration.
             function ev.Remove(fn)
                 local handlers = slot(name)
-                for i = #handlers, 1, -1 do
-                    if handlers[i] == fn then table.remove(handlers, i) end
+                for i = 1, #handlers do
+                    if handlers[i] == fn then
+                        table.remove(handlers, i)
+                        return
+                    end
                 end
             end
             eventObjects[name] = ev

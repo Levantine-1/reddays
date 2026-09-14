@@ -77,7 +77,7 @@ function M.new(config)
 
     env.MF = mf
     for _, className in ipairs({ "ISUnequipAction", "ISWearClothing", "ISWashYourself",
-                                "ISTakePillAction", "ISEatFoodAction" }) do
+                                "ISTakePillAction", "ISEatFoodAction", "ISDrinkFluidAction" }) do
         env[className] = actions[className]
     end
 
@@ -112,6 +112,7 @@ function M.new(config)
         if className == "Clothing" then return obj.__isClothing == true end
         if className == "InventoryItem" then return obj.__item == true end
         if className == "IsoPlayer" then return obj.__player == true end
+        if className == "Food" then return obj.__isFood == true end
         return false
     end
 
@@ -140,6 +141,19 @@ function M.new(config)
 
     env.getText = function(key, ...) return key end
 
+    -- Script-item tag registry behind the global hasItemTag(String, ItemTag). The real
+    -- signature is (String, ItemTag) -- confirmed in LuaManager$GlobalObject -- so a string
+    -- tag errors here exactly like the item-level hasTag double does.
+    local scriptItemTags = {}
+    env.hasItemTag = function(fullType, tag)
+        if type(tag) ~= "table" then
+            error("No implementation found for function: hasItemTag(string, " .. type(tag)
+                .. ") -- the tag must be an ItemTag object, never a raw string", 0)
+        end
+        local tags = scriptItemTags[fullType]
+        return tags ~= nil and tags[tag] == true
+    end
+
     -- RedDays_ProceduralDistributions.lua indexes this at load time and will
     -- error on a nil list entry, so every distribution it names must exist.
     env.ProceduralDistributions = { list = setmetatable({}, {
@@ -166,6 +180,12 @@ function M.new(config)
         bloodSplats = bloodSplats,
         triggered = triggered,
         newItem = itemLib.new,
+        -- Declare script-level tags for a full type, as read by the global hasItemTag.
+        setScriptItemTags = function(fullType, tagList)
+            local set = {}
+            for _, tag in ipairs(tagList) do set[tag] = true end
+            scriptItemTags[fullType] = set
+        end,
         setRole = function(client, server) isClient = client; isServer = server end,
         -- Concatenated print output, for asserting on log lines the mod emits.
         log = function() return table.concat(printed, "\n") end,

@@ -417,6 +417,30 @@ defineAccessor(RD_DebugAPI.pms, "pill_effect_counter", function(create)
 end, "pill_effect_counter", function(v)
     return clampNumber(v, 0, nil, 0)
 end)
+defineAccessor(RD_DebugAPI.pms, "food_pms_effect_active", function(create)
+    local ic = getICData(create)
+    if not ic then return nil end
+    if ic.food_pms_effect_active == nil then ic.food_pms_effect_active = false end
+    return ic
+end, "food_pms_effect_active", function(v)
+    return clampBoolean(v)
+end)
+defineAccessor(RD_DebugAPI.pms, "food_pms_effect_counter", function(create)
+    local ic = getICData(create)
+    if not ic then return nil end
+    if ic.food_pms_effect_counter == nil then ic.food_pms_effect_counter = 0 end
+    return ic
+end, "food_pms_effect_counter", function(v)
+    return clampNumber(v, 0, nil, 0)
+end)
+defineAccessor(RD_DebugAPI.pms, "food_pms_reduction_pct", function(create)
+    local ic = getICData(create)
+    if not ic then return nil end
+    if ic.food_pms_reduction_pct == nil then ic.food_pms_reduction_pct = 0 end
+    return ic
+end, "food_pms_reduction_pct", function(v)
+    return clampNumber(v, 0, 100, 0)
+end)
 
 RD_DebugAPI.status.get = function()
     local tss = getTSS(false)
@@ -455,6 +479,9 @@ RD_DebugAPI.status.get = function()
             pill_recently_taken = ic.pill_recently_taken,
             pill_effect_active = ic.pill_effect_active,
             pill_effect_counter = ic.pill_effect_counter,
+            food_pms_effect_active = ic.food_pms_effect_active,
+            food_pms_effect_counter = ic.food_pms_effect_counter,
+            food_pms_reduction_pct = ic.food_pms_reduction_pct,
         } or nil,
     }
 end
@@ -1023,6 +1050,8 @@ local function PrintStatus(cycle)
     print("PMS Symptom - Sadness ------------------- " .. tostring(cycle.pms_Sadness))
     print("Painkiller active ----------------------- " .. tostring(RD_modData.ICdata.pill_effect_active))
     print("Painkiller counter/max ------------------ " .. tostring(RD_modData.ICdata.pill_effect_counter or 0) .. " / " .. tostring(SandboxVars.RedDays.painkillerEffectDuration or 36))
+    print("Food PMS reduction active --------------- " .. tostring(RD_modData.ICdata.food_pms_effect_active))
+    print("Food PMS reduction pct/counter ---------- " .. tostring(RD_modData.ICdata.food_pms_reduction_pct or 0) .. "% / " .. tostring(RD_modData.ICdata.food_pms_effect_counter or 0) .. " of " .. tostring(SandboxVars.RedDays.foodPMSEffectDuration or 36))
     print("This log output was formatted to be read in a separate terminal window with a monospace font, not the in-game console.")
     print("==========================================================================================")
 end

@@ -28,7 +28,8 @@
 - Add sandbox options for customization
     - Hygiene product spawn rates
     - Option to enable MS for male characters (For FTM roleplay)
-    - painkiller effect time
+    - painkiller effect time and effectiveness
+    - PMS-easing food effect duration and total reduction cap
     - Upperbound and Lowerbound durations for cycle phases
 
 - Custom 3D models thanks to Sudodski
@@ -49,9 +50,19 @@
 
 - Pre-Menstrual Symptoms (PMS)
     - Characters spawn with 3 randomly selected PMS symptoms that remain consistent throughout their life. Enable random symptoms per cycle in sandbox options if you prefer variety.
-    - PMS severity varies each cycle and can be reduced by 75% with painkillers.
+    - PMS severity can be reduced by painkillers (50% by default, sandbox-configurable) and by eating certain foods (see below). Both sources stack independently, so eating well on top of painkillers gives a bit of extra relief.
     - Effects gradually increase during late luteal phase, peak just before menstruation, then quickly subside within 24 hours of bleeding.
-    
+
+    Food-based PMS relief:
+    - Eating or drinking certain foods temporarily reduces PMS severity, decaying over 6 in-game hours by default (same duration knob style as painkillers) unless you eat another qualifying food, which tops up the reduction and restarts the timer.
+    - The total reduction from food stacks across different foods eaten in that window, capped at 20% by default (sandbox-configurable).
+    - Milk (Carton, Bottle, or Personal-sized) / Yogurt / Milk Chocolate Bar: -10%
+    - Cheese (regular or Processed Cheese): -8%
+    - Bowl of Oatmeal: -6%
+    - Peanuts / Peanut Butter / Banana / Fish (any raw species, or Fish Fillet): -4%
+        - Only raw fish counts, not an already-cooked fish item eaten on its own (Fried Fish, Fish Fingers, Sushi). Cooking a stew or other dish you added raw fish to is fine -- the dish still gets credit for what went in.
+    - Home-cooked meals count too: a stew, soup, or other cooked dish gets credit for whichever of the above ingredients were mixed in, on top of the meal's own type if it matches. Works if food is divided into bowls.
+
     PMS Effects:
     - Agitation (A): Uses default unused anger moodle (may conflict with other mods). Doubles stamina/endurance recovery at peak severity. Cancels out Fatigue debuff.
     - Fatigue (F): Halves stamina/endurance recovery and doubles fatigue gain at peak severity. Cancels out Agitation buff.
@@ -155,7 +166,6 @@ numbers were being hidden from players either way).
 ## Current Known Bugs or Basic ToDos:
 - Add more sandbox options:
     - Stat degrade rates
-    - painkiller effectiveness
 - Fix bug related to randomized starts
 - Player spawns with a few sanitary items
 

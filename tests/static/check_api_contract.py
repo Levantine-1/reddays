@@ -10,7 +10,16 @@ import re
 from pathlib import Path
 
 from .jarindex import build_index
-from .luasource import strip_comments_and_strings
+from .luasource import strip_comments, strip_comments_and_strings
+
+# item:hasTag("someString") -- confirmed via bytecode disassembly of InventoryItem/Food/
+# DrainableComboItem: hasTag has ONLY (ItemTag) and (ItemTag[]) overloads, no String overload
+# anywhere in the exposed API. Every one of the 57 real vanilla call sites passes an
+# ItemTag.CONSTANT. A string argument throws "No implementation found for function: hasTag(...)"
+# unconditionally, for any item -- this is hard-failed rather than advisory because it is
+# ALWAYS wrong, not a fuzzy jar-lookup miss (confirmed the hard way: see RD_effects_pms.lua git
+# history for the crash this produced on any item not covered by an earlier fast-path).
+_HASTAG_STRING_ARG = re.compile(r':hasTag\s*\(\s*(["\'])')
 
 # obj:method(  -- calls on an engine object
 _METHOD_CALL = re.compile(r":(\w+)\s*\(")
@@ -77,14 +86,30 @@ def _collect(media_dir):
     return methods, statics, bares, defined
 
 
+def _check_hastag_string_args(repo_root, media_dir):
+    """hasTag(String) is confirmed broken for every item, unconditionally -- hard error."""
+    errors = 0
+    for path in sorted((media_dir / "lua").rglob("*.lua")):
+        # Comments stripped, but NOT strings -- we need to see the string literal itself.
+        text = strip_comments(path.read_text(encoding="utf-8", errors="replace"))
+        if _HASTAG_STRING_ARG.search(text):
+            rel = path.relative_to(repo_root).as_posix()
+            print(f"  ERROR  {rel}: hasTag() called with a string literal -- hasTag only "
+                  f"accepts an ItemTag object (e.g. ItemTag.FISH_MEAT); a string throws "
+                  f"'No implementation found for function: hasTag(...)' for any item")
+            errors += 1
+    return errors
+
+
 def run(repo_root, media_dir):
-    media_dir = Path(media_dir)
+    repo_root, media_dir = Path(repo_root), Path(media_dir)
     index = build_index()
 
     if index is None:
-        print("  skipped: projectzomboid.jar not found "
-              "(set PZ_JAR to your install to enable this check)")
-        return 0
+        print("  skipped jar-based checks: projectzomboid.jar not found "
+              "(set PZ_JAR to your install to enable them)")
+        # This one needs no jar -- it's a pure source-pattern match -- so it still runs.
+        return _check_hastag_string_args(repo_root, media_dir)
 
     methods, statics, bares, defined = _collect(media_dir)
 
@@ -132,6 +157,7 @@ def run(repo_root, media_dir):
     else:
         print(f"  {total} name(s) did not resolve -- advisory, verify before acting")
 
-    # Advisory only: constant-pool matching cannot distinguish a genuinely missing
-    # method from one this heuristic simply failed to see.
-    return 0
+    # Everything above is advisory: constant-pool matching cannot distinguish a genuinely
+    # missing method from one this heuristic simply failed to see. hasTag(String) is different
+    # -- confirmed via bytecode to have zero String overloads, so it is hard-failed instead.
+    return _check_hastag_string_args(repo_root, media_dir)

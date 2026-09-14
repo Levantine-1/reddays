@@ -34,6 +34,15 @@
     "Sandbox_RedDays_painkillerEffectDuration": "Painkiller Effect Duration",
     "Sandbox_RedDays_painkillerEffectDuration_tooltip": "Each point is 10 mins. Default is 36x10=360 mins or 6 hours",
 
+    "Sandbox_RedDays_painkillerEffectReductionPct": "Painkiller PMS Reduction (%)",
+    "Sandbox_RedDays_painkillerEffectReductionPct_tooltip": "How much painkillers reduce PMS symptom severity while active.",
+
+    "Sandbox_RedDays_foodPMSReductionCapPct": "Food PMS Reduction Cap (%)",
+    "Sandbox_RedDays_foodPMSReductionCapPct_tooltip": "Maximum total PMS severity reduction from eating PMS-easing foods (dairy, chocolate, oatmeal, nuts, banana, fish), stacking per food up to this cap.",
+
+    "Sandbox_RedDays_foodPMSEffectDuration": "Food PMS Effect Duration",
+    "Sandbox_RedDays_foodPMSEffectDuration_tooltip": "Each point is 10 mins. Default is 36x10=360 mins or 6 hours. Eating another qualifying food resets this timer, same as painkillers.",
+
     "Sandbox_RedDays_PMS_duration_upperbound": "Maximum PMS duration",
     "Sandbox_RedDays_PMS_duration_upperbound_tooltip": "Max time for PMS. PMS will ramp up towards the end of the luteal cycle and into the first day of the period.",
 

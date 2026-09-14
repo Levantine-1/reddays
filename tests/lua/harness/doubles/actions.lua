@@ -27,6 +27,7 @@ function M.new()
     defineClass("ISWashYourself", "perform")
     defineClass("ISTakePillAction", "perform")
     defineClass("ISEatFoodAction", "complete")
+    defineClass("ISDrinkFluidAction", "complete")
 
     -- Builds an action instance to pass into an intercepted method.
     -- `item` is what the mod inspects via self.item.

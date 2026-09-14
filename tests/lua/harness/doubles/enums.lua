@@ -37,6 +37,13 @@ function M.build()
         "VERY_UNDERWEIGHT", "UNDERWEIGHT", "EMACIATED", "OVERWEIGHT", "OBESE",
     })
 
+    -- ItemTag registry (zombie.scripting.objects.ItemTag). hasTag(ItemTag) is the ONLY real
+    -- overload -- confirmed via bytecode, no String overload exists -- so this must be an
+    -- opaque object, not a string, and item.lua's hasTag() enforces that at the double level.
+    enums.ItemTag = enum("ItemTag", {
+        "FISH_MEAT", "UNCUT_FISH",
+    })
+
     enums.BodyPartType = enum("BodyPartType", {
         "Torso_Upper", "Torso_Lower", "Groin",
         "UpperLeg_L", "UpperLeg_R", "LowerLeg_L", "LowerLeg_R",
