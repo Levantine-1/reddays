@@ -1,1 +1,6 @@
 notes/
+
+# Test suite artefacts (the tests themselves are tracked)
+tests/__pycache__/
+tests/**/__pycache__/
+tests/.jarindex-cache/

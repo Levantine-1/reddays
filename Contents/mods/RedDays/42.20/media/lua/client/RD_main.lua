@@ -79,6 +79,12 @@ local function EveryOneMinute()
 end
 Events.EveryOneMinute.Add(EveryOneMinute)
 
+local function OnClothingUpdated(player)
+    if not isValidGenderCheck() then return end
+    RD_moodles.OnClothingUpdated(player)
+end
+Events.OnClothingUpdated.Add(OnClothingUpdated)
+
 local function EveryDays()
     if not isValidGenderCheck() then return end
     RD_CycleIrregularity.applyDailyWeightCause(RD_modData.ICdata.currentCycle)

@@ -127,12 +127,18 @@ function RD_moodles.mainLoop()
     local phaseData = getCurrentPhaseData()
 
     if hygieneItem then
+        RD_modData.ICdata.hygieneMoodlesCleared = false
         if phaseData.phase == "redPhase" then
             setHygieneMoodle(hygieneItem, phaseData)
 
         elseif hygieneItem:getCondition() == 1 then
             setHygieneMoodle(hygieneItem, phaseData)
         end
+    elseif not RD_modData.ICdata.hygieneMoodlesCleared then
+        -- Safety net: nothing is worn but the moodles were never confirmed cleared (e.g. an
+        -- unequip path we don't otherwise hook). Bounds any such gap to one in-game minute.
+        resetMoodles()
+        RD_modData.ICdata.hygieneMoodlesCleared = true
     end
 
     updateLeakState(phaseData)
@@ -169,6 +175,16 @@ function RD_moodles.ISWearClothing_perform(self)
     end
 end
 -- 2026-01-22 Moved to events_intercepts.lua
+
+-- Universal safety net: fires on every vanilla worn-item change, including paths that bypass
+-- ISUnequipAction entirely (drag-and-drop unequip via ISTransferAction:removeItemOnCharacter,
+-- weapon-swap displacement via ISEquipWeaponAction, makeup removal, debug tools). Live-checks
+-- whether a hygiene item is still worn and clears the moodles if not.
+function RD_moodles.OnClothingUpdated(player)
+    if not getCurrentHygieneItem() then
+        resetMoodles()
+    end
+end
 
 -- If the player washes themselves, reset the leak moodle
 function RD_moodles.ISWashYourself_perform()
