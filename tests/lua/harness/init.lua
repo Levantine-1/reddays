@@ -37,7 +37,12 @@ M.buildSandbox = buildSandbox
 --   player      opts for the player double (female, health, traits, ...)
 --   isClient / isServer
 --   autoStart   fire OnGameStart to initialise player data (default true)
---   load        "client" (default) | "server" | "none"
+--   load        "client" (default) | "server" | "both" | "none"
+--               "both" is single player as the engine runs it: client and server Lua in one
+--               process, with commands looped back locally.
+--   selftest    RD_Config.selftest (default false)
+--   verboseLog  RD_Config.verboseLog (default false)
+--   debug       isDebugEnabled() (default false)
 function M.newWorld(opts)
     opts = opts or {}
     local config = hostConfig()
@@ -50,13 +55,17 @@ function M.newWorld(opts)
         player = opts.player,
         gameTime = opts.gameTime,
         activatedMods = opts.activatedMods,
+        selftest = opts.selftest,
+        verboseLog = opts.verboseLog,
+        debug = opts.debug,
     })
     loaderLib.install(env, config.luaRoot)
 
     local what = opts.load or "client"
-    if what == "client" then
+    if what == "client" or what == "both" then
         loaderLib.loadClient(env)
-    elseif what == "server" then
+    end
+    if what == "server" or what == "both" then
         loaderLib.loadServer(env)
     end
 
@@ -88,7 +97,7 @@ function M.newWorld(opts)
         return ic and ic.currentCycle
     end
 
-    if what == "client" and opts.autoStart ~= false then
+    if (what == "client" or what == "both") and opts.autoStart ~= false then
         world.start()
     end
 

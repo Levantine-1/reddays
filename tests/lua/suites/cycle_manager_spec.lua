@@ -275,7 +275,7 @@ T.describe("RD_CycleManager.newCycle", function()
         impossible.menstrual_cycle_duration_lowerBound = 100
         impossible.menstrual_cycle_duration_upperBound = 100
 
-        local w = H.newWorld({ sandbox = impossible })
+        local w = H.newWorld({ sandbox = impossible, verboseLog = true })
         local cycle = w.env.RD_CycleManager.newCycle("caller")
         T.contains(cycle.reason_for_cycle, "_fallbackDefault")
         T.eq(cycle.cycle_duration_mins, 28 * DAY, "the default cycle is 28 days")

@@ -107,6 +107,9 @@ function M.build()
 
     enums.MoodleType = enum("MoodleType", { "Endurance", "Sick", "Pain" })
 
+    -- zombie.characters.Capability, checked via player:getRole():hasCapability(...).
+    enums.Capability = enum("Capability", { "AddItem" })
+
     return enums
 end
 

@@ -25,13 +25,28 @@ function M.new()
     end
 
     -- Calls every handler registered for `name`, in order, passing ... through.
-    -- Iterates a snapshot so a handler that unregisters itself (as
-    -- RD_effects_manager does) doesn't corrupt the traversal.
+    --
+    -- Mirrors zombie.Lua.Event.trigger exactly (confirmed via bytecode): it walks the LIVE
+    -- list by index, re-reading size() every step, and only advances the index if the
+    -- handler it just ran is still registered (callbacks.contains). So a handler added
+    -- during dispatch runs in that same dispatch, and one that removes itself does not
+    -- make the next handler get skipped. An earlier snapshot-based version reported a
+    -- double registration in RD_effects_manager that cannot happen in game.
     function registry.fire(name, ...)
-        local snapshot = {}
-        for i, fn in ipairs(slot(name)) do snapshot[i] = fn end
-        for _, fn in ipairs(snapshot) do fn(...) end
-        return #snapshot
+        local list = slot(name)
+        local calls = 0
+        local i = 1
+        while i <= #list do
+            local fn = list[i]
+            fn(...)
+            calls = calls + 1
+            local stillRegistered = false
+            for _, h in ipairs(list) do
+                if h == fn then stillRegistered = true break end
+            end
+            if stillRegistered then i = i + 1 end
+        end
+        return calls
     end
 
     function registry.clear()

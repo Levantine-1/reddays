@@ -91,7 +91,7 @@ T.describe("RD_EffectsPMS.registerFoodPMSEffect", function()
     T.it("expires after the configured duration with no further qualifying food", function()
         -- The countdown checks `counter < max` BEFORE incrementing (mirroring the pre-existing
         -- pill pattern exactly), so it takes max+1 ticks to reach the else/expire branch.
-        local w = H.newWorld({ sandbox = { foodPMSEffectDuration = 3 } })
+        local w = H.newWorld({ sandbox = { foodPMSEffectDuration = 3 }, verboseLog = true })
         w.env.RD_EffectsPMS.registerFoodPMSEffect(w.t.newItem({ type = "Cheese", fullType = "Base.Cheese" }))
 
         for _ = 1, 3 do w.t.events.fire(TEN_MIN) end
@@ -154,18 +154,22 @@ T.describe("RD_EffectsPMS.registerFoodPMSEffect", function()
         T.truthy(w.icdata().food_pms_effect_active, "should not have expired after only 1 tick")
 
         -- On the 2nd tick, the FIRST copy to fire hits counter(2) < 2 == false and expires:
-        -- Remove() strips only that one match (the reported bug) -- but the snapshot-based fire
-        -- still calls the SECOND copy too, which now sees active == false (set by the first
-        -- copy moments earlier in this same tick) and self-heals immediately, removing itself.
-        -- Both copies are gone by the end of THIS tick, not the next one -- a better outcome
-        -- than a real per-tick engine dispatch might give, but correct for this harness's
-        -- snapshot iteration and still proves the self-heal actually engages.
+        -- Remove() strips only that one match (the reported bug), so the orphan copy is left.
+        -- The real engine (Event.trigger, confirmed via bytecode) walks the live list and only
+        -- advances past a handler that is still registered -- the removed copy's slot now holds
+        -- the orphan and contains() is still true, so the orphan is NOT called this tick.
         w.t.events.fire(TEN_MIN)
         T.falsy(w.icdata().food_pms_effect_active, "should have expired")
         T.eq(w.icdata().food_pms_reduction_pct, 0)
         T.eq(w.icdata().food_pms_effect_counter, 0)
-        T.eq(#w.t.events.handlersFor(TEN_MIN), baseline,
-             "both the expiring copy and the self-healing orphan must be gone")
+        T.eq(#w.t.events.handlersFor(TEN_MIN), baseline + 1, "the orphan survives this tick")
+
+        -- Next tick the orphan sees active == false and self-heals without touching any state.
+        w.t.events.fire(TEN_MIN)
+        T.eq(#w.t.events.handlersFor(TEN_MIN), baseline, "the self-healing orphan is gone")
+        T.falsy(w.icdata().food_pms_effect_active)
+        T.eq(w.icdata().food_pms_reduction_pct, 0)
+        T.eq(w.icdata().food_pms_effect_counter, 0, "the orphan must not count down again")
     end)
 
 end)
@@ -195,14 +199,14 @@ end)
 
 T.describe("food PMS effect via the intercepted action classes", function()
 
-    T.it("ISEatFoodAction:complete triggers the food effect for a qualifying item", function()
+    T.it("ISEatFoodAction:perform triggers the food effect for a qualifying item", function()
         local w = H.newWorld()
         local oatmeal = w.t.newItem({ type = "Oatmeal", fullType = "Base.Oatmeal" })
-        w.env.ISEatFoodAction.complete(w.t.actions.instance("ISEatFoodAction", oatmeal))
+        w.env.ISEatFoodAction.perform(w.t.actions.instance("ISEatFoodAction", oatmeal))
 
         T.eq(w.icdata().food_pms_reduction_pct, 6)
         T.eq(w.t.actions.originalCalls.ISEatFoodAction, 1,
-             "must still chain through to the original vanilla complete()")
+             "must still chain through to the original vanilla perform()")
     end)
 
     T.it("REGRESSION: eating a cooked meal with an unlisted FullType does not crash", function()
@@ -219,7 +223,7 @@ T.describe("food PMS effect via the intercepted action classes", function()
         soup:__addExtraItem("Base.Peanuts")  -- 4
         soup:__addExtraItem("Base.Salmon")   -- 4, via the fish tag
 
-        w.env.ISEatFoodAction.complete(w.t.actions.instance("ISEatFoodAction", soup))
+        w.env.ISEatFoodAction.perform(w.t.actions.instance("ISEatFoodAction", soup))
 
         T.eq(w.icdata().food_pms_reduction_pct, 16)
         T.eq(w.t.actions.originalCalls.ISEatFoodAction, 1,
@@ -240,7 +244,7 @@ T.describe("food PMS effect via the intercepted action classes", function()
         bowl:__addExtraItem("Base.Peanuts")
         bowl:__addExtraItem("Base.Salmon")
 
-        w.env.ISEatFoodAction.complete(w.t.actions.instance("ISEatFoodAction", bowl))
+        w.env.ISEatFoodAction.perform(w.t.actions.instance("ISEatFoodAction", bowl))
 
         T.eq(w.icdata().food_pms_reduction_pct, 16)
         T.falsy(string.find(w.t.log(), "food-PMS effect skipped", 1, true))
@@ -251,7 +255,7 @@ T.describe("food PMS effect via the intercepted action classes", function()
         local soup = w.t.newItem({ type = "PotOfSoupRecipe", fullType = "Base.PotOfSoupRecipe", isFood = true })
         soup:__addExtraItem("Cheese")
 
-        w.env.ISEatFoodAction.complete(w.t.actions.instance("ISEatFoodAction", soup))
+        w.env.ISEatFoodAction.perform(w.t.actions.instance("ISEatFoodAction", soup))
 
         T.eq(w.icdata().food_pms_reduction_pct, 8)
     end)
@@ -260,10 +264,10 @@ T.describe("food PMS effect via the intercepted action classes", function()
         -- Proves the pcall defense-in-depth in RD_main.lua independent of which bug caused a
         -- throw -- a deliberately unrelated failure, not the hasTag one (already fixed above).
         local w = H.newWorld()
-        w.env.RD_EffectsPMS.ISEatFoodAction_complete = function() error("simulated unrelated failure", 0) end
+        w.env.RD_EffectsPMS.ISEatFoodAction_perform = function() error("simulated unrelated failure", 0) end
 
         local item = w.t.newItem({ type = "Cheese", fullType = "Base.Cheese" })
-        w.env.ISEatFoodAction.complete(w.t.actions.instance("ISEatFoodAction", item))
+        w.env.ISEatFoodAction.perform(w.t.actions.instance("ISEatFoodAction", item))
 
         T.eq(w.t.actions.originalCalls.ISEatFoodAction, 1,
              "the vanilla eat effect must run regardless of what our own hook does")
@@ -271,10 +275,10 @@ T.describe("food PMS effect via the intercepted action classes", function()
 
     T.it("REGRESSION: the vanilla drink effect still applies even if the food-PMS hook throws", function()
         local w = H.newWorld()
-        w.env.RD_EffectsPMS.ISDrinkFluidAction_complete = function() error("simulated unrelated failure", 0) end
+        w.env.RD_EffectsPMS.ISDrinkFluidAction_perform = function() error("simulated unrelated failure", 0) end
 
         local milk = w.t.newItem({ type = "Milk", fullType = "Base.Milk" })
-        w.env.ISDrinkFluidAction.complete(w.t.actions.instance("ISDrinkFluidAction", milk))
+        w.env.ISDrinkFluidAction.perform(w.t.actions.instance("ISDrinkFluidAction", milk))
 
         T.eq(w.t.actions.originalCalls.ISDrinkFluidAction, 1,
              "the vanilla drink effect must run regardless of what our own hook does")
@@ -282,13 +286,52 @@ T.describe("food PMS effect via the intercepted action classes", function()
 
     T.it("REGRESSION: Milk is drunk via ISDrinkFluidAction, not eaten, and must still register", function()
         -- Milk is a FluidContainer item (ItemType = base:normal) -- confirmed it never reaches
-        -- ISEatFoodAction at all. Its only consumption path is ISDrinkFluidAction:complete().
+        -- ISEatFoodAction at all. Its only consumption path is ISDrinkFluidAction, hooked on perform().
         local w = H.newWorld()
         local milk = w.t.newItem({ type = "Milk", fullType = "Base.Milk" })
-        w.env.ISDrinkFluidAction.complete(w.t.actions.instance("ISDrinkFluidAction", milk))
+        w.env.ISDrinkFluidAction.perform(w.t.actions.instance("ISDrinkFluidAction", milk))
 
         T.eq(w.icdata().food_pms_reduction_pct, 10)
         T.eq(w.t.actions.originalCalls.ISDrinkFluidAction, 1)
+    end)
+
+    T.it("REGRESSION: drinking a container dry on an MP client still registers", function()
+        -- Seen in a hosted game: a whole carton never registered, a partial one did. The server
+        -- drinks during the action; once it empties the carton, the client's isValid()
+        -- (fluidContainer:isEmpty()) fails first, so the client gets stop() instead of perform().
+        local w = H.newWorld({ isClient = true })
+        local milk = w.t.newItem({ type = "Milk", fullType = "Base.Milk" })
+        local action = w.t.actions.instance("ISDrinkFluidAction", milk,
+            { fluidContainer = w.t.actions.fluidContainer(true) })
+
+        w.env.ISDrinkFluidAction.stop(action)
+
+        T.eq(w.icdata().food_pms_reduction_pct, 10)
+        T.eq(w.t.actions.originalStopCalls.ISDrinkFluidAction, 1, "vanilla stop() still runs")
+    end)
+
+    T.it("a cancelled drink with fluid left gives no credit", function()
+        local w = H.newWorld({ isClient = true })
+        local milk = w.t.newItem({ type = "Milk", fullType = "Base.Milk" })
+        local action = w.t.actions.instance("ISDrinkFluidAction", milk,
+            { fluidContainer = w.t.actions.fluidContainer(false) })
+
+        w.env.ISDrinkFluidAction.stop(action)
+
+        T.eq(w.icdata().food_pms_reduction_pct, 0)
+        T.eq(w.t.actions.originalStopCalls.ISDrinkFluidAction, 1)
+    end)
+
+    T.it("credits a drink once even if both perform() and stop() run", function()
+        local w = H.newWorld()
+        local milk = w.t.newItem({ type = "Milk", fullType = "Base.Milk" })
+        local action = w.t.actions.instance("ISDrinkFluidAction", milk,
+            { fluidContainer = w.t.actions.fluidContainer(true) })
+
+        w.env.ISDrinkFluidAction.perform(action)
+        w.env.ISDrinkFluidAction.stop(action)
+
+        T.eq(w.icdata().food_pms_reduction_pct, 10, "not 20")
     end)
 
     T.it("resumes an in-progress food effect across a reload (LoadPlayerData)", function()
@@ -375,6 +418,56 @@ T.describe("painkiller + food PMS multiplier interaction", function()
         w.icdata().food_pms_reduction_pct = 20         -- *0.8
         -- Independent multipliers: 1.0 * 0.5 * 0.8 = 0.4 (NOT 1 - (0.5+0.2) = 0.3).
         T.near(convergedAnger(w), 0.4, 1e-9)
+    end)
+
+end)
+
+-- ================= COMFORT-FOOD LIST (chocolate desserts, other sweets) =================
+
+T.describe("RD_EffectsPMS food list -- desserts and sweets", function()
+
+    T.it("credits a chocolate cake at the same 10% tier as plain Chocolate", function()
+        local w = H.newWorld()
+        w.env.RD_EffectsPMS.registerFoodPMSEffect(w.t.newItem({ type = "CakeChocolate", fullType = "Base.CakeChocolate" }))
+        T.eq(w.icdata().food_pms_reduction_pct, 10)
+    end)
+
+    T.it("credits chocolate cookies, doughnuts and candy at the chocolate tier", function()
+        for _, fullType in ipairs({
+            "Base.CookiesChocolate", "Base.CookieChocolateChip", "Base.DoughnutChocolate",
+            "Base.Chocolate_Candy", "Base.ChocolateChips", "Base.FudgeePop",
+        }) do
+            local w = H.newWorld()
+            w.env.RD_EffectsPMS.registerFoodPMSEffect(w.t.newItem({ type = "Item", fullType = fullType }))
+            T.eq(w.icdata().food_pms_reduction_pct, 10, fullType .. " should be a 10% reduction")
+        end
+    end)
+
+    T.it("credits a non-chocolate dessert at the lower 6% tier", function()
+        local w = H.newWorld()
+        w.env.RD_EffectsPMS.registerFoodPMSEffect(w.t.newItem({ type = "Pie", fullType = "Base.Pie" }))
+        T.eq(w.icdata().food_pms_reduction_pct, 6)
+    end)
+
+    T.it("credits ice cream, candy and other sweets at the 6% tier", function()
+        for _, fullType in ipairs({
+            "Base.Icecream", "Base.Marshmallows", "Base.Candycane", "Base.CakeRedVelvet",
+            "Base.CookiesSugar", "Base.MuffinGeneric", "Base.PieApple",
+        }) do
+            local w = H.newWorld()
+            w.env.RD_EffectsPMS.registerFoodPMSEffect(w.t.newItem({ type = "Item", fullType = fullType }))
+            T.eq(w.icdata().food_pms_reduction_pct, 6, fullType .. " should be a 6% reduction")
+        end
+    end)
+
+    T.it("gives no credit for raw/dough/prep dessert variants -- they aren't eaten as-is", function()
+        for _, fullType in ipairs({
+            "Base.CakeRaw", "Base.CakePrep", "Base.CookiesChocolateDough", "Base.PieWholeRaw",
+        }) do
+            local w = H.newWorld()
+            w.env.RD_EffectsPMS.registerFoodPMSEffect(w.t.newItem({ type = "Item", fullType = fullType }))
+            T.eq(w.icdata().food_pms_reduction_pct, 0, fullType .. " should give no PMS credit")
+        end
     end)
 
 end)

@@ -33,12 +33,16 @@ local function newBodyPart(typeEnum, calls)
         calls[#calls + 1] = { what = "setStiffness", part = self.type.name, value = v }
     end
 
+    -- BodyPart.setBleeding(boolean) sets the bleeding FLAG; the bleeding time is separate.
+    -- An earlier version stored the boolean as the time, which made bleeding() compare a
+    -- boolean with a number.
+    part.isBleeding = false
     function part:getBleedingTime() return self.bleedingTime end
     function part:setBleeding(v)
-        self.bleedingTime = v
+        self.isBleeding = v == true
         calls[#calls + 1] = { what = "setBleeding", part = self.type.name, value = v }
     end
-    function part:bleeding() return self.bleedingTime > 0 end
+    function part:bleeding() return self.isBleeding or self.bleedingTime > 0 end
 
     function part:bandaged() return self.isBandaged end
     function part:getBandageLife() return self.bandageLife end

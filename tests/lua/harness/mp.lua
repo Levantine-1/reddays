@@ -60,6 +60,7 @@ end
 
 local CLIENT_FILES = {
     "RD_hygiene_manager.lua", "RD_effects_pms.lua", "RD_tss_manager.lua", "RD_main.lua",
+    "RD_selftest.lua",
 }
 
 -- Every ('RedDays', 'command') pair the client can send, with its source file.
@@ -88,6 +89,16 @@ function M.clientCommands()
         end
     end
     return order, found
+end
+
+-- { [fileName] = source } for every scanned client file that exists.
+function M.clientSources()
+    local out = {}
+    for _, name in ipairs(CLIENT_FILES) do
+        local src = readFile(luaRoot() .. "/client/" .. name)
+        if src then out[name] = src end
+    end
+    return out
 end
 
 -- Every command the server implements.
@@ -141,7 +152,7 @@ end
 
 -- ================= THE BUS =================
 
--- opts: sandbox, seed, player (client-side), serverPlayer
+-- opts: sandbox, seed, player (client-side), serverPlayer, selftest, verboseLog, debug
 function M.newPair(opts)
     opts = opts or {}
 
@@ -151,6 +162,9 @@ function M.newPair(opts)
         player = opts.player,
         isClient = true,
         autoStart = opts.autoStart,
+        selftest = opts.selftest,
+        verboseLog = opts.verboseLog,
+        debug = opts.debug,
     })
     local server = H.newWorld({
         sandbox = opts.sandbox,
@@ -158,9 +172,12 @@ function M.newPair(opts)
         player = opts.serverPlayer or opts.player,
         isServer = true,
         load = "server",
+        selftest = opts.selftest,
+        verboseLog = opts.verboseLog,
+        debug = opts.debug,
     })
 
-    local bus = { sent = {}, delivered = {}, dropped = {} }
+    local bus = { sent = {}, delivered = {}, dropped = {}, toClient = {} }
 
     local pair = {
         client = client,
@@ -209,6 +226,24 @@ function M.newPair(opts)
     client.env.sendClientCommand = function(sender, module, command, args)
         return deliver(sender, module, command, args)
     end
+
+    -- Route the server's replies back to the client's OnServerCommand handlers.
+    server.env.sendServerCommand = function(a, b, c, d)
+        local module, command, args
+        if type(a) == "string" then module, command, args = a, b, c else module, command, args = b, c, d end
+        local record = { module = module, command = command, payload = deepCopy(args) }
+        bus.toClient[#bus.toClient + 1] = record
+        client.t.events.fire("OnServerCommand", module, command, record.payload)
+    end
+
+    -- transmitModData(): the server's copy of the player's modData becomes the client's.
+    local clientPlayer = client.t.player
+    local rawTransmit = clientPlayer.transmitModData
+    function clientPlayer:transmitModData()
+        rawTransmit(self)
+        server.t.player.modData = deepCopy(self.modData)
+    end
+    server.t.player.modData = deepCopy(clientPlayer.modData)
 
     -- Sends a command directly, without going through mod code.
     function pair.send(command, args)
@@ -268,6 +303,14 @@ function M.newPair(opts)
             if record.command == name then out[#out + 1] = record end
         end
         return out
+    end
+
+    -- Gives the server-side player an admin role (vanilla's Capability.AddItem check).
+    function pair.makeServerAdmin()
+        local Capability = server.env.Capability
+        function pair.serverPlayer:getRole()
+            return { hasCapability = function(_, cap) return cap == Capability.AddItem end }
+        end
     end
 
     return pair

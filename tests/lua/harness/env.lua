@@ -35,12 +35,19 @@ local STDLIB = {
 --   isServer     bool (default false)
 --   player       opts forwarded to the player double
 --   activatedMods list of mod names (default includes MoodleFramework)
+--   selftest     RD_Config.selftest (default false, whatever shared/RD_config.lua ships)
+--   verboseLog   RD_Config.verboseLog (default false, whatever shared/RD_config.lua ships)
+--   debug        isDebugEnabled() (default false)
 function M.new(config)
     config = config or {}
 
     local env = {}
     for _, name in ipairs(STDLIB) do env[name] = _G[name] end
     env._G = env
+
+    -- ---- build switches ----
+    -- Pre-seeded so tests never depend on the value the real file currently ships with.
+    env.RD_Config = { selftest = config.selftest == true, verboseLog = config.verboseLog == true }
 
     -- ---- captured output ----
     local printed = {}
@@ -85,25 +92,63 @@ function M.new(config)
     env.getSpecificPlayer = function() return player end
     env.getGameTime = function() return gameTime end
 
+    -- ---- real-time clock (getTimestampMs), advanced by __test.tick ----
+    local realMs = 1000000
+    env.getTimestampMs = function() return realMs end
+
     -- ---- multiplayer role ----
     local isClient = config.isClient == true
     local isServer = config.isServer == true
+    local debugEnabled = config.debug == true
     env.isClient = function() return isClient end
     env.isServer = function() return isServer end
+    env.isDebugEnabled = function() return debugEnabled end
 
-    -- Outbound client->server traffic. mp.lua replaces this with a live bus;
-    -- on its own it just records, so single-environment tests can still assert
-    -- on what would have been sent.
+    local function singlePlayer() return not isClient and not isServer end
+
+    -- Outbound client->server traffic. mp.lua replaces this with a live bus. In single
+    -- player the engine loops it back locally (SinglePlayerClient -> SinglePlayerServer ->
+    -- OnClientCommand), so this does the same -- a no-op unless the world also loaded
+    -- RD_server_commands.lua.
     local sentCommands = {}
     env.sendClientCommand = function(sender, module, command, args)
         sentCommands[#sentCommands + 1] = {
             player = sender, module = module, command = command, args = args,
         }
+        if singlePlayer() then
+            events.fire("OnClientCommand", module, command, sender, args)
+        end
+    end
+
+    -- Server->client traffic: (player, module, command, args) or (module, command, args).
+    -- NOT looped back in single player: both real overloads return immediately unless
+    -- GameServer.serverZ (confirmed via bytecode), so in SP a reply sent this way is simply
+    -- lost. Only client->server loops back. Routed by mp.lua in a pair.
+    local serverCommands = {}
+    env.sendServerCommand = function(a, b, c, d)
+        local module, command, args
+        if type(a) == "string" then module, command, args = a, b, c else module, command, args = b, c, d end
+        serverCommands[#serverCommands + 1] = { module = module, command = command, args = args }
     end
 
     local syncedItems = {}
     env.syncItemFields = function(p, item)
         syncedItems[#syncedItems + 1] = { player = p, item = item }
+    end
+
+    -- syncVisuals(player) / sendHumanVisual(player): how vanilla pushes body and worn-clothing
+    -- visuals (blood, dirt) from the server (ISWashClothing / ISWashYourself).
+    local visualSyncs = {}
+    env.syncVisuals = function(p)
+        visualSyncs[#visualSyncs + 1] = { what = "syncVisuals", player = p }
+    end
+    env.sendHumanVisual = function(p)
+        visualSyncs[#visualSyncs + 1] = { what = "sendHumanVisual", player = p }
+    end
+
+    local addedToContainer = {}
+    env.sendAddItemToContainer = function(container, item)
+        addedToContainer[#addedToContainer + 1] = { container = container, item = item }
     end
 
     -- ---- misc engine globals ----
@@ -141,6 +186,33 @@ function M.new(config)
 
     env.getText = function(key, ...) return key end
 
+    -- getFileWriter / getFileReader (files in the Zomboid/Lua folder), kept in memory per world.
+    -- Vanilla usage: getFileWriter(name, createIfNull, append) -> write/close,
+    -- getFileReader(name, createIfNull) -> readLine/close.
+    local files = {}
+    env.getFileWriter = function(name, createIfNull, append)
+        local buffer = (append and files[name]) or ""
+        return {
+            write = function(_, s) buffer = buffer .. tostring(s) end,
+            close = function() files[name] = buffer end,
+        }
+    end
+    env.getFileReader = function(name, createIfNull)
+        local content = files[name]
+        if content == nil then
+            if not createIfNull then return nil end
+            content = ""
+            files[name] = content
+        end
+        local lines = {}
+        for line in string.gmatch(content, "([^\n]*)\n") do lines[#lines + 1] = line end
+        local i = 0
+        return {
+            readLine = function() i = i + 1; return lines[i] end,
+            close = function() end,
+        }
+    end
+
     -- Script-item tag registry behind the global hasItemTag(String, ItemTag). The real
     -- signature is (String, ItemTag) -- confirmed in LuaManager$GlobalObject -- so a string
     -- tag errors here exactly like the item-level hasTag double does.
@@ -176,7 +248,11 @@ function M.new(config)
         sandbox = sandbox,
         printed = printed,
         sentCommands = sentCommands,
+        serverCommands = serverCommands,
         syncedItems = syncedItems,
+        addedToContainer = addedToContainer,
+        visualSyncs = visualSyncs,
+        files = files,
         bloodSplats = bloodSplats,
         triggered = triggered,
         newItem = itemLib.new,
@@ -187,6 +263,12 @@ function M.new(config)
             scriptItemTags[fullType] = set
         end,
         setRole = function(client, server) isClient = client; isServer = server end,
+        setDebug = function(on) debugEnabled = on == true end,
+        -- Advances real time by `ms` and fires one OnTick.
+        tick = function(ms)
+            realMs = realMs + (ms or 0)
+            events.fire("OnTick")
+        end,
         -- Concatenated print output, for asserting on log lines the mod emits.
         log = function() return table.concat(printed, "\n") end,
     }

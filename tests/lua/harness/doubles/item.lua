@@ -49,10 +49,36 @@ function M.new(opts)
     function item:getCondition() return self.condition end
     function item:setCondition(v) self.condition = v; record("setCondition", v) end
     function item:getConditionMax() return self.conditionMax end
-    function item:getBlood() return self.blood end
-    function item:setBlood(v) self.blood = v; record("setBlood", v) end
-    function item:getDirt() return self.dirt end
-    function item:setDirt(v) self.dirt = v; record("setDirt", v) end
+    -- Clothing:getBlood(BloodBodyPartType) / setBlood(BloodBodyPartType, value) are per body
+    -- part, which is how RD_hygiene_manager stains clothing. The no-part forms keep a
+    -- whole-item value.
+    item.partBlood, item.partDirt = {}, {}
+    function item:getBlood(part)
+        if part ~= nil then return self.partBlood[part] or 0 end
+        return self.blood
+    end
+    function item:setBlood(a, b)
+        if b ~= nil then
+            self.partBlood[a] = b
+            record("setBlood", { part = a, value = b })
+        else
+            self.blood = a
+            record("setBlood", a)
+        end
+    end
+    function item:getDirt(part)
+        if part ~= nil then return self.partDirt[part] or 0 end
+        return self.dirt
+    end
+    function item:setDirt(a, b)
+        if b ~= nil then
+            self.partDirt[a] = b
+            record("setDirt", { part = a, value = b })
+        else
+            self.dirt = a
+            record("setDirt", a)
+        end
+    end
     function item:getBloodClothingType() return self.bloodClothingType end
     function item:getModData() return self.modData end
 
