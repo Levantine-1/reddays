@@ -1,7 +1,6 @@
-print("[RedDays] CLIENT: RD_hygiene_manager.lua loading - VERSION 2")
-
 RD_HygieneManager = RD_HygieneManager or {}
 require "RD_game_api"
+RD_zapi.log("[RedDays] CLIENT: RD_hygiene_manager.lua loading - VERSION 2")
 
 -- Helper function to sync item changes to server in multiplayer
 -- This ensures condition and name changes persist when items are dropped/picked up
@@ -27,13 +26,13 @@ end
 function RD_HygieneManager.debugSetCondition(newCondition)
     local item = RD_HygieneManager.getCurrentlyWornSanitaryItem()
     if not item then
-        print("[RedDays] DEBUG: No sanitary item worn")
+        RD_zapi.log("[RedDays] DEBUG: No sanitary item worn")
         return
     end
-    print("[RedDays] DEBUG: Setting condition to " .. tostring(newCondition))
+    RD_zapi.log("[RedDays] DEBUG: Setting condition to " .. tostring(newCondition))
     item:setCondition(newCondition)
     syncItemToServer(item, newCondition, nil)
-    print("[RedDays] DEBUG: Condition set and synced")
+    RD_zapi.log("[RedDays] DEBUG: Condition set and synced")
 end
 
 function RD_HygieneManager.LoadPlayerData()
@@ -194,18 +193,11 @@ local function consumeSanitaryItem()
     return isSanitaryItemEquipped, didConsumeSanitaryItem
 end
 
--- Blood/dirt stain spreading for body and clothing
--- Stains spread from groin outward: groin → both thighs → both shins
--- blood = true adds blood, dirt = true adds dirt
--- Each tier is a group of body parts that stain together
-local STAIN_TIERS = {
-    { BloodBodyPartType.Groin },
-    { BloodBodyPartType.UpperLeg_L, BloodBodyPartType.UpperLeg_R },
-    { BloodBodyPartType.LowerLeg_L, BloodBodyPartType.LowerLeg_R },
-    { BloodBodyPartType.Foot_L, BloodBodyPartType.Foot_R },
-}
-
-local STAIN_INCREMENT = 0.01 -- How much dirt to add per call (dirt still increments since it's groin-only)
+-- Blood/dirt stain spreading for body and clothing lives in shared/RD_stains.lua, so the server
+-- can repeat it in MP. RD_Stains can be nil if the game wasn't fully restarted after that file was
+-- added (PZ keeps the file list from launch); stains are then skipped rather than crashing.
+require "RD_stains"
+local STAIN_TIERS = (RD_Stains and RD_Stains.TIERS) or {}
 local STAIN_MAX = 1.0
 
 -- Maps leak level to stain intensity, tier spread, and ground drip chance.
@@ -389,68 +381,20 @@ local function maybeDropBloodOnGround(dropChance, maxBlood)
     end
 end
 
-local function addStainToClothingPart(item, bodyPart, blood, dirt, maxLevel)
-    -- Check if the clothing covers this body part
-    local coveredParts = RD_zapi.getClothingCoveredParts(item)
-    if not coveredParts then return false end
-    maxLevel = maxLevel or STAIN_MAX
-
-    for i = 0, coveredParts:size() - 1 do
-        local coveredPart = coveredParts:get(i)
-        if coveredPart == bodyPart then
-            if blood then
-                local current = item:getBlood(coveredPart)
-                if current < maxLevel then
-                    item:setBlood(coveredPart, math.min(maxLevel, current + STAIN_INCREMENT))
-                end
-            end
-            if dirt then
-                local current = item:getDirt(coveredPart)
-                if current < maxLevel then
-                    item:setDirt(coveredPart, math.min(maxLevel, current + STAIN_INCREMENT))
-                end
-            end
-            return true
-        end
-    end
-    return false
-end
-
 local function addStainsToBodyAndClothes(blood, dirt, maxTier, maxLevel)
-    local visual = RD_zapi.getHumanVisual()
-    local wornItems = RD_zapi.getWornItems()
-    if not visual or not wornItems then return end
+    local player = RD_zapi.getPlayer()
+    if not player or not RD_Stains then return end
 
     maxTier = maxTier or #STAIN_TIERS
     maxLevel = maxLevel or STAIN_MAX
     if maxTier <= 0 then return end
 
-    -- Apply stains to each allowed tier
-    for tierIndex = 1, math.min(maxTier, #STAIN_TIERS) do
-        local tier = STAIN_TIERS[tierIndex]
-
-        for _, bodyPart in ipairs(tier) do
-            local bodyBlood = blood and visual:getBlood(bodyPart) or 0
-            local bodyDirt = dirt and visual:getDirt(bodyPart) or 0
-
-            if blood and bodyBlood < maxLevel then
-                visual:setBlood(bodyPart, math.min(maxLevel, bodyBlood + STAIN_INCREMENT))
-            end
-            if dirt and bodyDirt < maxLevel then
-                visual:setDirt(bodyPart, math.min(maxLevel, bodyDirt + STAIN_INCREMENT))
-            end
-
-            -- Add stain to any worn clothing covering this body part
-            for i = 0, wornItems:size() - 1 do
-                local wornItem = wornItems:get(i)
-                if wornItem and wornItem:getItem() then
-                    local clothingItem = wornItem:getItem()
-                    if RD_zapi.isClothingItem(clothingItem) and clothingItem:getBloodClothingType() then
-                        addStainToClothingPart(clothingItem, bodyPart, blood, dirt, maxLevel)
-                    end
-                end
-            end
-        end
+    RD_Stains.apply(player, blood, dirt, maxTier, maxLevel)
+    -- Body and clothing visuals are server-authoritative in MP: the hosted self-test showed
+    -- client-only stains never reaching the server. The server repeats the same spread and syncs it.
+    if isClient() then
+        sendClientCommand(player, 'RedDays', 'applyStains',
+            { blood = blood == true, dirt = dirt == true, maxTier = maxTier, maxLevel = maxLevel })
     end
 
     -- Update visuals so stains render
@@ -471,27 +415,20 @@ function RD_HygieneManager.addDirtStains()
     addStainsToBodyAndClothes(false, true, 1, STAIN_MAX) -- Dirt only stains groin, capped at STAIN_MAX
 end
 
+-- Periods show through moodles and stains, never by injuring the player: this never touches the
+-- groin's bleeding state, and a bandage is not a stand-in for a pad (a later update may let
+-- players fold one into a pad).
 function RD_HygieneManager.consumeHygieneProduct()
-    local groin = RD_zapi.getBodyPart(BodyPartType.Groin)
-
-    isSanitaryItemEquipped, didConsumeSanitaryItem = consumeSanitaryItem()
+    local isSanitaryItemEquipped, didConsumeSanitaryItem = consumeSanitaryItem()
     if isSanitaryItemEquipped then
-        local bleedingTime = groin:getBleedingTime()
-        if bleedingTime == 0 and didConsumeSanitaryItem then
-            groin:setBleeding(false) -- Clear bleeding if no wounds. Cycle generates bleeding time of 0, so assumed no wounds.
-        end
         if not didConsumeSanitaryItem then
             -- Sanitary item leaked - add blood stains to body and clothes
             RD_HygieneManager.addBloodStains()
         end
         return didConsumeSanitaryItem -- Returns true if sanitary item was consumed and no leak occurred
-    elseif groin:bandaged() then
-        current_bandageLife = groin:getBandageLife()
-        groin:setBandageLife(current_bandageLife - 0.1)
-        return true -- Always returns true because player could bleed to death if they have other injuries. Setting to false could remove the bandage.
     end
 
-    -- No sanitary item equipped and no bandage - blood stains on body/clothes
+    -- No sanitary item equipped - blood stains on body/clothes
     RD_HygieneManager.addBloodStains()
     return false
 end

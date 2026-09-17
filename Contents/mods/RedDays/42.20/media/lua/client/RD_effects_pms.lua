@@ -9,11 +9,40 @@ local FOOD_PMS_REDUCTIONS = {
     ["Base.Milk"] = 10, ["Base.MilkBottle"] = 10, ["Base.Milk_Personalsized"] = 10,  -- drunk, not eaten -- see ISDrinkFluidAction hook
     ["Base.Yoghurt"] = 10,
     ["Base.Cheese"] = 8, ["Base.Processedcheese"] = 8,
-    ["Base.Chocolate"] = 10,
     ["Base.Oatmeal"] = 6,
     ["Base.PeanutButter"] = 4,
     ["Base.Peanuts"] = 4,
     ["Base.Banana"] = 4,
+
+    -- Chocolate-flavored (10%, same tier as plain Chocolate). Raw/dough/prep variants
+    -- (CakeRaw, CakePrep, *Dough, PieWholeRaw*, Muffintray_Biscuit) aren't eaten as-is, so they're
+    -- excluded on purpose.
+    ["Base.Chocolate"] = 10,
+    ["Base.CakeChocolate"] = 10, ["Base.CakeBlackForest"] = 10,  -- black forest = chocolate + cherry
+    ["Base.CookieChocolateChip"] = 10, ["Base.CookiesChocolate"] = 10,
+    ["Base.DoughnutChocolate"] = 10, ["Base.ChocolateChips"] = 10,
+    ["Base.ChocolateCoveredCoffeeBeans"] = 10,
+    ["Base.Chocolate_Butterchunkers"] = 10, ["Base.Chocolate_Candy"] = 10,
+    ["Base.Chocolate_Crackle"] = 10, ["Base.Chocolate_Deux"] = 10,
+    ["Base.Chocolate_GalacticDairy"] = 10, ["Base.Chocolate_HeartBox"] = 10,
+    ["Base.Chocolate_RoysPBPucks"] = 10, ["Base.Chocolate_Smirkers"] = 10,
+    ["Base.Chocolate_SnikSnak"] = 10, ["Base.FudgeePop"] = 10, ["Base.FudgeePop_Melted"] = 10,
+
+    -- Other sweets/desserts (6%, same tier as Oatmeal -- comfort food, less indulgent than chocolate).
+    ["Base.CakeCarrot"] = 6, ["Base.CakeCheeseCake"] = 6, ["Base.CakeRedVelvet"] = 6,
+    ["Base.CakeSlice"] = 6, ["Base.CakeStrawberryShortcake"] = 6,
+    ["Base.CookieJelly"] = 6, ["Base.CookiesOatmeal"] = 6, ["Base.CookiesShortbread"] = 6,
+    ["Base.CookiesSugar"] = 6,
+    ["Base.DoughnutFrosted"] = 6, ["Base.DoughnutJelly"] = 6, ["Base.DoughnutPlain"] = 6,
+    ["Base.MuffinFruit"] = 6, ["Base.MuffinGeneric"] = 6,
+    ["Base.Pie"] = 6, ["Base.PieApple"] = 6, ["Base.PieBlueberry"] = 6, ["Base.PieKeyLime"] = 6,
+    ["Base.PieLemonMeringue"] = 6, ["Base.PiePumpkin"] = 6,
+    ["Base.CandyCaramels"] = 6, ["Base.CandyGummyfish"] = 6, ["Base.CandyMolasses"] = 6,
+    ["Base.CandyNovapops"] = 6, ["Base.Candycane"] = 6, ["Base.CandyCorn"] = 6,
+    ["Base.CandyFruitSlices"] = 6, ["Base.CandyPackage"] = 6,
+    ["Base.Icecream"] = 6, ["Base.IcecreamMelted"] = 6,
+    ["Base.IcecreamSandwich"] = 6, ["Base.IcecreamSandwich_Melted"] = 6,
+    ["Base.Marshmallows"] = 6,
 }
 local FISH_TAG_REDUCTION_PCT = 4  -- fish items are inconsistent on FoodType but consistently tagged base:fishmeat
 
@@ -58,7 +87,16 @@ local function getTotalFoodPMSReduction(item)
     return total
 end
 
-function RD_EffectsPMS.setAngerMoodle(stats, target_value, rate_multiplier)
+-- In MP the server owns character stats: a client's direct stats:set() is reverted (proven in
+-- game by rd.mptest's stat check). The stat effects below still apply locally for instant
+-- feedback, and also record the same STEP in `pending`, which applyEnabledSymptomEffects sends
+-- once per tick to Commands.applyPMSStats. Steps rather than final values, because the server
+-- keeps changing these stats itself and a value computed from the client's copy would clobber that.
+local function addPending(pending, field, delta)
+    if pending then pending[field] = (pending[field] or 0) + delta end
+end
+
+function RD_EffectsPMS.setAngerMoodle(stats, target_value, rate_multiplier, pending)
         -- Anger or irritability tends to rise during the late luteal phase (about 1 week before period).
         -- Often linked to progesterone dominance and serotonin fluctuations.
         -- Peaks just before menstruation and resolves quickly once bleeding begins.
@@ -78,6 +116,12 @@ function RD_EffectsPMS.setAngerMoodle(stats, target_value, rate_multiplier)
         local endurance_change_rate = (0.0053 * severity) * rate_multiplier
         local current_endurance = stats:get(CharacterStat.ENDURANCE)
         stats:set(CharacterStat.ENDURANCE, math.min(1, current_endurance + endurance_change_rate))
+
+        if pending then
+            pending.angerTarget = severity
+            pending.angerStep = angerLevel_change_rate
+        end
+        addPending(pending, "enduranceDelta", endurance_change_rate)
 end
 
 function RD_EffectsPMS.setCrampsEffect(stats, target_value, rate_multiplier)
@@ -108,7 +152,7 @@ function RD_EffectsPMS.setCrampsEffect(stats, target_value, rate_multiplier)
         end
 end
 
-function RD_EffectsPMS.setFatigueEffect(stats, target_value, rate_multiplier)
+function RD_EffectsPMS.setFatigueEffect(stats, target_value, rate_multiplier, pending)
         -- Fatigue builds gradually during the luteal phase (about 5–7 days pre-period).
         -- Peaks right before or at the start of menstruation due to hormonal shifts and poor sleep quality.
         -- Resolves around day 2–3 of the period.
@@ -125,6 +169,9 @@ function RD_EffectsPMS.setFatigueEffect(stats, target_value, rate_multiplier)
         local endurance_change_rate = (0.00134 * severity) * rate_multiplier
         local current_endurance = stats:get(CharacterStat.ENDURANCE)
         stats:set(CharacterStat.ENDURANCE, math.max(0, current_endurance - endurance_change_rate))
+
+        addPending(pending, "fatigueDelta", fatigue_change_rate)
+        addPending(pending, "enduranceDelta", -endurance_change_rate)
 end
 
 function RD_EffectsPMS.setTenderBreastsEffect(stats, target_value, rate_multiplier, alsoHasCramps)
@@ -155,7 +202,7 @@ end
 
 local setFoodCravingEffect_lastHunger = 0
     local setFoodCravingEffect_jumpedToHungry = false
-    function RD_EffectsPMS.setFoodCravingEffect(stats, target_value, rate_multiplier)
+    function RD_EffectsPMS.setFoodCravingEffect(stats, target_value, rate_multiplier, pending)
         -- Starts about 5–7 days before menstruation.
         -- Common cravings: carbs, sweets, salty or fatty foods due to serotonin and blood sugar changes.
         -- Peaks just before menstruation and fades within the first day of bleeding.
@@ -184,11 +231,12 @@ local setFoodCravingEffect_lastHunger = 0
         if currentHunger > target_trigger_hunger_value and currentHunger < 0.16 and not setFoodCravingEffect_jumpedToHungry then
             stats:set(CharacterStat.HUNGER, 0.16)  -- Jump to peckish threshold
             setFoodCravingEffect_jumpedToHungry = true
+            if pending then pending.hungerFloor = 0.16 end
         end
         setFoodCravingEffect_lastHunger = currentHunger
 end
 
-function RD_EffectsPMS.setSadnessMoodle(stats, target_value, rate_multiplier)
+function RD_EffectsPMS.setSadnessMoodle(stats, target_value, rate_multiplier, pending)
         -- Mild sadness or mood dips commonly appear in the days leading up to menstruation.
         -- May involve lower energy, sensitivity, or tearfulness.
         -- Often starts 3–5 days before menstruation and resolves within 1–2 days of bleeding onset.
@@ -207,6 +255,12 @@ function RD_EffectsPMS.setSadnessMoodle(stats, target_value, rate_multiplier)
         elseif currentUnhappynessLevel > target_value then
             -- Decrease unhappiness toward target
             stats:set(CharacterStat.UNHAPPINESS, math.max(0, currentUnhappynessLevel - change_rate))
+        end
+
+        -- Sent even when the client is already at the target: the server's copy may not be.
+        if pending then
+            pending.unhappinessTarget = target_value
+            pending.unhappinessStep = change_rate
         end
 end
 
@@ -273,23 +327,37 @@ local function applyEnabledSymptomEffects(currentCycle, pms_severity, rate_multi
             target_value = target_value * (1 - (RD_modData.ICdata.food_pms_reduction_pct / 100))
         end
 
+        local pending = {}
         if currentCycle.pms_agitation then
-            RD_EffectsPMS.setAngerMoodle(stats, target_value, rate_multiplier)
+            RD_EffectsPMS.setAngerMoodle(stats, target_value, rate_multiplier, pending)
         end
         if currentCycle.pms_cramps then
             RD_EffectsPMS.setCrampsEffect(stats, target_value, rate_multiplier)
         end
         if currentCycle.pms_fatigue then
-            RD_EffectsPMS.setFatigueEffect(stats, target_value, rate_multiplier)
+            RD_EffectsPMS.setFatigueEffect(stats, target_value, rate_multiplier, pending)
         end
         if currentCycle.pms_tenderBreasts then
             RD_EffectsPMS.setTenderBreastsEffect(stats, target_value, rate_multiplier, currentCycle.pms_cramps)
         end
         if currentCycle.pms_craveFood then
-            RD_EffectsPMS.setFoodCravingEffect(stats, target_value, rate_multiplier)
+            RD_EffectsPMS.setFoodCravingEffect(stats, target_value, rate_multiplier, pending)
         end
         if currentCycle.pms_Sadness then
-            RD_EffectsPMS.setSadnessMoodle(stats, target_value, rate_multiplier)
+            RD_EffectsPMS.setSadnessMoodle(stats, target_value, rate_multiplier, pending)
+        end
+
+        -- One command per tick for all stat effects; stiffness keeps applyBodyStiffness.
+        -- Kahlua has no next(), so test for an empty table with pairs().
+        if isClient() then
+            local hasAny = false
+            for _ in pairs(pending) do
+                hasAny = true
+                break
+            end
+            if hasAny then
+                sendClientCommand(player, 'RedDays', 'applyPMSStats', pending)
+            end
         end
 end
 
@@ -304,7 +372,7 @@ local function takePillsStiffness()
     if RD_modData.ICdata.pill_effect_counter < pill_effect_counter_max then
         RD_modData.ICdata.pill_effect_counter = RD_modData.ICdata.pill_effect_counter + 1
     else
-        print("PMS Painkiller Effect Ended")
+        RD_zapi.log("PMS Painkiller Effect Ended")
         Events.EveryTenMinutes.Remove(takePillsStiffness)
         RD_modData.ICdata.pill_effect_active = false
         RD_modData.ICdata.pill_effect_counter = 0
@@ -317,7 +385,7 @@ function RD_EffectsPMS.ISTakePillAction_perform(self)
     local fullType = self.item:getFullType()
 
     if fullType == "Base.Pills" then
-        print("Painkillers Taken, Reducing PMS Symptoms")
+        RD_zapi.log("Painkillers Taken, Reducing PMS Symptoms")
         RD_modData.ICdata.pill_recently_taken = true
         local wasActive = RD_modData.ICdata.pill_effect_active
         RD_modData.ICdata.pill_effect_active = true
@@ -343,7 +411,7 @@ local function takeFoodPMSCountdown()
     if RD_modData.ICdata.food_pms_effect_counter < food_effect_counter_max then
         RD_modData.ICdata.food_pms_effect_counter = RD_modData.ICdata.food_pms_effect_counter + 1
     else
-        print("PMS Food Effect Ended")
+        RD_zapi.log("PMS Food Effect Ended")
         Events.EveryTenMinutes.Remove(takeFoodPMSCountdown)
         RD_modData.ICdata.food_pms_effect_active = false
         RD_modData.ICdata.food_pms_effect_counter = 0
@@ -363,7 +431,7 @@ function RD_EffectsPMS.registerFoodPMSEffect(item)
     local newTotal = math.min(cap, (RD_modData.ICdata.food_pms_reduction_pct or 0) + reduction)
     local wasActive = RD_modData.ICdata.food_pms_effect_active
 
-    print("PMS-reducing food eaten (+" .. reduction .. "%, total " .. newTotal .. "%)")
+    RD_zapi.log("PMS-reducing food eaten (+" .. reduction .. "%, total " .. newTotal .. "%)")
     RD_modData.ICdata.food_pms_reduction_pct = newTotal
     RD_modData.ICdata.food_pms_effect_active = true
     RD_modData.ICdata.food_pms_effect_counter = 0  -- reset, exactly like re-taking a pill
@@ -375,12 +443,13 @@ function RD_EffectsPMS.registerFoodPMSEffect(item)
     end
 end
 
-function RD_EffectsPMS.ISEatFoodAction_complete(self)
+-- Called from the perform() hooks in RD_main.lua -- complete() never runs client-side in MP.
+function RD_EffectsPMS.ISEatFoodAction_perform(self)
     if not self.item then return end
     RD_EffectsPMS.registerFoodPMSEffect(self.item)
 end
 
-function RD_EffectsPMS.ISDrinkFluidAction_complete(self)
+function RD_EffectsPMS.ISDrinkFluidAction_perform(self)
     if not self.item then return end
     RD_EffectsPMS.registerFoodPMSEffect(self.item)
 end

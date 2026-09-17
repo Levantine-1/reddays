@@ -24,13 +24,10 @@ local function consumeDischargeProduct()
     return RD_HygieneManager:consumeDischargeProduct()
 end
 
-local function stopGroinBleeding()
-    local groin = RD_zapi.getBodyPart(BodyPartType.Groin)
-    local bleedingTime = groin:getBleedingTime()
-    if bleedingTime == 0 then -- Clear bleeding if no wounds. Cycle generates bleeding time of 0, so assumed no wounds.
-        -- groin:setBleeding(false)
-        RD_modData.ICdata.LeakSwitchState = false
-    end
+-- The period is over, so stop the leak moodle building. Deliberately independent of the groin's
+-- bleeding state: the mod never injures the player, so a real wound there is not period-related.
+local function endRedPhaseLeak()
+    RD_modData.ICdata.LeakSwitchState = false
 end
 
 function RD_EffectsManager.determineEffects(cycle)
@@ -47,7 +44,7 @@ function RD_EffectsManager.determineEffects(cycle)
     else
         if stat_Adjustment_isEnabled then
             Events.EveryOneMinute.Remove(stat_Adjustment)
-            stopGroinBleeding() -- Stop bleeding if it was caused by the red phase
+            endRedPhaseLeak()
         end
         stat_Adjustment_isEnabled = false
 

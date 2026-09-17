@@ -59,19 +59,18 @@ local TSS_STAGE4_ABX_HEALTH_CAP_DEFAULT = 50 -- fallback if tss_abx_sleep_health
 local FEVER_TICK_INTERVAL_S = 3.0 -- Apply fever pressure every N in-game seconds
 local ABX_BANK_POINTS_PER_DOSE = 10
 local ABX_TOXIN_MAX = 100                    -- Stage 4 toxin score scale (0..100)
+local ABX_TOXIN_EPSILON = 1e-6               -- float residue below this counts as fully cleared
 
 local function getSandbox()
     return SandboxVars.RedDays or {}
 end
 
 local function isEnabled()
-    -- TSS is disabled in true multiplayer for now: dose registration and stat sync have
-    -- unresolved desync issues (see notes/apiDocumentation). Singleplayer is unaffected.
-    if isClient() then return false end
     local sb = getSandbox()
     if sb.tss_enabled == nil then return true end
     return sb.tss_enabled
 end
+RD_TSSManager.isEnabled = isEnabled
 
 local function isLethalEnabled()
     local sb = getSandbox()
@@ -197,7 +196,7 @@ end
 
 local function notifyPlayer(msg)
     if not msg then return end
-    print("[RedDays][TSS] " .. msg)
+    RD_zapi.log("[RedDays][TSS] " .. msg)
 end
 
 local function transmitNow()
@@ -436,6 +435,10 @@ local function rollTSSTransition(player, tss, pending)
         tss.abx_bank_points = 0
         tss.abx_cooldown_mins = 0
         tss.abx_suppress_mins = 0
+        -- Antibiotics taken back at stages 1-3 leave recovery_mode = "antibiotics". If it
+        -- survived into Stage 4, applySicknessProgression would DECAY sickness instead of
+        -- ramping it, and toxic shock would reset itself to stage 0 without a course.
+        tss.recovery_mode = "none"
         tss._tempDiagPrinted = nil  -- ensure calibration print fires on first Stage 4 tick
         tss._feverDrive = 0
         tss._feverAccum = 0
@@ -444,7 +447,7 @@ local function rollTSSTransition(player, tss, pending)
             s4Stats:set(CharacterStat.SICKNESS, TSS_SICKNESS_STAGE4_START)
             if pending then pending.sickness = TSS_SICKNESS_STAGE4_START end
         end
-        print("[RedDays][TSS] Toxic shock triggered. Toxin score set to 100. Take antibiotics repeatedly.")
+        RD_zapi.log("[RedDays][TSS] Toxic shock triggered. Toxin score set to 100. Take antibiotics repeatedly.")
         transmitNow()
     end
 end
@@ -738,22 +741,22 @@ local function rollComplication(player, tss, pending)
             stats:set(CharacterStat.UNHAPPINESS, newUnhappiness)
             if pending then pending.unhappiness = newUnhappiness end
         end
-        print("[RedDays][TSS] Complication: mild symptom flare.")
+        RD_zapi.log("[RedDays][TSS] Complication: mild symptom flare.")
     elseif roll < 85 then
         local spike = 30 + ZombRand(91)
         tss.severity = (tss.severity or 0) + spike
-        print("[RedDays][TSS] Complication: infection flare, +" .. spike .. " severity mins.")
+        RD_zapi.log("[RedDays][TSS] Complication: infection flare, +" .. spike .. " severity mins.")
     elseif roll < 97 then
         if tss.stage >= 2 then
             local spike = 120 + ZombRand(361)
             tss.severity = (tss.severity or 0) + spike
-            print("[RedDays][TSS] Complication: severe infection spike, +" .. spike .. " severity mins.")
+            RD_zapi.log("[RedDays][TSS] Complication: severe infection spike, +" .. spike .. " severity mins.")
         end
     else
         if tss.stage >= 3 then
             local riskGain = 20 + ZombRand(31)
             tss.tss_risk = (tss.tss_risk or 0) + riskGain
-            print("[RedDays][TSS] Complication: systemic stress spike, +" .. riskGain .. " TSS risk.")
+            RD_zapi.log("[RedDays][TSS] Complication: systemic stress spike, +" .. riskGain .. " TSS risk.")
         end
     end
 end
@@ -806,7 +809,7 @@ function RD_TSSManager.ApplyFeverPressure(player)
     if not tss._tempDiagPrinted then
         tss._tempDiagPrinted = true
         local statVal = feverStats:get(CharacterStat.TEMPERATURE)
-        print(string.format(
+        RD_zapi.log(string.format(
             "[RedDays][TEMP] Scale calibration: getCoreCelcius()=%.4f  stats:get(TEMPERATURE)=%.4f  min=%.4f  max=%.4f  default=%.4f",
             currentTempC, statVal or 0,
             CharacterStat.TEMPERATURE:getMinimumValue(),
@@ -930,7 +933,7 @@ function RD_TSSManager.registerTreatmentFromItem(item, actionName)
     local fullType = item:getFullType() or ""
     if fullType ~= "Base.Antibiotics" then return end
     if tss.stage < 1 then
-        print("[RedDays][TSS] Antibiotics taken but no active TSS infection.")
+        RD_zapi.log("[RedDays][TSS] Antibiotics taken but no active TSS infection.")
         return
     end
 
@@ -947,7 +950,7 @@ function RD_TSSManager.registerTreatmentFromItem(item, actionName)
     tss.antibiotics_taken_recently = true
 
     if tss.stage == 4 then
-        print("[RedDays][TSS] Dose " .. tss.abx_dose_count
+        RD_zapi.log("[RedDays][TSS] Dose " .. tss.abx_dose_count
             .. ". ABX bank: " .. string.format("%.2f", tss.abx_bank_points or 0)
             .. "/" .. string.format("%.2f", bankCap)
             .. ". Toxin drains over " .. math.floor(cooldownMins / MINUTES_PER_HOUR) .. "h.")
@@ -955,7 +958,7 @@ function RD_TSSManager.registerTreatmentFromItem(item, actionName)
         -- Stages 1-3: ABX relief now drains over time from the same bank model.
         tss.stabilized_until = math.max(tss.stabilized_until or 0, suppressMins)
         tss.recovery_mode = "antibiotics"
-        print("[RedDays][TSS] Dose " .. tss.abx_dose_count
+        RD_zapi.log("[RedDays][TSS] Dose " .. tss.abx_dose_count
             .. ". ABX bank: " .. string.format("%.2f", tss.abx_bank_points or 0)
             .. "/" .. string.format("%.2f", bankCap)
             .. ". Severity relief drains over " .. math.floor(cooldownMins / MINUTES_PER_HOUR) .. "h.")
@@ -1064,6 +1067,12 @@ local function doEveryOneMinute(cycle, pending)
                 -- Toxin clears at a rate sized so tss_abx_pills_to_cure full doses clear it exactly.
                 local toxinCleared = drained * (tss.abx_toxin_clear_per_point or 1)
                 tss.abx_toxin_level = math.max(0, (tss.abx_toxin_level or 0) - toxinCleared)
+                -- A full course is sized to clear the toxin exactly, but summing hundreds of small
+                -- float drains can leave a residue (1.6e-11 seen with the defaults) once the bank
+                -- is empty -- which would demand one pill more than tss_abx_pills_to_cure.
+                if tss.abx_toxin_level < ABX_TOXIN_EPSILON then
+                    tss.abx_toxin_level = 0
+                end
             else
                 -- Stages 1-3: no direct severity effect here -- an active bank simply doubles the
                 -- recovery_timer rate above (see the source-removed branch). recovery_mode is only
@@ -1094,7 +1103,7 @@ local function doEveryOneMinute(cycle, pending)
             -- decays below ~0.91 via applySicknessProgression (recovery_mode = "antibiotics").
             -- Fever breaks gradually as the player recovers — no manual TEMPERATURE reset needed.
             tss.recovery_mode = "antibiotics"
-            print("[RedDays][TSS] Toxin cleared by antibiotics. Fever breaking. Transitioning to Stage 3 recovery.")
+            RD_zapi.log("[RedDays][TSS] Toxin cleared by antibiotics. Fever breaking. Transitioning to Stage 3 recovery.")
             transmitNow()
             return
         end
