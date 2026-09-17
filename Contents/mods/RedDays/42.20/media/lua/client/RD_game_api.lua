@@ -3,6 +3,13 @@
 
 RD_zapi = RD_zapi or {}
 
+-- Non-debugger diagnostic prints go through here, gated by RD_Config.verboseLog (shared/RD_config.lua),
+-- so a live game only prints what RD_debugger.lua's rd.* console commands are asked for.
+-- RD_Config can be nil if PZ wasn't fully restarted after RD_config.lua was added (see RD_main.lua).
+function RD_zapi.log(msg)
+    if RD_Config and RD_Config.verboseLog then print(msg) end
+end
+
 -- ================= GAME TIME =================
 
 -- https://projectzomboid.com/modding/zombie/GameTime.html

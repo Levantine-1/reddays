@@ -22,7 +22,7 @@ function RD_CycleManager.LoadPlayerData()
     -- Initialize or validate the current cycle
     RD_modData.ICdata.currentCycle = RD_modData.ICdata.currentCycle or RD_CycleManager.newCycle("LoadPlayerData")
     if not RD_CycleManager.isCycleValid(RD_modData.ICdata.currentCycle) then
-        print("Cycle data structure mismatch! This could be due to a mod update. Regenerating cycle...")
+        RD_zapi.log("Cycle data structure mismatch! This could be due to a mod update. Regenerating cycle...")
         RD_modData.ICdata.currentCycle = RD_CycleManager.newCycle("LoadPlayerData_afterValidation")
     end
 end
@@ -53,13 +53,13 @@ end
 -- Main cycle tick - decrements time and transitions phases
 function RD_CycleManager.tick(tickMinutes)
     if not tickMinutes or tickMinutes <= 0 then
-        print("Invalid tickMinutes value: " .. tostring(tickMinutes))
+        RD_zapi.log("Invalid tickMinutes value: " .. tostring(tickMinutes))
         return RD_modData.ICdata.currentCycle
     end
     local cycle = RD_modData.ICdata.currentCycle
     
     if not cycle or not cycle.current_phase then
-        print("Invalid cycle, regenerating...")
+        RD_zapi.log("Invalid cycle, regenerating...")
         RD_modData.ICdata.currentCycle = RD_CycleManager.newCycle("tick_invalidCycle")
         return RD_modData.ICdata.currentCycle
     end
@@ -73,7 +73,7 @@ function RD_CycleManager.tick(tickMinutes)
         
         if nextPhase == "endOfCycle" then
             -- Generate a new cycle
-            print("Cycle ended. New cycle generated.")
+            RD_zapi.log("Cycle ended. New cycle generated.")
             RD_modData.ICdata.currentCycle = RD_CycleManager.newCycle("tick_endOfCycle")
             return RD_modData.ICdata.currentCycle
         else
@@ -81,7 +81,7 @@ function RD_CycleManager.tick(tickMinutes)
             local overflow = math.abs(cycle.phase_minutes_remaining)
             cycle.current_phase = nextPhase
             cycle.phase_minutes_remaining = cycle[nextPhase .. "_duration_mins"] - overflow
-            print("Phase transition: now in " .. nextPhase .. " with " .. cycle.phase_minutes_remaining .. " minutes remaining")
+            RD_zapi.log("Phase transition: now in " .. nextPhase .. " with " .. cycle.phase_minutes_remaining .. " minutes remaining")
         end
     end
     
@@ -265,7 +265,7 @@ local testCycle = false
 function RD_CycleManager.newCycle(whoDidThis)
     -- Debug mode: use fast test cycle if enabled
     if testCycle then
-        print("Debug fast cycle enabled - using test_debug_cycle()")
+        RD_zapi.log("Debug fast cycle enabled - using test_debug_cycle()")
         local cycle = test_debug_cycle()
         cycle.reason_for_cycle = whoDidThis .. "_debugFastCycle"
         return cycle
@@ -282,7 +282,7 @@ function RD_CycleManager.newCycle(whoDidThis)
     local range_total_cycle = ranges.range_total_menstrual_cycle_duration
 
     if whoDidThis ~= "isCycleValid" then
-        print("Generating a new menstrual cycle (countdown-based)...")
+        RD_zapi.log("Generating a new menstrual cycle (countdown-based)...")
     end
 
     -- Try up to 10 times to generate a valid cycle (up to 10 times because sometimes the ranges make it possible)
@@ -302,19 +302,19 @@ function RD_CycleManager.newCycle(whoDidThis)
         if total_days >= range_total_cycle[1] and total_days <= range_total_cycle[2] then
             valid_cycle_generated = true
             if whoDidThis ~= "isCycleValid" then
-                print("Valid cycle generated on attempt " .. attempt .. " (total: " .. total_days .. " days)")
+                RD_zapi.log("Valid cycle generated on attempt " .. attempt .. " (total: " .. total_days .. " days)")
             end
             break
         else
             if whoDidThis ~= "isCycleValid" then
-                print("Attempt " .. attempt .. ": total " .. total_days .. " days outside range [" .. range_total_cycle[1] .. "-" .. range_total_cycle[2] .. "]")
+                RD_zapi.log("Attempt " .. attempt .. ": total " .. total_days .. " days outside range [" .. range_total_cycle[1] .. "-" .. range_total_cycle[2] .. "]")
             end
         end
     end
 
     -- Fallback to default cycle if we couldn't generate a valid one
     if not valid_cycle_generated then
-        print("Failed to generate valid cycle after " .. max_attempts .. " attempts. Using default cycle.")
+        RD_zapi.log("Failed to generate valid cycle after " .. max_attempts .. " attempts. Using default cycle.")
         local cycle = default_cycle()
         cycle.reason_for_cycle = whoDidThis .. "_fallbackDefault"
         return cycle
@@ -399,7 +399,7 @@ function RD_CycleManager.newCycle(whoDidThis)
     }
 
     if whoDidThis ~= "isCycleValid" then
-        print("New cycle created: starting in " .. starting_phase .. " with " .. starting_minutes .. " minutes (" .. (starting_minutes / MINUTES_PER_DAY) .. " days)")
+        RD_zapi.log("New cycle created: starting in " .. starting_phase .. " with " .. starting_minutes .. " minutes (" .. (starting_minutes / MINUTES_PER_DAY) .. " days)")
     end
 
     return cycle
@@ -407,7 +407,7 @@ end
 
 function RD_CycleManager.getCurrentCyclePhase(cycle)
     if not cycle or not cycle.current_phase then
-        print("Invalid cycle structure detected.")
+        RD_zapi.log("Invalid cycle structure detected.")
         return "invalidCycle"
     end
     return cycle.current_phase
@@ -494,14 +494,14 @@ function RD_CycleManager.isCycleValid(cycle) -- If mod is updated and the cycle 
     
     for _, field in ipairs(required_fields) do
         if cycle[field] == nil then
-            print("Cycle missing required field: " .. field)
+            RD_zapi.log("Cycle missing required field: " .. field)
             return false
         end
     end
     
     -- Validate current_phase is a known phase
     if not phaseIsValid(cycle.current_phase) then
-        print("Cycle has invalid current_phase: " .. tostring(cycle.current_phase))
+        RD_zapi.log("Cycle has invalid current_phase: " .. tostring(cycle.current_phase))
         return false
     end
     

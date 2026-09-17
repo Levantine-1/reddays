@@ -65,7 +65,7 @@ function RD_CycleTrackerLogic.getJournal(player, idSubstring, returnBlank)
 end
 
 function RD_CycleTrackerLogic.RegisterNewJournal(player, idSubstring)
-    print("Registering new journal with ID - " .. tostring(idSubstring))
+    RD_zapi.log("Registering new journal with ID - " .. tostring(idSubstring))
     local journal = RD_CycleTrackerLogic.getJournal(player, idSubstring, true)
     if journal then
         local frontCoverData = RD_CycleTrackerText.getFrontPage(player)
@@ -129,7 +129,7 @@ function RD_CycleTrackerLogic.cycleTrackerMainLogic(cycle)
     local player = RD_zapi.getPlayer()
     local playerJournalID = RD_modData.ICdata.journalID
     if not playerJournalID then
-        print("It appears the player has died and respawned without reloading the game. Generating a new journal ID.")
+        RD_zapi.log("It appears the player has died and respawned without reloading the game. Generating a new journal ID.")
         RD_modData.ICdata.journalID = RD_CycleTrackerText.generateUID()
         playerJournalID = RD_modData.ICdata.journalID
     end
@@ -141,14 +141,14 @@ function RD_CycleTrackerLogic.cycleTrackerMainLogic(cycle)
     if RD_modData.ICdata.calendarMonth ~= month then
         RD_modData.ICdata.calendarMonth = month
         RD_modData.ICdata.calendar = RD_CycleTrackerText.newCalendar() -- Reset calendar for the new month
-        print("Cycle Tracker Logic: New month detected, resetting calendar.")
+        RD_zapi.log("Cycle Tracker Logic: New month detected, resetting calendar.")
     end
 
     local journal = RD_CycleTrackerLogic.getJournal(player, playerJournalID, false)
     if not journal then
         journal = RD_CycleTrackerLogic.RegisterNewJournal(player, playerJournalID)
         if not journal then
-            print("No valid journal found or registered. Cycle tracking data will not be saved.")
+            RD_zapi.log("No valid journal found or registered. Cycle tracking data will not be saved.")
             return
         end
     end
