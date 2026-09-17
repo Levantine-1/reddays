@@ -13,7 +13,7 @@
 - Debuff effects during the Menstrual Phase
     - Reduced Endurance
     - Increased Fatigue
-    - Groin bleeding and muscle strain (to simulate cramps)
+    - Groin muscle strain (to simulate cramps)
     - Lower torso muscle strain (to simulate cramps and increase pain level so the moodle shows up)
     - Increased discomfort levels
 
@@ -23,7 +23,6 @@
     - Boxes of Sanitary Pads
     - Boxes of Tampons
     - Boxes of Panty Liners
-    - Bandages will work as a quick stop gap if regular feminine hygiene products are not available.
 
 - Add sandbox options for customization
     - Hygiene product spawn rates
@@ -78,7 +77,7 @@
     - Early on it's just stamina/fatigue penalties and a nagging feeling something's off. Left unchecked, it can spiral into a dangerous late stage where your health itself starts draining -- made worse by stress, exhaustion, thirst, body temperature, and hunger.
     - Changing your hygiene items regularly keeps it from ever starting. Once infected, removing the source lets your body recover on its own over time -- no medication strictly required, just patience.
     - Antibiotics (a regular food item) speed up recovery and are your best safety net if things get bad.
-    - Known limitation: TSS is currently disabled automatically when playing on a true multiplayer/dedicated server, due to an unresolved sync bug -- it works as described above in singleplayer. Will be revisited in a future update. I've tested SP to work fine, but for both MP and SP, if you encounter something that doesn't seem right.                                                   
+    - Works in both singleplayer and multiplayer. TSS used to be switched off in multiplayer because antibiotics weren't being registered there; that's fixed, and both modes have been tested. If you encounter something that doesn't seem right in either mode:                                                   
         - RESET TSS:
             - You can reset TSS by launching the game in debug mode, and running this command: rd.goToTSSStage(0)
         - COLLECT REPORT:
@@ -87,13 +86,14 @@
             - Submit the bug report, what you did leading up to the bug, what you expected, what you got and then the error.
 
 - Health affects menstrual cycle
-    - Severe underweight/malnutrition can stop the cycle
-    - Severe stress can alter the cycle
+    - Being underweight, overweight or malnourished delays the next period (severe cases by weeks)
+    - Severe trauma (health below 25%) delays the next period once per cycle
     
 ## Planned features
 
 Feminine Hygiene products:
 - Craftable re-usable cloth pads
+- Fold a bandage into a makeshift pad
 - Menstrual cups
 
 
@@ -105,6 +105,8 @@ Traits:
 - Right now player starts on red day, but eventually a different start date could be a trait
 - Endometriosis by popular request
 - PMS symptoms as traits
+
+- Stress accumulation: read the player's stress level over time into a running score. Sustained high stress delays the cycle and adds a TSS progression/severity penalty (TSS currently only reads exhaustion, thirst, hunger and body temperature).
 
 - Birth control pills
 
@@ -172,6 +174,7 @@ numbers were being hidden from players either way).
 - Add more sandbox options:
     - Stat degrade rates
 - Fix bug related to randomized starts
+- TSS blurry vision (stage 3+) doesn't show in game; the sleeping-tablet blur effect never visibly worked. Investigate and fix
 - Player spawns with a few sanitary items
 
 ## Fixed Reported Bugs and minor feature change notes:
