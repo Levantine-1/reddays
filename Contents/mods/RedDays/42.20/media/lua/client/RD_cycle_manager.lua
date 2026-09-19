@@ -12,6 +12,7 @@ function RD_CycleManager.LoadPlayerData()
     RD_modData = RD_zapi.getModData()
     RD_modData.ICdata = RD_modData.ICdata or {}
     cycleDelayed = RD_modData.ICdata.cycleDelayed or false
+    RD_modData.ICdata.chronicStressScore = RD_modData.ICdata.chronicStressScore or 0
 
     -- Generate PMS symptoms if not already saved, and persist them
     if not RD_modData.ICdata.pmsSymptoms then
@@ -261,6 +262,24 @@ function RD_CycleManager.getPMSymptoms()
     return symptoms
 end
 
+-- Rolls the first cycle's start delay in minutes, or nil when it doesn't apply, latching
+-- cycleDelayed so later cycles start on the period as normal.
+--
+-- The floor of one day matters: random_between is max-exclusive, so the shipped 0-5 bounds
+-- rolled 0-4, and a zero-day delay left the luteal countdown at 0. The next tick then saw the
+-- phase already over and rolled straight into the period -- which is what players meant by
+-- "the random start does nothing".
+local MIN_START_DELAY_DAYS = 1
+local function rollStartDelayMinutes(ranges, whoDidThis)
+    if not ranges.phase_start_delay_enabled then return nil end
+    if RD_modData.ICdata.cycleDelayed then return nil end
+    if whoDidThis == "isCycleValid" then return nil end
+
+    local delay_days = math.max(MIN_START_DELAY_DAYS, random_between(ranges.range_delay_duration))
+    RD_modData.ICdata.cycleDelayed = true
+    return daysToMinutes(delay_days)
+end
+
 local testCycle = false
 function RD_CycleManager.newCycle(whoDidThis)
     -- Debug mode: use fast test cycle if enabled
@@ -276,7 +295,6 @@ function RD_CycleManager.newCycle(whoDidThis)
     local range_follicular_phase_duration = ranges.range_follicular_phase_duration
     local range_ovulation_phase_duration = ranges.range_ovulation_phase_duration
     local range_luteal_phase_duration = ranges.range_luteal_phase_duration
-    local range_delay_duration = ranges.range_delay_duration
     local range_healthEffectLevel = ranges.range_healthEffectLevel
     local range_pms_duration = ranges.range_pms_duration
     local range_total_cycle = ranges.range_total_menstrual_cycle_duration
@@ -317,6 +335,12 @@ function RD_CycleManager.newCycle(whoDidThis)
         RD_zapi.log("Failed to generate valid cycle after " .. max_attempts .. " attempts. Using default cycle.")
         local cycle = default_cycle()
         cycle.reason_for_cycle = whoDidThis .. "_fallbackDefault"
+        -- The fallback is still someone's first cycle, so it honours the delay too.
+        local fallbackDelayMinutes = rollStartDelayMinutes(ranges, whoDidThis)
+        if fallbackDelayMinutes then
+            cycle.current_phase = "lutealPhase"
+            cycle.phase_minutes_remaining = fallbackDelayMinutes
+        end
         return cycle
     end
 
@@ -327,12 +351,11 @@ function RD_CycleManager.newCycle(whoDidThis)
     local starting_minutes = 0
     cycleDelayed = RD_modData.ICdata.cycleDelayed or false
 
-    if ranges.phase_start_delay_enabled and not cycleDelayed and whoDidThis ~= "isCycleValid" then
+    local delayMinutes = rollStartDelayMinutes(ranges, whoDidThis)
+    if delayMinutes then
         -- Start on luteal phase with duration = delay value only, so when it ends the period starts
-        local delay_days = random_between(range_delay_duration)
         starting_phase = "lutealPhase"
-        starting_minutes = daysToMinutes(delay_days)
-        RD_modData.ICdata.cycleDelayed = true
+        starting_minutes = delayMinutes
     else
         starting_minutes = daysToMinutes(red_days)
     end

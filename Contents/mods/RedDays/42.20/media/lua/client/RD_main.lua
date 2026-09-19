@@ -5,6 +5,7 @@ require "RD_cycle_tracker_logic"
 require "RD_effects_manager"
 require "RD_hygiene_manager"
 require "RD_effects_pms"
+require "RD_hotwater"
 require "RD_tss_manager"
 require "RD_moodles"
 require "RD_debugger"
@@ -70,6 +71,7 @@ Events.EveryHours.Add(EveryHours)
 
 local function EveryTenMinutes()
     if not isValidGenderCheck() then return end
+    RD_CycleIrregularity.checkStressCause(RD_modData.ICdata.currentCycle)
     transmitModDataToServer() -- Periodically sync modData to server for persistence
 end
 Events.EveryTenMinutes.Add(EveryTenMinutes)
@@ -79,6 +81,7 @@ local function EveryOneMinute()
     local cycle = RD_CycleManager.tick(1)
     RD_CycleIrregularity.checkTraumaCause(cycle)
     RD_EffectsManager.determineEffects(cycle)
+    RD_HotWater.EveryOneMinute()
     RD_EffectsPMS.applyPMSEffectsMain()
     RD_TSSManager.EveryOneMinute(cycle)
     RD_moodles.mainLoop()

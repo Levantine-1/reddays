@@ -155,6 +155,10 @@ function M.new(enums, opts)
     function player:isFemale() return self.female end
     function player:getModData() return self.modData end
     function player:getWornItems() return worn end
+    function player:getPrimaryHandItem() return self.primaryHandItem end
+    function player:getSecondaryHandItem() return self.secondaryHandItem end
+    function player:setPrimaryHandItem(item) self.primaryHandItem = item end
+    function player:setSecondaryHandItem(item) self.secondaryHandItem = item end
     function player:getInventory() return inventory end
     function player:getBodyDamage() return bodyDamage end
     function player:getStats() return stats end

@@ -1,0 +1,34 @@
+-- TEMPORARY SPIKE ITEM -- DELETE THIS FILE BEFORE ANY WORKSHOP UPLOAD.
+--
+-- Answers one question the test harness cannot: does the engine heat a CLOTHING item that carries
+-- a FluidContainer component? InventoryItem.update() gates heating on the component, not on the
+-- item's type, but that combination is unproven, and the wearable hot water bottle depends on it.
+--
+-- How to test: launch with -debug, spawn RedDays.SpikeWearableBottle, fill it with water, put it in
+-- a lit oven or a microwave, and watch for the red heat border in the inventory.
+--   heats  -> build the wearable bottle as a clothing item in the RedDays:HotWaterBottle slot
+--   doesn't -> the wearable carries RedDays' own tracked heat instead, with a moodle to show it
+--
+-- It deliberately uses the tampon's body location and model so it needs no new art.
+
+module RedDays
+{
+    item SpikeWearableBottle
+    {
+        DisplayCategory = Clothing,
+        Type = Clothing,
+        DisplayName = SPIKE Wearable Bottle,
+        ClothingItem = Tampon,
+        BodyLocation = RedDays:HygieneItem,
+        Icon = HotWaterBottle,
+        WorldStaticModel = HotWaterBottle,
+        Weight = 0.4,
+        IsCookable = true,
+        Tags = base:cookable;base:cookablemicrowave,
+        component FluidContainer
+        {
+            ContainerName = HotWaterBottle,
+            Capacity = 1.0,
+        }
+    }
+}

@@ -25,7 +25,7 @@ function M.build()
     -- assumption here, and tests that care can override it.
     enums.CharacterStat = enum("CharacterStat", {
         "ANGER", "ENDURANCE", "FATIGUE", "HUNGER",
-        "THIRST", "SICKNESS", "UNHAPPINESS", "TEMPERATURE",
+        "THIRST", "SICKNESS", "UNHAPPINESS", "TEMPERATURE", "STRESS",
     }, function(member)
         member.min, member.max, member.default = 0, 1, 0.5
         function member:getMinimumValue() return self.min end

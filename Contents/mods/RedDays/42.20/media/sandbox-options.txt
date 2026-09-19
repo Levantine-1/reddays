@@ -228,6 +228,56 @@ option RedDays.trauma_follicular_delay_days
 	translation = RedDays_trauma_follicular_delay_days,
 }
 
+option RedDays.stress_irregularity_severity_pct
+{
+	type = integer,
+	min = 0,
+	max = 300,
+	default = 100,
+	page = RedDays,
+	translation = RedDays_stress_irregularity_severity_pct,
+}
+
+option RedDays.stress_threshold_pct
+{
+	type = integer,
+	min = 0,
+	max = 100,
+	default = 25,
+	page = RedDays,
+	translation = RedDays_stress_threshold_pct,
+}
+
+option RedDays.luteal_phase_max_days
+{
+	type = integer,
+	min = 1,
+	max = 100,
+	default = 30,
+	page = RedDays,
+	translation = RedDays_luteal_phase_max_days,
+}
+
+option RedDays.hot_water_bottle_reduction_pct
+{
+	type = integer,
+	min = 0,
+	max = 100,
+	default = 30,
+	page = RedDays,
+	translation = RedDays_hot_water_bottle_reduction_pct,
+}
+
+option RedDays.hot_water_bottle_cooling_halflife_mins
+{
+	type = integer,
+	min = 1,
+	max = 600,
+	default = 90,
+	page = RedDays,
+	translation = RedDays_hot_water_bottle_cooling_halflife_mins,
+}
+
 option RedDays.ovulation_phase_duration_lowerBound
 {
 	type = integer,

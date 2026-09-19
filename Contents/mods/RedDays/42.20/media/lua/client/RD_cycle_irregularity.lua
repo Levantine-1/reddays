@@ -87,4 +87,69 @@ function RD_CycleIrregularity.checkTraumaCause(cycle)
     RD_CycleIrregularity.addFollicularMinutes(cycle, delayDays * MINUTES_PER_DAY)
 end
 
+-- Luteal counterpart of addFollicularMinutes, capped by luteal_phase_max_days. Same contract:
+-- no-op outside the phase, clamps the amount being added rather than an over-cap base roll, and
+-- deliberately leaves cycle_duration_mins alone, exactly as the follicular helper does.
+function RD_CycleIrregularity.addLutealMinutes(cycle, minutes)
+    if not cycle or cycle.current_phase ~= "lutealPhase" then return 0 end
+    if not minutes or minutes <= 0 then return 0 end
+
+    local maxDays = getSandbox().luteal_phase_max_days or 30
+    local maxMins = maxDays * MINUTES_PER_DAY
+
+    local currentDuration = cycle.lutealPhase_duration_mins or 0
+    local room = maxMins - currentDuration
+    if room <= 0 then return 0 end
+
+    local actualAdd = math.min(minutes, room)
+    cycle.lutealPhase_duration_mins = currentDuration + actualAdd
+    cycle.phase_minutes_remaining = (cycle.phase_minutes_remaining or 0) + actualAdd
+    return actualAdd
+end
+
+-- Cause 3: chronic stress. Called every ten in-game minutes from RD_main.lua.
+--
+-- Stress above the threshold feeds a 0-100 score that builds in about three hard days and takes
+-- roughly four and a half calm ones to clear, so it tracks a rough patch rather than one bad
+-- fight. While the player is in the luteal phase the score holds the period back, at most about
+-- twelve hours per day -- deliberately gentler than the weight cause's 16-36 hours, and capped,
+-- so a period is always late rather than cancelled.
+local STRESS_SAMPLES_PER_DAY = 144          -- one per ten in-game minutes
+local STRESS_SCORE_MAX = 100
+local STRESS_GAIN_PER_SAMPLE = 0.25         -- 36/day at maximum stress
+local STRESS_DECAY_PER_SAMPLE = 0.15        -- 21.6/day while calm
+local STRESS_LUTEAL_MINUTES_PER_SAMPLE = 5  -- 12 hours/day at a maxed-out score
+
+function RD_CycleIrregularity.checkStressCause(cycle)
+    if not RD_modData or not RD_modData.ICdata then return end
+
+    local player = RD_zapi.getPlayer()
+    if not player then return end
+    local stats = player:getStats()
+    if not stats then return end
+
+    local sb = getSandbox()
+    local threshold = (sb.stress_threshold_pct or 25) / 100
+    local stress = stats:get(CharacterStat.STRESS) or 0
+
+    local score = RD_modData.ICdata.chronicStressScore or 0
+    if stress > threshold then
+        local headroom = 1 - threshold
+        local intensity = headroom > 0 and ((stress - threshold) / headroom) or 1
+        score = math.min(STRESS_SCORE_MAX, score + (intensity * STRESS_GAIN_PER_SAMPLE))
+    else
+        score = math.max(0, score - STRESS_DECAY_PER_SAMPLE)
+    end
+    RD_modData.ICdata.chronicStressScore = score
+
+    if score <= 0 then return end
+
+    local severityPct = sb.stress_irregularity_severity_pct
+    if severityPct == nil then severityPct = 100 end
+    if severityPct <= 0 then return end
+
+    local minutes = (score / STRESS_SCORE_MAX) * STRESS_LUTEAL_MINUTES_PER_SAMPLE * (severityPct / 100)
+    RD_CycleIrregularity.addLutealMinutes(cycle, minutes)
+end
+
 return RD_CycleIrregularity

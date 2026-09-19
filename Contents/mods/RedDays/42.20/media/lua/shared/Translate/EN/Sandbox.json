@@ -22,6 +22,20 @@
     "Sandbox_RedDays_trauma_follicular_delay_days": "Trauma Delay Length",
     "Sandbox_RedDays_trauma_follicular_delay_days_tooltip": "How many days are added to the follicular phase when the trauma HP threshold is crossed.",
 
+    "Sandbox_RedDays_stress_irregularity_severity_pct": "Chronic Stress Irregularity Severity",
+    "Sandbox_RedDays_stress_irregularity_severity_pct_tooltip": "Scales how much a long stretch of stress delays the period by extending the luteal phase. 0 disables it, 100 is normal (up to about 12 hours per day at maximum chronic stress), up to 300 for triple.",
+
+    "Sandbox_RedDays_stress_threshold_pct": "Chronic Stress Threshold",
+    "Sandbox_RedDays_stress_threshold_pct_tooltip": "Stress above this percent builds chronic stress; below it, chronic stress fades. Roughly 3 days of heavy stress to build fully, 4-5 calm days to clear.",
+
+    "Sandbox_RedDays_hot_water_bottle_reduction_pct": "Hot Water Bottle PMS Relief",
+    "Sandbox_RedDays_hot_water_bottle_cooling_halflife_mins_tooltip": "How many in-game minutes it takes a hot water bottle to lose half its remaining warmth. At the default it stays useful for roughly three hours.",
+    "Sandbox_RedDays_hot_water_bottle_cooling_halflife_mins": "Hot Water Bottle Cooling Half-Life (Minutes)",
+    "Sandbox_RedDays_hot_water_bottle_reduction_pct_tooltip": "Most a filled, fully heated hot water bottle can ease PMS symptoms while held. The relief fades as the bottle cools. 0 disables it.",
+
+    "Sandbox_RedDays_luteal_phase_max_days": "Maximum Luteal Phase Length (Irregularity Cap)",
+    "Sandbox_RedDays_luteal_phase_max_days_tooltip": "Hard cap, in days, on how long the luteal phase can be extended by chronic stress. The period is always late, never cancelled.",
+
     "Sandbox_RedDays_affectsAllGenders": "Affect All Genders",
     "Sandbox_RedDays_affectsAllGenders_tooltip": "Enable to apply menstrual cycle to all characters regardless of gender",
 

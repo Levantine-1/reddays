@@ -214,3 +214,149 @@ T.describe("RD_CycleIrregularity.checkTraumaCause", function()
     end)
 
 end)
+
+-- ================= CAUSE 3: CHRONIC STRESS =================
+-- Stress is sampled every ten in-game minutes into a running score, and while the player is in
+-- the luteal phase that score pushes the period back. Unlike the other two causes this one
+-- extends LUTEAL, and its score lives in ICdata so it survives the end-of-cycle regeneration.
+
+local function lutealCycle(overrides)
+    local cycle = {
+        current_phase = "lutealPhase",
+        phase_minutes_remaining = 10 * DAY,
+        lutealPhase_duration_mins = 14 * DAY,
+    }
+    for k, v in pairs(overrides or {}) do cycle[k] = v end
+    return cycle
+end
+
+local function stressWorld(sandbox, stress)
+    local w = world(sandbox)
+    w.t.player.stats:__seed(w.env.CharacterStat.STRESS, stress or 0)
+    return w
+end
+
+local function score(w) return w.icdata().chronicStressScore end
+
+-- One sample per ten minutes.
+local function sample(w, cycle, times)
+    for _ = 1, (times or 1) do
+        w.env.RD_CycleIrregularity.checkStressCause(cycle)
+    end
+end
+
+T.describe("RD_CycleIrregularity.addLutealMinutes", function()
+
+    T.it("extends both the phase duration and the remaining countdown", function()
+        local w = world()
+        local cycle = lutealCycle()
+        local added = w.env.RD_CycleIrregularity.addLutealMinutes(cycle, 3 * HOUR)
+        T.eq(added, 3 * HOUR)
+        T.eq(cycle.lutealPhase_duration_mins, (14 * DAY) + (3 * HOUR))
+        T.eq(cycle.phase_minutes_remaining, (10 * DAY) + (3 * HOUR))
+    end)
+
+    T.it("does nothing outside the luteal phase", function()
+        local w = world()
+        local cycle = lutealCycle({ current_phase = "follicularPhase" })
+        T.eq(w.env.RD_CycleIrregularity.addLutealMinutes(cycle, 3 * HOUR), 0)
+        T.eq(cycle.lutealPhase_duration_mins, 14 * DAY)
+    end)
+
+    T.it("clamps growth at luteal_phase_max_days without shrinking an over-cap phase", function()
+        local w = world({ luteal_phase_max_days = 30 })
+        local cycle = lutealCycle({ lutealPhase_duration_mins = 29 * DAY })
+        T.eq(w.env.RD_CycleIrregularity.addLutealMinutes(cycle, 5 * DAY), 1 * DAY, "only the room left")
+        T.eq(cycle.lutealPhase_duration_mins, 30 * DAY)
+
+        local over = lutealCycle({ lutealPhase_duration_mins = 40 * DAY })
+        T.eq(w.env.RD_CycleIrregularity.addLutealMinutes(over, 1 * DAY), 0)
+        T.eq(over.lutealPhase_duration_mins, 40 * DAY, "never shrinks a phase already past the cap")
+    end)
+
+end)
+
+T.describe("RD_CycleIrregularity.checkStressCause", function()
+
+    T.it("builds the score while stress is above the threshold", function()
+        local w = stressWorld({ stress_threshold_pct = 25 }, 1.0)
+        sample(w, lutealCycle(), 144)   -- one full day at maximum stress
+        T.near(score(w), 36, 0.5, "a day of maximum stress should be about a third of the scale")
+    end)
+
+    T.it("builds more slowly at moderate stress and not at all below the threshold", function()
+        local moderate = stressWorld({ stress_threshold_pct = 25 }, 0.625)  -- halfway up the band
+        sample(moderate, lutealCycle(), 144)
+        T.near(score(moderate), 18, 0.5)
+
+        local calm = stressWorld({ stress_threshold_pct = 25 }, 0.25)
+        sample(calm, lutealCycle(), 144)
+        T.eq(score(calm), 0, "at the threshold itself nothing accumulates")
+    end)
+
+    T.it("decays the score during calm and never goes negative", function()
+        local w = stressWorld({ stress_threshold_pct = 25 }, 0)
+        w.icdata().chronicStressScore = 50
+        sample(w, lutealCycle(), 144)
+        T.near(score(w), 50 - 21.6, 0.5, "about 21.6 points shed per calm day")
+
+        sample(w, lutealCycle(), 1000)
+        T.eq(score(w), 0)
+    end)
+
+    T.it("never passes 100", function()
+        local w = stressWorld({ stress_threshold_pct = 25 }, 1.0)
+        sample(w, lutealCycle(), 144 * 10)
+        T.eq(score(w), 100)
+    end)
+
+    T.it("delays the period while in luteal, scaled by the score", function()
+        -- Stress held at maximum so the score stays pinned at 100 for the whole day.
+        local w = stressWorld({ stress_threshold_pct = 25 }, 1.0)
+        w.icdata().chronicStressScore = 100
+        local cycle = lutealCycle()
+        sample(w, cycle, 144)   -- a full day at a maxed-out score
+        T.near(cycle.phase_minutes_remaining, (10 * DAY) + (12 * HOUR), 30,
+               "a maxed-out score adds about twelve hours per day")
+    end)
+
+    T.it("adds nothing outside the luteal phase, but still tracks the score", function()
+        local w = stressWorld({ stress_threshold_pct = 25 }, 1.0)
+        local cycle = lutealCycle({ current_phase = "follicularPhase",
+                                    follicularPhase_duration_mins = 12 * DAY })
+        sample(w, cycle, 144)
+        T.eq(cycle.phase_minutes_remaining, 10 * DAY, "the follicular phase is not this cause's job")
+        T.truthy(score(w) > 0, "stress still builds outside luteal")
+    end)
+
+    T.it("scales the delay with the severity option and is disabled at zero", function()
+        local half = stressWorld({ stress_irregularity_severity_pct = 50 }, 1.0)
+        half.icdata().chronicStressScore = 100
+        local halfCycle = lutealCycle()
+        sample(half, halfCycle, 144)
+        T.near(halfCycle.phase_minutes_remaining, (10 * DAY) + (6 * HOUR), 30)
+
+        local off = stressWorld({ stress_irregularity_severity_pct = 0 }, 1.0)
+        off.icdata().chronicStressScore = 100
+        local offCycle = lutealCycle()
+        sample(off, offCycle, 144)
+        T.eq(offCycle.phase_minutes_remaining, 10 * DAY, "severity 0 disables the delay entirely")
+    end)
+
+    T.it("respects the luteal cap", function()
+        local w = stressWorld({ luteal_phase_max_days = 15 }, 1.0)
+        w.icdata().chronicStressScore = 100
+        local cycle = lutealCycle({ lutealPhase_duration_mins = 14 * DAY })
+        sample(w, cycle, 144 * 5)
+        T.eq(cycle.lutealPhase_duration_mins, 15 * DAY)
+    end)
+
+    T.it("keeps the score across a new cycle", function()
+        local w = stressWorld({ stress_threshold_pct = 25 }, 1.0)
+        sample(w, lutealCycle(), 144)
+        local before = score(w)
+        w.env.RD_CycleManager.newCycle("test_rollover")
+        T.eq(score(w), before, "chronic stress is a property of the player, not the cycle")
+    end)
+
+end)

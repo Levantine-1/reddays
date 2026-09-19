@@ -88,6 +88,14 @@
 - Health affects menstrual cycle
     - Being underweight, overweight or malnourished delays the next period (severe cases by weeks)
     - Severe trauma (health below 25%) delays the next period once per cycle
+    - Chronic stress delays the next period: stress above the threshold (25% by default) builds a 0-100 score over about 3 days and clears over about 4-5 calm ones. While in the luteal phase that score extends the phase, up to ~12 hours per day at a maxed-out score, capped by luteal_phase_max_days (30) so a period is always late, never cancelled.
+
+- Hot water bottle (vanilla Base.HotWaterBottle, redefined by this mod to add base:cookable so it heats on a stove/oven/BBQ/campfire, not only in a microwave)
+    - Fill it with water, heat it, and hold it in either hand to ease PMS symptoms
+    - Relief scales with the item's heat: nothing below 1.10, full (30% by default) at 1.80
+    - The engine cools items far too fast for this, so RedDays tracks the bottle's heat itself on a half-life curve (90 minutes by default), which keeps it useful for roughly 3 hours, and writes the value back so the inventory's red border still matches
+    - Stacks multiplicatively with painkillers and comfort food
+    - rd.hotwater.print() shows the tracked heat and the current relief
     
 ## Planned features
 
@@ -106,7 +114,7 @@ Traits:
 - Endometriosis by popular request
 - PMS symptoms as traits
 
-- Stress accumulation: read the player's stress level over time into a running score. Sustained high stress delays the cycle and adds a TSS progression/severity penalty (TSS currently only reads exhaustion, thirst, hunger and body temperature).
+- Stress accumulation part 2: feed the chronic stress score into TSS as well, as a progression/severity penalty (TSS currently only reads exhaustion, thirst, hunger and body temperature).
 
 - Birth control pills
 
@@ -114,7 +122,7 @@ Traits:
 
 - Revamp period tracker with a custom user interface.
 
-- Make the hot water bag actually wearable and useful.
+- Wearable hot water bottle in its own clothing slot. Blocked on one in-game check: whether the engine heats a clothing item that carries a FluidContainer component (spawn RedDays.SpikeWearableBottle from media/scripts/RedDays_spike_wearable.txt and put it in an oven). If it doesn't, the wearable uses RedDays' own tracked heat plus a moodle to show its temperature.
 
 ## Investigated and abandoned: real fluid containers for hygiene items
 
@@ -173,7 +181,6 @@ numbers were being hidden from players either way).
 ## Current Known Bugs or Basic ToDos:
 - Add more sandbox options:
     - Stat degrade rates
-- Fix bug related to randomized starts
 - TSS blurry vision (stage 3+) doesn't show in game; the sleeping-tablet blur effect never visibly worked. Investigate and fix
 - Player spawns with a few sanitary items
 

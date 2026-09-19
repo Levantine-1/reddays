@@ -330,4 +330,57 @@ T.describe("first-cycle start delay", function()
         T.eq(w.cycle().current_phase, "redPhase")
     end)
 
+    -- REGRESSION: players reported that a delayed start still began on the period. The default
+    -- bounds are 0..5 and random_between is max-exclusive, so a 0-day delay left the luteal
+    -- countdown at zero and the very next tick rolled straight into redPhase.
+    T.it("never hands out a zero-length delay, even on the lowest roll", function()
+        local sandbox = {}
+        for k, v in pairs(FIXED) do sandbox[k] = v end
+        sandbox.phase_start_delay_enabled = true
+        sandbox.phase_start_delay_lowerBound = 0
+        sandbox.phase_start_delay_upperBound = 5   -- the shipped defaults
+
+        for seed = 1, 40 do
+            local w = H.newWorld({ sandbox = sandbox, seed = seed })
+            local cycle = w.cycle()
+            T.eq(cycle.current_phase, "lutealPhase", "seed " .. seed .. " did not start in luteal")
+            T.truthy(cycle.phase_minutes_remaining >= DAY,
+                     "seed " .. seed .. " got a delay under a day: " .. cycle.phase_minutes_remaining)
+        end
+    end)
+
+    T.it("does not drop into the period on the first tick after a delayed start", function()
+        local sandbox = {}
+        for k, v in pairs(FIXED) do sandbox[k] = v end
+        sandbox.phase_start_delay_enabled = true
+        sandbox.phase_start_delay_lowerBound = 0
+        sandbox.phase_start_delay_upperBound = 5
+
+        for seed = 1, 20 do
+            local w = H.newWorld({ sandbox = sandbox, seed = seed })
+            w.advanceMinutes(1)
+            T.eq(w.cycle().current_phase, "lutealPhase",
+                 "seed " .. seed .. " reached the period one minute after spawning")
+        end
+    end)
+
+    T.it("still delays the start when the ranges force the default cycle", function()
+        -- Phase ranges sum to 27 but the total is required to be 100, so newCycle() falls back
+        -- to default_cycle(). That path used to ignore the delay and start on the period.
+        local sandbox = {}
+        for k, v in pairs(FIXED) do sandbox[k] = v end
+        sandbox.phase_start_delay_enabled = true
+        sandbox.phase_start_delay_lowerBound = 3
+        sandbox.phase_start_delay_upperBound = 4   -- always 3
+        sandbox.menstrual_cycle_duration_lowerBound = 100
+        sandbox.menstrual_cycle_duration_upperBound = 100
+
+        local w = H.newWorld({ sandbox = sandbox })
+        local cycle = w.cycle()
+        T.contains(cycle.reason_for_cycle, "_fallbackDefault")
+        T.eq(cycle.current_phase, "lutealPhase", "the fallback cycle should honour the delay too")
+        T.eq(cycle.phase_minutes_remaining, 3 * DAY)
+        T.truthy(w.env.RD_modData.ICdata.cycleDelayed, "cycleDelayed should latch on the fallback path")
+    end)
+
 end)

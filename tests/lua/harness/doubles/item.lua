@@ -26,6 +26,11 @@ function M.new(opts)
         conditionMax = opts.conditionMax or 10,
         blood = opts.blood or 0,
         dirt = opts.dirt or 0,
+        -- InventoryItem.itemHeat: 1.0 is ambient, above that is hot. Engine-side it only ticks
+        -- for items carrying a FluidContainer component (InventoryItem.update, confirmed via
+        -- bytecode), so the double keeps the two together.
+        itemHeat = opts.itemHeat or 1.0,
+        fluidAmount = opts.fluidAmount,
         bodyLocation = opts.bodyLocation,
         bloodClothingType = opts.bloodClothingType,
         modData = {},
@@ -81,6 +86,21 @@ function M.new(opts)
     end
     function item:getBloodClothingType() return self.bloodClothingType end
     function item:getModData() return self.modData end
+
+    function item:getItemHeat() return self.itemHeat end
+    function item:setItemHeat(v)
+        self.itemHeat = v
+        record("setItemHeat", v)
+    end
+
+    function item:getFluidContainer()
+        if self.fluidAmount == nil then return nil end
+        local owner = self
+        return {
+            getAmount = function() return owner.fluidAmount end,
+            isEmpty = function() return (owner.fluidAmount or 0) <= 0 end,
+        }
+    end
 
     function item:isBodyLocation(loc)
         if not loc or not self.bodyLocation then return false end

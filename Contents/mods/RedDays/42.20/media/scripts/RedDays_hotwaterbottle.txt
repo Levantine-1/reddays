@@ -1,0 +1,32 @@
+-- Redefines the vanilla hot water bottle so it can be heated on a stove, oven, BBQ or campfire,
+-- not only in a microwave.
+--
+-- InventoryItem.update() (confirmed via bytecode) only raises itemHeat when the item carries a
+-- FluidContainer component AND has base:cookable, or base:cookablemicrowave while sitting in a
+-- microwave. Vanilla ships the bottle with the microwave tag alone, so every other heat source
+-- did nothing. Everything else here is copied verbatim from
+-- media/scripts/generated/items/normal.txt so the item is otherwise unchanged.
+--
+-- RedDays reads the resulting heat in client/RD_hotwater.lua, where a filled, hot bottle held in
+-- hand eases PMS symptoms.
+
+module Base
+{
+    item HotWaterBottle
+    {
+        DisplayCategory = WaterContainer,
+        Weight = 0.4,
+        ItemType = base:normal,
+        Icon = HotWaterBottle,
+        WorldStaticModel = HotWaterBottle,
+        IsCookable = true,
+        CookingSound = BoilingFood,
+        Tags = base:cookable;base:cookablemicrowave,
+        component FluidContainer
+        {
+            ContainerName = HotWaterBottle,
+            Capacity = 1.0,
+            CustomDrinkSound = DrinkingFromBottlePlastic,
+        }
+    }
+}

@@ -4,6 +4,7 @@ require "RD_cycle_tracker_logic"
 require "RD_cycle_manager"
 require "RD_hygiene_manager"
 require "RD_game_api"
+require "RD_hotwater"
 
 local MINUTES_PER_DAY = 1440
 local MINUTES_PER_HOUR = 60
@@ -441,6 +442,34 @@ defineAccessor(RD_DebugAPI.pms, "food_pms_reduction_pct", function(create)
 end, "food_pms_reduction_pct", function(v)
     return clampNumber(v, 0, 100, 0)
 end)
+
+-- rd.hotwater.print() -- what the hot water bottle model currently sees, for tuning the cooling
+-- curve in game. Heat is 1.0 at ambient; RedDays gives relief from 1.10 up to full at 1.80.
+RD_DebugAPI.hotwater = RD_DebugAPI.hotwater or {}
+RD_DebugAPI.hotwater.print = function()
+    local player = RD_zapi.getPlayer()
+    if not player or not RD_HotWater then
+        print("[RedDays][rd.hotwater] unavailable")
+        return nil
+    end
+
+    local function describe(label, item)
+        if not item then
+            print("[RedDays][rd.hotwater] " .. label .. " ----------------- empty")
+            return
+        end
+        local md = item:getModData()
+        print("[RedDays][rd.hotwater] " .. label .. " ----------------- " .. tostring(item:getFullType())
+            .. " engineHeat=" .. string.format("%.3f", item:getItemHeat() or 0)
+            .. " tracked=" .. string.format("%.3f", md.rdHeat or 0))
+    end
+
+    describe("primary hand  ", player:getPrimaryHandItem())
+    describe("secondary hand", player:getSecondaryHandItem())
+    local pct = RD_HotWater.getReductionPct()
+    print("[RedDays][rd.hotwater] PMS relief ---------------- " .. string.format("%.1f", pct) .. "%")
+    return pct
+end
 
 RD_DebugAPI.status.get = function()
     local tss = getTSS(false)

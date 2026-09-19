@@ -1,6 +1,7 @@
 RD_EffectsPMS = RD_EffectsPMS or {}
 RDEffectsPMS = RD_EffectsPMS -- Alias for backward compatibility
 require "RD_game_api"
+require "RD_hotwater"
 
 -- FullType -> percent PMS reduction (doubled from the original design values per user request).
 -- Sourced from vanilla item scripts (media/scripts/generated/items/{food,normal}.txt) -- note the
@@ -325,6 +326,14 @@ local function applyEnabledSymptomEffects(currentCycle, pms_severity, rate_multi
 
         if (RD_modData.ICdata.food_pms_reduction_pct or 0) > 0 then
             target_value = target_value * (1 - (RD_modData.ICdata.food_pms_reduction_pct / 100))
+        end
+
+        -- A hot water bottle held in hand. Unlike the pill and food sources this one has no
+        -- countdown: it is re-read every minute straight from the item's tracked heat, so it
+        -- fades as the bottle cools and returns the moment it is reheated.
+        local bottlePct = RD_HotWater and RD_HotWater.getReductionPct() or 0
+        if bottlePct > 0 then
+            target_value = target_value * (1 - (bottlePct / 100))
         end
 
         local pending = {}
